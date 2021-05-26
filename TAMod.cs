@@ -13,7 +13,7 @@ namespace TreeAnarchy
 {
     public class TAMod : LoadingExtensionBase, IUserMod
     {
-        private const string Version = @"0.1";
+        private const string Version = @"0.2.0";
         private const string ModName = @"Unlimited Trees: Rebooted";
         public string Name => $"{ModName} - {Version}";
         public string Description => "Reboot of the Unlimited Trees Mod. Tree snapping is also enabled";
