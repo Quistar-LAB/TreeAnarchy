@@ -15,5 +15,5 @@ I'm now also working on prop anarchy to support more props (although its not my 
 
 Anyways, these codes are open to the public, as its a hobby of mine. If you wish to contribute to the codes, please join in.
 
-IMPORTANT!! As always, create a new save!!! This mod creates a new version of saved datas. Original mod formats are supported, but then are saved into the new format.
+IMPORTANT!! As always, create a new save!!! This mod creates a new version of saved datas. Original mod formats loading are supported, but then are saved into the new format.
 
