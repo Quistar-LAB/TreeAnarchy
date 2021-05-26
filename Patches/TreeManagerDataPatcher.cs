@@ -121,10 +121,8 @@ namespace TreeAnarchy.Patches
                 }
             }
 
-            if(UseModifiedTreeCap)
-            {
-                TASerializableDataExtension.Deserialize();
-            }
+            if(UseModifiedTreeCap) TASerializableDataExtension.Deserialize();
+
             int MaxTreeLen = MaxTreeLimit;
             for (uint i = 1; i < MaxTreeLen; i++)
             {
@@ -140,38 +138,6 @@ namespace TreeAnarchy.Patches
             }
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndDeserialize(s, "TreeManager");
             return false;
-        }
-
-        private static bool AfterDeserializePostfix(TreeManager.Data __instance, ref DataSerializer s)
-        {
-            Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.BeginAfterDeserialize(s, "TreeManager");
-            Singleton<LoadingManager>.instance.WaitUntilEssentialScenesLoaded();
-            PrefabCollection<TreeInfo>.BindPrefabs();
-
-            TreeManager instance = Singleton<TreeManager>.instance;
-            TreeInstance[] buffer = instance.m_trees.m_buffer;
-
-            //Our additions, if enabled do our version if not just C\O's.
-            // removed original nulltreeoption framework: Simon Ueng April 12 2020
-#if DEBUG
-            UnityEngine.Debug.Log("TreeUnlimiter::TreeManager::AfterDeserialize(): Starting custom Tree validation process...");
-#endif
-            TreeManager treeManager = Singleton<TreeManager>.instance;
-            treeManager.m_treeCount = (int)(treeManager.m_trees.ItemCount() - 1u); //needed before getpackedlistcall
-/*
-            if (TreePrefabsDebug.ValidateAllTreeInfos())
-            {
-                UnityEngine.Debug.Log("TreeUnlimiter::TreeManager::AfterDeserialize(): Tree validation process completed...");
-            }
-            else
-            {
-                TreePrefabsDebug.DoOriginal();
-            }
-*/
-            instance.m_treeCount = (int)(instance.m_trees.ItemCount() - 1u);
-            Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndAfterDeserialize(s, "TreeManager");
-
-            return false; // Don't run original code
         }
 
         private static bool SerializePrefix(DataSerializer s)

@@ -33,12 +33,6 @@ namespace TreeAnarchy
         public abstract void FinalizeSave();
         public abstract void AfterDeserialize(Stream s);
 
-        private ushort getPosY(Vector3 position)
-        {
-            position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
-            return (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
-        }
-
         private byte[] Compress(Stream s)
         {
             byte[] compressed;
@@ -74,8 +68,6 @@ namespace TreeAnarchy
             SaveFlags flags = 0;
 
             TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
-            Flags tempFlag = ~(Flags.FireDamage | Flags.Burning);
-            ushort burningTreeMask = (ushort)tempFlag;
 
             Format version = (Format)ReadUShort(s);
             switch(version)
@@ -126,8 +118,9 @@ namespace TreeAnarchy
                             ReadData:
                             for (uint i = DefaultTreeLimit; i < MaxLen; i++)
                             {
-                                trees[i].m_flags = ReadUShort(s);
-                                trees[i].m_flags &= burningTreeMask; // remove burning tree flags
+                                TreeInstance.Flags m_flags = (TreeInstance.Flags)ReadUShort(s);
+                                m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
+                                trees[i].m_flags = (ushort)m_flags;
                                 if (trees[i].m_flags != 0)
                                 {
                                     trees[i].m_infoIndex = ReadUShort(s); ;
@@ -154,9 +147,13 @@ namespace TreeAnarchy
                     }
                     if (treeCount > 0) // Handle 262144 ~ MaxTreeLimit
                     {
+                        Debug.Log($"TreeAnarchy: {treeCount} extra trees saved");
+                        treeCount = 0;
                         for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
                         {
-                            trees[i].m_flags = (ushort)(ReadUShort(s) & burningTreeMask);
+                            TreeInstance.Flags m_flags = (TreeInstance.Flags)ReadUShort(s);
+                            m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
+                            trees[i].m_flags = (ushort)m_flags;
                         }
                         for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
                         {
@@ -166,8 +163,10 @@ namespace TreeAnarchy
                                 trees[i].m_posX = ReadShort(s);
                                 trees[i].m_posZ = ReadShort(s);
                                 trees[i].m_posY = ReadUShort(s);
+                                treeCount++;
                             }
                         }
+                        Debug.Log($"TreeAnarchy: {treeCount} extra trees loaded");
                     }
                     break;
             }
@@ -188,13 +187,13 @@ namespace TreeAnarchy
             WriteUInt32(s, 0);        // Reserved for future use    4 bytes
             WriteUShort(s, 0);        // flags.. this is ignore in our version 2 bytes
 
-            if (Singleton<TreeManager>.instance.m_trees.ItemCount() > 0)
+            if (Singleton<TreeManager>.instance.m_trees.ItemCount() > 1)
             {
                 for (index = 1; index < DefaultTreeLimit; index++)
                 {
                     if (buffer[index].m_flags != 0)
                     {
-                        WriteUShort(s, buffer[index].m_posY/*getPosY(buffer[index].Position)*/);
+                        WriteUShort(s, buffer[index].m_posY);
                         orgTreeCount++;
                     }
                 }
@@ -228,6 +227,7 @@ namespace TreeAnarchy
                 s.WriteByte((byte)(orgTreeCount >> 24));
             }
 #if FALSE // Burning tree handled in prefix method
+            // Let original codes handle the extra burning tree list. Hope it works
             WriteUInt24(s, (uint)instance.m_burningTrees.m_size);
             for (int m = 0; m < instance.m_burningTrees.m_size; m++)
             {
