@@ -81,15 +81,12 @@ namespace TreeAnarchy
             switch(version)
             {
                 case Format.Version1:
-                    Debug.Log("TreeAnarchy: Found Version1 Format");
                     treeLimit = FormatVersion1TreeLimit;
                     break;
                 case Format.Version2:
-                    Debug.Log("TreeAnarchy: Found Version2 Format");
                     treeLimit = FixEndian(ReadInt32(s)); // Fixing ushort reorder
                     break;
                 case Format.Version3:
-                    Debug.Log("TreeAnarchy: Found Version3 Format");
                     treeLimit = FixEndian(ReadInt32(s)); // Fixing ushort reorder
                     treeCount = FixEndian(ReadInt32(s)); // Fixing ushort reorder
                     ReadInt32(s); // Reserved for future use
@@ -97,7 +94,6 @@ namespace TreeAnarchy
                     flags = (SaveFlags)ReadUShort(s);
                     break;
                 case Format.Version4:
-                    Debug.Log("TreeAnarchy: Found Version4 Format");
                     treeLimit = ReadInt32(s);
                     treeCount = ReadInt32(s);
                     orgTreeCount = ReadInt32(s); // used for reading posY between 0~262144 trees
@@ -105,7 +101,6 @@ namespace TreeAnarchy
                     flags = (SaveFlags)ReadUShort(s);
                     break;
                 default:
-                    Debug.Log($"TreeAnarchy: Unsupported Data Version! VerData: {version}");
                     return;
             }
             /* Sanity check */
@@ -115,7 +110,6 @@ namespace TreeAnarchy
                 return;
             }
             if(treeLimit > MaxTreeLimit) treeLimit = MaxTreeLimit; // Only load what MaxTreeLimit is limited to
-            Debug.Log($"TreeAnarchy: TreeCount:{treeCount}, TreeLimit:{treeLimit}");
             switch (version)
             {
                 case Format.Version1:
@@ -141,7 +135,6 @@ namespace TreeAnarchy
                                     trees[i].m_posZ = ReadShort(s);
                                     trees[i].m_posY = 0; // old format doesn't save this
                                 }
-                                Debug.Log($"TreeAnarchy: treeID:{i} flags:{trees[i].m_flags} infoIndex:{trees[i].m_infoIndex} posX:{trees[i].m_posX} posZ:{trees[i].m_posZ} posY:{trees[i].m_posY}");
                             }
                             break;
                     }
@@ -149,7 +142,6 @@ namespace TreeAnarchy
                 case Format.Version4:
                     if (orgTreeCount > 0)  // Handle first 0~262144 trees
                     {
-                        Debug.Log($"orgTreeCount: {orgTreeCount}");
                         int treeAddCount = 0;
                         for (uint i = 1; i < DefaultTreeLimit; i++)
                         {
@@ -157,7 +149,6 @@ namespace TreeAnarchy
                             {
                                 trees[i].m_posY = ReadUShort(s);
                                 treeAddCount++;
-                                Debug.Log($"TreeAnarchy: treeID:{i} flags:{trees[i].m_flags} infoIndex:{trees[i].m_infoIndex} posX:{trees[i].m_posX} posZ:{trees[i].m_posZ} posY:{trees[i].m_posY}");
                             }
                         }
                     }
@@ -175,7 +166,6 @@ namespace TreeAnarchy
                                 trees[i].m_posX = ReadShort(s);
                                 trees[i].m_posZ = ReadShort(s);
                                 trees[i].m_posY = ReadUShort(s);
-                                Debug.Log($"TreeAnarchy: treeID:{i} flags:{trees[i].m_flags} infoIndex:{trees[i].m_infoIndex} posX:{trees[i].m_posX} posZ:{trees[i].m_posZ} posY:{trees[i].m_posY}");
                             }
                         }
                     }
@@ -204,7 +194,7 @@ namespace TreeAnarchy
                 {
                     if (buffer[index].m_flags != 0)
                     {
-                        WriteUShort(s, getPosY(buffer[index].Position));
+                        WriteUShort(s, buffer[index].m_posY/*getPosY(buffer[index].Position)*/);
                         orgTreeCount++;
                     }
                 }
@@ -236,8 +226,6 @@ namespace TreeAnarchy
                 s.WriteByte((byte)(orgTreeCount >> 8));
                 s.WriteByte((byte)(orgTreeCount >> 16));
                 s.WriteByte((byte)(orgTreeCount >> 24));
-
-                Debug.Log($"TreeAnarchy: Wrote {s.Position} bytes, treeCount:{orgTreeCount} extraTrees:{extraTreeCount}");
             }
 #if FALSE // Burning tree handled in prefix method
             WriteUInt24(s, (uint)instance.m_burningTrees.m_size);

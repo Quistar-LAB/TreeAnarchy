@@ -16,7 +16,6 @@ namespace TreeAnarchy
             // Used for saving trees indexed > 262144
             public override void FinalizeSave()
             {
-
             }
 
             public override void AfterDeserialize(Stream s)
