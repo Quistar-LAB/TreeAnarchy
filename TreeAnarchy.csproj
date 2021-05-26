@@ -62,7 +62,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Patches\BuildingDecorationPatcher.cs" />
     <Compile Include="TASerializableDataExtension.cs" />
     <Compile Include="TADataSerializer.cs" />
     <Compile Include="Patches\TreeSnappingPatcher.cs" />
