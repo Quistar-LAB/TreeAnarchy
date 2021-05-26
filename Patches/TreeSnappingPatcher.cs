@@ -13,11 +13,14 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using ColossalFramework;
 using UnityEngine;
 using MoveIt;
+#if DEBUG
 using static TreeAnarchy.Patches.Patcher;
+#endif
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy.Patches
@@ -26,10 +29,17 @@ namespace TreeAnarchy.Patches
     {
         internal static void EnablePatches(Harmony harmony)
         {
-            //harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
-            //    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.CalculateTreePrefix))));
+            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.SimulationStepTranspiler))));
+
+#if FALSE
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.TransformPrefix))));
+#endif
         }
 
         internal static void DisablePatches(Harmony harmony, string id)
@@ -85,31 +95,103 @@ namespace TreeAnarchy.Patches
             return codes.AsEnumerable();
         }
 
-        private static bool TransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, Vector3 center, bool followTerrain)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool CalculateTreePrefix()
         {
-            /* I wanted to prevent trees from going underground, but the way moveit was written, and the way
-             * deltaMove is used, there was no way to prevent deltaMove from increasing or decreasing when trees
-             * go below the terrain.
-            /* Basically the same as original Moveit::Transform, but the original never really had to consider
-             * the possibility of trees going underground. With tree snapping enabled, this possibility has to
-             * be considered. But for now...... just enabling tree.fixedheight.
-             * Perhaps Moveit developers would be willing to change the way deltaMove is used to prevent things from
-             * going below terrain... afterall... who needs their props below the terrain? just my thought
-             */
-            Vector3 newPosition = matrix4x.MultiplyPoint(state.position - center);
-            float terrainHeight = TerrainManager.instance.SampleOriginalRawHeightSmooth(newPosition);
-
-            newPosition.y = state.position.y + deltaHeight;
-            if(newPosition.y > terrainHeight && UseTreeSnapping)
-            {
-                if (followTerrain)
-                {
-                    newPosition.y = newPosition.y + terrainHeight - state.position.y;
-                }
-                Singleton<TreeManager>.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
-            }
-            __instance.Move(newPosition, 0);
             return false;
+        }
+
+        private static IEnumerable<CodeInstruction> SimulationStepTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method)
+        {
+            LocalBuilder input = null;
+            ConstructorInfo constructor = typeof(ToolBase.RaycastService).
+                GetConstructor(BindingFlags.Instance | BindingFlags.Public, null,
+                new Type[] { typeof(ItemClass.Service), typeof(ItemClass.SubService), typeof(ItemClass.Layer) }, null);
+
+            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+            for(int i = 0; i < codes.Count; i++)
+            {
+                LocalBuilder local = codes[i].operand as LocalBuilder;
+                if (local != null && local.LocalType == typeof(ToolBase.RaycastInput))
+                {
+                    input = local;
+                    break;
+                }
+            }
+            /* The following IL represents the following c# codes
+             * input.m_ignoreBuildingFlags = Building.Flags.None;
+             * input.m_ignoreNodeFlags = NetNode.Flags.None;
+             * input.m_ignoreSegmentFlags = NetSegment.Flags.None;
+             * input.m_buildingService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+             * input.m_netService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+             * input.m_netService2 = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+             */
+            CodeInstruction[] insertCodes = new CodeInstruction[]
+            {
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_ignoreBuildingFlags))),
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_ignoreNodeFlags))),
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_ignoreSegmentFlags))),
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Newobj, constructor),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_buildingService))),
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Newobj, constructor),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_netService))),
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Newobj, constructor),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_netService2))),
+            };
+
+            int firstIndex = 0;
+            int secondIndex = 0;
+            bool firstSigFound = false;
+            bool skippedFirst = false;
+            
+            for(int i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].Calls(AccessTools.Method(typeof(Singleton<ToolManager>), "get_instance")) && !firstSigFound)
+                {
+                    if(skippedFirst == true)
+                    {
+                        firstIndex = i;
+                        firstSigFound = true;
+                    }
+                    skippedFirst = true;
+                }
+                if(codes[i].StoresField(AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))))
+                {
+                    secondIndex = i + 1;
+                }
+                if(codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight")))
+                {
+                    codes.RemoveRange(i - 3, 4);
+                }
+            }
+            codes.RemoveRange(firstIndex, secondIndex - firstIndex);
+            codes.InsertRange(firstIndex, insertCodes);
+
+            Debug.Log("TreeAnarchy: ------------- SimulationStep --------------------");
+            foreach (var code in codes)
+            {
+                Debug.Log($"==> {code}");
+            }
+            Debug.Log("TreeAnarchy: -------------------------------------------------");
+            return codes.AsEnumerable();
         }
     }
 }
