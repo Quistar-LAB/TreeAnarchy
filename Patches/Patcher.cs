@@ -19,7 +19,6 @@ using ColossalFramework;
 using HarmonyLib;
 using static TreeAnarchy.TAConfig;
 using static TreeAnarchy.Patches.TreeManagerDataPatcher;
-using static TreeAnarchy.Patches.BuildingDecorationPatcher;
 
 namespace TreeAnarchy.Patches
 {
@@ -53,7 +52,6 @@ namespace TreeAnarchy.Patches
             }
         }
 #endif
-        [MethodImpl(MethodImplOptions.NoInlining)]
 #if DEBUG
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions, MethodBase method)
 #else
@@ -250,7 +248,6 @@ namespace TreeAnarchy.Patches
                 TreeSnappingPatcher.EnablePatches(m_Harmony);
                 PatchTreeManagerData(m_Harmony);
                 PatchMaxTreeTranspiler();
-                PatchBuildingDecoration(m_Harmony);
             }
             catch (Exception e)
             {
@@ -282,8 +279,7 @@ namespace TreeAnarchy.Patches
                 newBuffer.CreateItem(out uint _);
                 if (manager.m_trees.ItemCount() > 0)
                 {
-                    int len = oldbuf.Length;
-                    for(int i = 1; i < len; i++)
+                    for(int i = 1; i < DefaultTreeLimit; i++)
                     {
                         if(newBuffer.CreateItem(out uint index))
                         {
