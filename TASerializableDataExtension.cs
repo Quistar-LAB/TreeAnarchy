@@ -26,10 +26,7 @@ namespace TreeAnarchy
 
         public const string OldTreeUnlimiterKey = @"mabako/unlimiter";
 
-        public void OnCreated(ISerializableData s)
-        {
-            m_Serializer = s;
-        }
+        public void OnCreated(ISerializableData s) => m_Serializer = s;
 
         public void OnLoadData()
         {
@@ -38,16 +35,18 @@ namespace TreeAnarchy
         public void OnSaveData()
         {
             const int headerSize = 100; // over estimate header size
-            const int eachTreeByteCount = 5;
+            const int eachTreeByteCount = 10;
 
             PurgeData(); // remove old data if it exists
             try
             {
+                // hmmmm assuming 1 million trees... this is around ~10mb of data
+                // lets see if compression helps improve File IO
                 using (DataSerializer serializer = new DataSerializer())
                 using (MemoryStream stream = new MemoryStream((MaxTreeLimit * eachTreeByteCount) + headerSize))
                 {
                     serializer.Serialize(stream);
-                    if(m_Serializer != null) m_Serializer.SaveData(OldTreeUnlimiterKey, stream.ToArray());
+                    m_Serializer?.SaveData(OldTreeUnlimiterKey, stream.ToArray());
                 }
             }
             catch (Exception e)
@@ -55,15 +54,9 @@ namespace TreeAnarchy
                 Debug.LogException(e);
             }
         }
-        public void OnReleased()
-        {
-            m_Serializer = null;
-        }
+        public void OnReleased() => m_Serializer = null;
 
-        public static void PurgeData()
-        {
-            if (m_Serializer != null) m_Serializer.EraseData(OldTreeUnlimiterKey);
-        }
+        public static void PurgeData() => m_Serializer?.EraseData(OldTreeUnlimiterKey);
 
         public static void Deserialize()
         {
