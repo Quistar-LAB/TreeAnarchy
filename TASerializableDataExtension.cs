@@ -1,9 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Threading;
-using ColossalFramework;
 using ICities;
 using UnityEngine;
+using ColossalFramework;
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy
@@ -51,7 +50,6 @@ namespace TreeAnarchy
                  * saving into our new format. We need to actually store their posY
                  * so we have to make sure its initialized.
                  */
-                TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
                 for(uint i = 1; i < MaxTreeLimit; i++)
                 {
                     TreeManager.instance.m_trees.m_buffer[i].CalculateTree(i);
@@ -88,12 +86,17 @@ namespace TreeAnarchy
                 }
                 using (DataSerializer serializer = new DataSerializer(data))
                 {
-                    TADataSerializer.ErrorFlags errors;
-                    errors = serializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer);
-                    if ((errors & TADataSerializer.ErrorFlags.OLDFORMAT) != TADataSerializer.ErrorFlags.NONE)
+                    if(serializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer, out TADataSerializer.ErrorFlags errors))
                     {
-                        Debug.Log("TreeAnarchy: Old Format Detected");
-                        OldFormatLoaded = true;
+                        if ((errors & TADataSerializer.ErrorFlags.OLDFORMAT) != TADataSerializer.ErrorFlags.NONE)
+                        {
+                            Debug.Log("TreeAnarchy: Old Format Detected");
+                            OldFormatLoaded = true;
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("TreeAnarchy: Invalid Data Format");
                     }
                 }
                 return;

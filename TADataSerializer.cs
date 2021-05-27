@@ -9,7 +9,6 @@ using static TreeInstance;
 
 namespace TreeAnarchy
 {
-    [Serializable]
     public abstract class TADataSerializer : IDisposable
     {
         private const int FormatVersion1TreeLimit = 1048576;
@@ -39,7 +38,7 @@ namespace TreeAnarchy
         private readonly MemoryStream m_Stream = null;
         public MemoryStream m_tempBuf = null;
 
-        public TADataSerializer()
+        protected TADataSerializer()
         {
             m_Stream = new MemoryStream();
         }
@@ -49,7 +48,7 @@ namespace TreeAnarchy
             m_Stream = new MemoryStream(data);
         }
 
-        public TADataSerializer(int size)
+        protected TADataSerializer(int size)
         {
             m_Stream = new MemoryStream(size);
         }
@@ -83,7 +82,7 @@ namespace TreeAnarchy
         // a bit long because of all the different formats we have to consider
         // Keeping compatibility almost broke my brain reading the old codes,
         // but was a fun challenge
-        public ErrorFlags Deserialize(TreeInstance[] trees)
+        public bool Deserialize(TreeInstance[] trees, out ErrorFlags errorFlags)
         {
             int treeCount = 0;
             int orgTreeCount = 0;
@@ -91,6 +90,7 @@ namespace TreeAnarchy
             int MaxLen;
             SaveFlags flags = 0;
 
+            errorFlags = ErrorFlags.NONE;
             Format version = (Format)ReadUShort();
             switch(version)
             {
@@ -115,13 +115,14 @@ namespace TreeAnarchy
                     flags = (SaveFlags)ReadUShort();
                     break;
                 default:
-                    return ErrorFlags.FAILED;
+                    errorFlags |= ErrorFlags.FAILED;
+                    return false;
             }
             /* Sanity check */
             if (treeLimit < 1 && treeCount < 0)
             {
-                Debug.Log(@"TreeAnarchy: Read Tree Capacity < 0. Invalid Data");
-                return ErrorFlags.FAILED;
+                errorFlags |= ErrorFlags.FAILED;
+                return false;
             }
             if(treeLimit > MaxTreeLimit) treeLimit = MaxTreeLimit; // Only load what MaxTreeLimit is limited to
             switch (version)
@@ -153,7 +154,8 @@ namespace TreeAnarchy
                             }
                             break;
                     }
-                    return ErrorFlags.SUCCESS | ErrorFlags.OLDFORMAT;
+                    errorFlags |= (ErrorFlags.SUCCESS | ErrorFlags.OLDFORMAT);
+                    return true;
                 case Format.Version4:
                     int treeAddCount = 0;
                     for (uint i = 1; i < DefaultTreeLimit; i++)
@@ -185,15 +187,10 @@ namespace TreeAnarchy
                             trees[i].m_posY = 0;
                         }
                     }
-                    return ErrorFlags.SUCCESS;
+                    errorFlags = ErrorFlags.SUCCESS;
+                    return true;
             }
-            return ErrorFlags.FAILED;
-        }
-
-        private ushort UpdatePosY(Vector3 position)
-        {
-            position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
-            return (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
+            return false;
         }
 
         public byte[] Serialize()
