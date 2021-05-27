@@ -10,7 +10,7 @@ namespace TreeAnarchy
         internal const int DefaultTreeUpdateCount = 4096;
 
         internal static bool isInGame = false;
-        internal static bool PreviousSaveWasOldFormat = false;
+        internal static bool OldFormatLoaded = false;
         private static float m_ScaleFactor = 4f;
         internal static bool TreeEffectOnWind = true;
         internal static bool UseTreeSnapping = true;
