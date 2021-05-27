@@ -107,6 +107,7 @@ namespace TreeAnarchy
                 case Format.Version1:
                 case Format.Version2:
                 case Format.Version3:
+                    PreviousSaveWasOldFormat = true;
                     switch (flags & SaveFlags.PACKED)
                     {
                         case SaveFlags.NONE:
@@ -133,45 +134,44 @@ namespace TreeAnarchy
                     }
                     break;
                 case Format.Version4:
-                    if (orgTreeCount > 0)  // Handle first 0~262144 trees
+                    int treeAddCount = 0;
+                    for (uint i = 1; i < DefaultTreeLimit; i++)
                     {
-                        int treeAddCount = 0;
-                        for (uint i = 1; i < DefaultTreeLimit; i++)
+                        if(trees[i].m_flags != 0 && treeAddCount < orgTreeCount)
                         {
-                            if(trees[i].m_flags != 0 && treeAddCount < orgTreeCount)
-                            {
-                                trees[i].m_posY = ReadUShort(s);
-                                treeAddCount++;
-                            }
+                            trees[i].m_posY = ReadUShort(s);
+                            treeAddCount++;
                         }
                     }
-                    if (treeCount > 0) // Handle 262144 ~ MaxTreeLimit
+                    for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
                     {
-                        treeCount = 0;
-                        for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
+                        TreeInstance.Flags m_flags = (TreeInstance.Flags)ReadUShort(s);
+                        m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
+                        trees[i].m_flags = (ushort)m_flags;
+                    }
+                    for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
+                    {
+                        if (trees[i].m_flags != 0)
                         {
-                            TreeInstance.Flags m_flags = (TreeInstance.Flags)ReadUShort(s);
-                            m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
-                            trees[i].m_flags = (ushort)m_flags;
+                            trees[i].m_infoIndex = ReadUShort(s);
+                            trees[i].m_posX = ReadShort(s);
+                            trees[i].m_posZ = ReadShort(s);
+                            trees[i].m_posY = ReadUShort(s);
+                            treeCount++;
                         }
-                        for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
+                        else
                         {
-                            if (trees[i].m_flags != 0)
-                            {
-                                trees[i].m_infoIndex = ReadUShort(s);
-                                trees[i].m_posX = ReadShort(s);
-                                trees[i].m_posZ = ReadShort(s);
-                                trees[i].m_posY = ReadUShort(s);
-                                treeCount++;
-                            }
-                            else
-                            {
-                                trees[i].m_posY = 0;
-                            }
+                            trees[i].m_posY = 0;
                         }
                     }
                     break;
             }
+        }
+
+        private ushort UpdatePosY(Vector3 position)
+        {
+            position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+            return (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
         }
 
         public void Serialize(Stream s)
@@ -189,45 +189,47 @@ namespace TreeAnarchy
             WriteUInt32(s, 0);        // Reserved for future use    4 bytes
             WriteUShort(s, 0);        // flags.. this is ignore in our version 2 bytes
 
-            if (Singleton<TreeManager>.instance.m_trees.ItemCount() > 1)
+            /* Apparently, the trees could be located anywhere in the buffer
+             * even if there's only 1 tree in the buffer. I'm assuming this is
+             * due to performance concerns.
+             * So have to save the entire buffer.
+             */
+            for (uint i = 1; i < DefaultTreeLimit; i++)
             {
-                for (index = 1; index < DefaultTreeLimit; index++)
+                if (buffer[i].m_flags != 0)
                 {
-                    if (buffer[index].m_flags != 0)
-                    {
-                        WriteUShort(s, buffer[index].m_posY);
-                        orgTreeCount++;
-                    }
+                    if (PreviousSaveWasOldFormat) buffer[i].m_posY = UpdatePosY(buffer[i].Position);
+                    WriteUShort(s, buffer[i].m_posY);
+                    orgTreeCount++;
                 }
-                if (index < Singleton<TreeManager>.instance.m_trees.ItemCount() && index == DefaultTreeLimit)
-                {
-                    for(uint i = DefaultTreeLimit; i < treeLimit; i++)
-                    {
-                        WriteUShort(s, buffer[i].m_flags);
-                    }
-                    for(uint i = DefaultTreeLimit; i < treeLimit; i++)
-                    {
-                        if (buffer[i].m_flags != 0)
-                        {
-                            WriteUShort(s, buffer[i].m_infoIndex);
-                            WriteShort(s, buffer[i].m_posX);
-                            WriteShort(s, buffer[i].m_posZ);
-                            WriteUShort(s, buffer[i].m_posY);
-                            extraTreeCount++;
-                        }
-                    }
-                }
-                // Set header information now
-                s.Position = 6;
-                s.WriteByte((byte)extraTreeCount);
-                s.WriteByte((byte)(extraTreeCount >> 8));
-                s.WriteByte((byte)(extraTreeCount >> 16));
-                s.WriteByte((byte)(extraTreeCount >> 24));
-                s.WriteByte((byte)(orgTreeCount));
-                s.WriteByte((byte)(orgTreeCount >> 8));
-                s.WriteByte((byte)(orgTreeCount >> 16));
-                s.WriteByte((byte)(orgTreeCount >> 24));
             }
+            for(uint i = DefaultTreeLimit; i < treeLimit; i++)
+            {
+                WriteUShort(s, buffer[i].m_flags);
+            }
+            for(uint i = DefaultTreeLimit; i < treeLimit; i++)
+            {
+                if (buffer[i].m_flags != 0)
+                {
+                    WriteUShort(s, buffer[i].m_infoIndex);
+                    WriteShort(s, buffer[i].m_posX);
+                    WriteShort(s, buffer[i].m_posZ);
+                    if (PreviousSaveWasOldFormat) buffer[i].m_posY = UpdatePosY(buffer[i].Position);
+                    WriteUShort(s, buffer[i].m_posY);
+                    extraTreeCount++;
+                }
+            }
+            // Set header information now
+            s.Position = 6;
+            s.WriteByte((byte)extraTreeCount);
+            s.WriteByte((byte)(extraTreeCount >> 8));
+            s.WriteByte((byte)(extraTreeCount >> 16));
+            s.WriteByte((byte)(extraTreeCount >> 24));
+            s.WriteByte((byte)(orgTreeCount));
+            s.WriteByte((byte)(orgTreeCount >> 8));
+            s.WriteByte((byte)(orgTreeCount >> 16));
+            s.WriteByte((byte)(orgTreeCount >> 24));
+
 #if FALSE // Burning tree handled in prefix method
             // Let original codes handle the extra burning tree list. Hope it works
             WriteUInt24(s, (uint)instance.m_burningTrees.m_size);
