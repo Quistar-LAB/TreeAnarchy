@@ -36,8 +36,8 @@ namespace TreeAnarchy.Patches
 //                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedTranspiler))));
 //            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
 //                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.CalculateTreePrefix))));
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.SimulationStepTranspiler))));
+//            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
+//                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.SimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.TransformPrefix))));
         }
@@ -62,7 +62,7 @@ namespace TreeAnarchy.Patches
                 if (num != __instance.m_posY)
                 {
                     int growState = __instance.GrowState;
-                    if(UseTreeSnapping)
+                    if (UseTreeSnapping)
                     {
                         if (__instance.m_posY < num) __instance.m_posY = num;
                     }
