@@ -1,4 +1,4 @@
-TreeAnarchy v0.1 (AKA Unlimited Trees Mod: Rebooted)
+TreeAnarchy (AKA Unlimited Trees Mod: Rebooted)
 
 I called this mod TreeAnarchy, since it incorporated concepts from TreeAnarchy and TreeSnapping. This mod supports tree snapping, which I've wondered why the original mod creator never tried.
 This mod is a complete rewrite, taking out bloats and streamlining the serialization process. The concept is the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators.
