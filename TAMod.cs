@@ -141,9 +141,17 @@ namespace TreeAnarchy
         private OptionPanel optionPanel = null;
 
         #region IUserMod
-        public void OnEnabled() => LoadSettings();
+        public void OnEnabled()
+        {
+            LoadSettings();
+            Patcher.Setup();
+        }
 
-        public void OnDisabled() => SaveSettings();
+        public void OnDisabled()
+        {
+            Patcher.Remove();
+            SaveSettings();
+        }
 
         public void OnSettingsUI(UIHelperBase helper)
         {
@@ -164,14 +172,12 @@ namespace TreeAnarchy
         public override void OnCreated(ILoading loading)
         {
             isInGame = true;
-            Patcher.Setup();
             base.OnCreated(loading);
         }
 
         public override void OnReleased()
         {
             isInGame = false;
-            Patcher.Remove();
             base.OnReleased();
         }
         #endregion
