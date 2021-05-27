@@ -147,7 +147,6 @@ namespace TreeAnarchy
                     }
                     if (treeCount > 0) // Handle 262144 ~ MaxTreeLimit
                     {
-                        Debug.Log($"TreeAnarchy: {treeCount} extra trees saved");
                         treeCount = 0;
                         for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
                         {
@@ -157,7 +156,7 @@ namespace TreeAnarchy
                         }
                         for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++)
                         {
-                            if(trees[i].m_flags != 0)
+                            if (trees[i].m_flags != 0)
                             {
                                 trees[i].m_infoIndex = ReadUShort(s);
                                 trees[i].m_posX = ReadShort(s);
@@ -165,8 +164,11 @@ namespace TreeAnarchy
                                 trees[i].m_posY = ReadUShort(s);
                                 treeCount++;
                             }
+                            else
+                            {
+                                trees[i].m_posY = 0;
+                            }
                         }
-                        Debug.Log($"TreeAnarchy: {treeCount} extra trees loaded");
                     }
                     break;
             }
