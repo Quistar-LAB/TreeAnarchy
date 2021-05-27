@@ -61,23 +61,18 @@ namespace TreeAnarchy
                 else PurgeSnappingData.Hide();
             }
 
-            private void PurgeDataHandler()
-            {
-                TASerializableDataExtension.PurgeData();
-            }
+            private void PurgeDataHandler() => TASerializableDataExtension.PurgeData();
 
             internal void UpdateState()
             {
                 if (isInGame)
                 {
-                    UnityEngine.Debug.Log("TreeSnapping: Showing in-game options");
                     WindEffect.Disable();
                     TreeSnap.Disable();
                     ScaleFactor.Disable();
                     Debug.Enable();
                     return;
                 }
-                UnityEngine.Debug.Log("TreeSnapping: Showing initial game options");
                 WindEffect.Enable();
                 TreeSnap.Enable();
                 ScaleFactor.Enable();
@@ -176,9 +171,7 @@ namespace TreeAnarchy
         #region LoadingExtensionBase
         public override void OnCreated(ILoading loading)
         {
-            Debug.Log($"TreeSnapping:: Entering OnCreated(): loading={loading}");
             isInGame = true;
-
             base.OnCreated(loading);
         }
 
