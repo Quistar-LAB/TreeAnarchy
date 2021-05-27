@@ -1,5 +1,4 @@
-﻿using System.Threading;
-using ColossalFramework;
+﻿using ColossalFramework;
 
 namespace TreeAnarchy
 {
