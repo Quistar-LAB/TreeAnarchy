@@ -16,6 +16,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using ColossalFramework;
+using ColossalFramework.Math;
 using UnityEngine;
 using MoveIt;
 #if DEBUG
@@ -29,22 +30,59 @@ namespace TreeAnarchy.Patches
     {
         internal static void EnablePatches(Harmony harmony)
         {
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.CalculateTreePrefix))));
+//            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
+//                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedPrefix))));
+//            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
+//                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.AfterTerrainUpdatedTranspiler))));
+//            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+//                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.CalculateTreePrefix))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.SimulationStepTranspiler))));
-
-#if FALSE
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnappingPatcher), nameof(TreeSnappingPatcher.TransformPrefix))));
-#endif
         }
 
         internal static void DisablePatches(Harmony harmony, string id)
         {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, id);
+        }
+
+        // TreeInstance
+        internal static bool AfterTerrainUpdatedPrefix(TreeInstance __instance, uint treeID, float minX, float minZ, float maxX, float maxZ)
+        {
+            if ((__instance.m_flags & 3) != 1)
+            {
+                return false;
+            }
+            if ((__instance.m_flags & 32) == 0)
+            {
+                Vector3 position = __instance.Position;
+                position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+                ushort num = (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
+                if (num != __instance.m_posY)
+                {
+                    int growState = __instance.GrowState;
+                    if(UseTreeSnapping)
+                    {
+                        if (__instance.m_posY < num) __instance.m_posY = num;
+                    }
+                    else
+                    {
+                        __instance.m_posY = num;
+                    }
+                    //__instance.CheckOverlap(treeID);
+                    int growState2 = __instance.GrowState;
+                    if (growState2 != growState)
+                    {
+                        Singleton<TreeManager>.instance.UpdateTree(treeID);
+                    }
+                    else if (growState2 != 0)
+                    {
+                        Singleton<TreeManager>.instance.UpdateTreeRenderer(treeID, true);
+                    }
+                }
+            }
+            return false;
         }
 
 #if DEBUG
@@ -101,7 +139,8 @@ namespace TreeAnarchy.Patches
             return false;
         }
 
-        private static IEnumerable<CodeInstruction> SimulationStepTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method)
+
+        private static IEnumerable<CodeInstruction> SimulationStepTranspiler(IEnumerable<CodeInstruction> instructions)
         {
             LocalBuilder input = null;
             ConstructorInfo constructor = typeof(ToolBase.RaycastService).
@@ -111,23 +150,26 @@ namespace TreeAnarchy.Patches
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for(int i = 0; i < codes.Count; i++)
             {
-                LocalBuilder local = codes[i].operand as LocalBuilder;
-                if (local != null && local.LocalType == typeof(ToolBase.RaycastInput))
+                if (codes[i].operand is LocalBuilder local && local.LocalType == typeof(ToolBase.RaycastInput))
                 {
                     input = local;
                     break;
                 }
             }
-            /* The following IL represents the following c# codes
-             * input.m_ignoreBuildingFlags = Building.Flags.None;
-             * input.m_ignoreNodeFlags = NetNode.Flags.None;
-             * input.m_ignoreSegmentFlags = NetSegment.Flags.None;
-             * input.m_buildingService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-             * input.m_netService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-             * input.m_netService2 = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-             */
+        /* The following IL represents the following c# codes
+         * input.m_currentEditObject = true;
+         * input.m_ignoreBuildingFlags = Building.Flags.None;
+         * input.m_ignoreNodeFlags = NetNode.Flags.None;
+         * input.m_ignoreSegmentFlags = NetSegment.Flags.None;
+         * input.m_buildingService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+         * input.m_netService = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+         * input.m_netService2 = new RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+         */
             CodeInstruction[] insertCodes = new CodeInstruction[]
             {
+                new CodeInstruction(OpCodes.Ldloca_S, input),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))),
                 new CodeInstruction(OpCodes.Ldloca_S, input),
                 new CodeInstruction(OpCodes.Ldc_I4_0),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_ignoreBuildingFlags))),
@@ -161,6 +203,7 @@ namespace TreeAnarchy.Patches
             int secondIndex = 0;
             bool firstSigFound = false;
             bool skippedFirst = false;
+            Label label5 = new Label();
             
             for(int i = 0; i < codes.Count; i++)
             {
@@ -169,21 +212,26 @@ namespace TreeAnarchy.Patches
                     if(skippedFirst == true)
                     {
                         firstIndex = i;
+                        if(codes[i - 1].Branches(out Label? label))
+                        {
+                            label5 = (Label)label;
+                        }
                         firstSigFound = true;
                     }
                     skippedFirst = true;
                 }
-                if(codes[i].StoresField(AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))))
+                if (firstSigFound
+                    && codes[i].opcode == OpCodes.Callvirt
+                    && codes[i].operand == AccessTools.Method(typeof(ToolController), nameof(ToolController.BeginColliding)))
                 {
                     secondIndex = i + 1;
-                }
-                if(codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight")))
-                {
-                    codes.RemoveRange(i - 3, 4);
+
                 }
             }
+            Debug.Log($"TreeAnarchy: First Index at {firstIndex} Found second index at {secondIndex}");
             codes.RemoveRange(firstIndex, secondIndex - firstIndex);
             codes.InsertRange(firstIndex, insertCodes);
+            codes[firstIndex + insertCodes.Length] = codes[firstIndex + insertCodes.Length].WithLabels(new Label[] { label5 });
 
             Debug.Log("TreeAnarchy: ------------- SimulationStep --------------------");
             foreach (var code in codes)
@@ -192,6 +240,15 @@ namespace TreeAnarchy.Patches
             }
             Debug.Log("TreeAnarchy: -------------------------------------------------");
             return codes.AsEnumerable();
+        }
+
+        private static bool TransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain)
+        {
+            if (!TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0)
+            {
+                TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
+            }
+            return true;
         }
     }
 }
