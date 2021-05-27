@@ -262,26 +262,18 @@ namespace TreeAnarchy.Patches
 
         internal static void EnsureCapacity()
         {
-            if(Singleton<TreeManager>.instance.m_trees.m_buffer.Length != MaxTreeLimit)
-            {
-                ResizeTreeBuffer((uint)MaxTreeLimit, MaxTreeUpdateLimit);
-            }
-        }
-
-        internal static void ResizeTreeBuffer(uint newTreeSize, int newUpdateTreeSize)
-        {
             TreeManager manager = Singleton<TreeManager>.instance;
             TreeInstance[] oldbuf = manager.m_trees.m_buffer;
 
-            if(manager.m_trees.m_buffer.Length != newTreeSize)
+            if (Singleton<TreeManager>.instance.m_trees.m_buffer.Length != MaxTreeLimit)
             {
-                Array32<TreeInstance> newBuffer = new Array32<TreeInstance>(newTreeSize);
+                Array32<TreeInstance> newBuffer = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 newBuffer.CreateItem(out uint _);
                 if (manager.m_trees.ItemCount() > 0)
                 {
-                    for(int i = 1; i < DefaultTreeLimit; i++)
+                    for (int i = 1; i < DefaultTreeLimit; i++)
                     {
-                        if(newBuffer.CreateItem(out uint index))
+                        if (newBuffer.CreateItem(out uint index))
                         {
                             newBuffer.m_buffer[index].m_flags = oldbuf[i].m_flags;
                             newBuffer.m_buffer[index].m_infoIndex = oldbuf[i].m_infoIndex;
@@ -293,7 +285,7 @@ namespace TreeAnarchy.Patches
                     }
                 }
                 manager.m_trees = newBuffer;
-                Array.Resize<ulong>(ref manager.m_updatedTrees, newUpdateTreeSize);
+                Array.Resize<ulong>(ref manager.m_updatedTrees, MaxTreeUpdateLimit);
             }
         }
     }
