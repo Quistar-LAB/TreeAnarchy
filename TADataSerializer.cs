@@ -3,9 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using ColossalFramework;
 using ColossalFramework.IO;
-using UnityEngine;
 using static TreeAnarchy.TAConfig;
-using static TreeInstance;
 
 namespace TreeAnarchy
 {
@@ -237,14 +235,8 @@ namespace TreeAnarchy
             }
             // Set header information now
             m_Stream.Position = 6;
-            m_Stream.WriteByte((byte)extraTreeCount);
-            m_Stream.WriteByte((byte)(extraTreeCount >> 8));
-            m_Stream.WriteByte((byte)(extraTreeCount >> 16));
-            m_Stream.WriteByte((byte)(extraTreeCount >> 24));
-            m_Stream.WriteByte((byte)(orgTreeCount));
-            m_Stream.WriteByte((byte)(orgTreeCount >> 8));
-            m_Stream.WriteByte((byte)(orgTreeCount >> 16));
-            m_Stream.WriteByte((byte)(orgTreeCount >> 24));
+            WriteInt32(extraTreeCount);
+            WriteInt32(orgTreeCount);
 
 #if FALSE // Burning tree handled in prefix method
             // Let original codes handle the extra burning tree list. Hope it works

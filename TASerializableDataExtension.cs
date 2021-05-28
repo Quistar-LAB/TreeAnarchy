@@ -4,6 +4,7 @@ using ICities;
 using UnityEngine;
 using ColossalFramework;
 using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TADataSerializer;
 
 namespace TreeAnarchy
 {
@@ -86,9 +87,9 @@ namespace TreeAnarchy
                 }
                 using (DataSerializer serializer = new DataSerializer(data))
                 {
-                    if(serializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer, out TADataSerializer.ErrorFlags errors))
+                    if(serializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer, out ErrorFlags errors))
                     {
-                        if ((errors & TADataSerializer.ErrorFlags.OLDFORMAT) != TADataSerializer.ErrorFlags.NONE)
+                        if ((errors & ErrorFlags.OLDFORMAT) != ErrorFlags.NONE)
                         {
                             Debug.Log("TreeAnarchy: Old Format Detected");
                             OldFormatLoaded = true;
