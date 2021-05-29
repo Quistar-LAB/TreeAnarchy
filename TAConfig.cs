@@ -13,7 +13,7 @@ namespace TreeAnarchy
         internal static bool OldFormatLoaded = false;
         private static float m_ScaleFactor = 4f;
         internal static bool TreeEffectOnWind = true;
-        internal static bool UseTreeSnapping = true;
+        public static bool UseTreeSnapping = true;
         internal static bool DebugMode = false;
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
 
