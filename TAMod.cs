@@ -42,8 +42,6 @@ namespace TreeAnarchy
             private void TreeSnapHandler(bool b)
             {
                 UseTreeSnapping = b;
-                if (!UseTreeSnapping) TreeSnappingPatcher.DisablePatches(Patcher.m_Harmony, Patcher.HARMONYID);
-                else TreeSnappingPatcher.EnablePatches(Patcher.m_Harmony);
                 SaveSettings();
             }
 
@@ -68,13 +66,11 @@ namespace TreeAnarchy
                 if (isInGame)
                 {
                     WindEffect.Disable();
-                    TreeSnap.Disable();
                     ScaleFactor.Disable();
                     Debug.Enable();
                     return;
                 }
                 WindEffect.Enable();
-                TreeSnap.Enable();
                 ScaleFactor.Enable();
                 Debug.Disable();
             }
@@ -179,6 +175,37 @@ namespace TreeAnarchy
         {
             isInGame = false;
             base.OnReleased();
+        }
+        public override void OnLevelLoaded(LoadMode mode)
+        {
+            if (OldFormatLoaded)
+            {
+                /* When using original CO or Unlimited Trees Mod, the posY is never
+                 * considered, and it could be any random number, usually 0. When
+                 * saving into our new format. We need to actually store their posY
+                 * so we have to make sure its initialized.
+                 */
+                TreeManager manager = Singleton<TreeManager>.instance;
+                for (uint i = 1; i < MaxTreeLimit; i++)
+                {
+                    if (manager.m_trees.m_buffer[i].m_flags != 0)
+                    {
+                        if ((manager.m_trees.m_buffer[i].m_flags & 32) == 0)
+                        {
+                            Vector3 position = manager.m_trees.m_buffer[i].Position;
+                            position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+                            ushort terrainHeight = (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
+                            if(manager.m_trees.m_buffer[i].m_posY < terrainHeight)
+                            {
+                                manager.m_trees.m_buffer[i].m_posY = terrainHeight;
+                            }
+                        }
+                    }
+                }
+                OldFormatLoaded = false;
+            }
+
+            base.OnLevelLoaded(mode);
         }
         #endregion
     }
