@@ -29,6 +29,8 @@ namespace TreeAnarchy.Patches
         {
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerDataPatcher), nameof(TreeManagerDataPatcher.DataDeserializePrefix))));
+//            harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
+//                postfix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerDataPatcher), nameof(TreeManagerDataPatcher.AfterDeserializePostfix))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerDataPatcher), nameof(TreeManagerDataPatcher.SerializePrefix))));
         }
@@ -138,6 +140,14 @@ namespace TreeAnarchy.Patches
             }
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndDeserialize(s, "TreeManager");
             return false;
+        }
+
+        private static void AfterDeserializePostfix(DataSerializer s)
+        {
+            using(TASerializableDataExtension.DataSerializer serializer = new TASerializableDataExtension.DataSerializer())
+            {
+                serializer.AfterDeserialize(s);
+            }
         }
 
         private static bool SerializePrefix(DataSerializer s)
