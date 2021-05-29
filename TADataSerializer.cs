@@ -52,7 +52,7 @@ namespace TreeAnarchy
         }
 
         public abstract void FinalizeSave();
-        public abstract void AfterDeserialize(Stream s);
+        public abstract void AfterDeserialize(DataSerializer s);
 
         private byte[] Compress(Stream s)
         {
