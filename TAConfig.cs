@@ -9,13 +9,19 @@ namespace TreeAnarchy
         internal const int DefaultTreeLimit = 262144;
         internal const int DefaultTreeUpdateCount = 4096;
 
+        /* Unlimited Trees Related */
         internal static bool isInGame = false;
         internal static bool OldFormatLoaded = false;
         private static float m_ScaleFactor = 4f;
-        internal static bool TreeEffectOnWind = true;
+        internal static bool TreeEffectOnWind = false;
         public static bool UseTreeSnapping = true;
         internal static bool DebugMode = false;
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
+
+        /* Tree Movement Releated */
+        internal static uint StopDistantTree = 1;
+        internal static float TreeSwayFactor = 1f;
+        internal static bool RandomTreeRotation = true;
 
         internal static int MaxTreeLimit => (int)(DefaultTreeLimit * TreeScaleFactor);
         internal static float TreeScaleFactor
