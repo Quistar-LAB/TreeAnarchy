@@ -20,6 +20,13 @@ namespace TreeAnarchy.Utils
             public bool TreeSnapping { get => TAConfig.UseTreeSnapping; set => TAConfig.UseTreeSnapping = value; }
             [XmlElement("ScaleFactor")]
             public float ScaleFactor { get => TreeScaleFactor; set => TreeScaleFactor = value; }
+            [XmlElement("RandomRotation")]
+            public bool RandomRotation { get => RandomTreeRotation; set => RandomTreeRotation = value; }
+            [XmlElement("TreeSwayFactor")]
+            public float TreeSwayScale { get => TreeSwayFactor; set => TreeSwayFactor = value; }
+            [XmlElement("DistantTree")]
+            public uint DistanctTree { get => StopDistantTree; set => StopDistantTree = value; }
+
         }
 
         internal static void LoadSettings()
