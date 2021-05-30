@@ -243,9 +243,10 @@ namespace TreeAnarchy.Patches
                 m_Harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)), HarmonyPatchType.Prefix);
                 m_Harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Prefix);
 
-                m_Harmony.Patch(AccessTools.Method(typeof(TreeManager), "TrySpreadFire"), prefix: new HarmonyMethod(AccessTools.Method(typeof(Patcher), nameof(Patcher.TrySpreadFirePrefix))));
+                //m_Harmony.Patch(AccessTools.Method(typeof(TreeManager), "TrySpreadFire"), prefix: new HarmonyMethod(AccessTools.Method(typeof(Patcher), nameof(Patcher.TrySpreadFirePrefix))));
                 m_Harmony.Patch(AccessTools.Method(typeof(WeatherManager), "CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(Patcher), @"CalculateSelfHeightTranspiler")));
                 TreeSnappingPatcher.EnablePatches(m_Harmony);
+                TreeMovementPatcher.EnablePatch(m_Harmony);
                 PatchTreeManagerData(m_Harmony);
                 PatchMaxTreeTranspiler();
             }
