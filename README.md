@@ -1,17 +1,22 @@
-TreeAnarchy (AKA Unlimited Trees Mod: Rebooted)
+# Tree Anarchy 
+### __(AKA Unlimited Trees: Rebooted)__
 
-I called this mod TreeAnarchy, since it incorporated concepts from TreeAnarchy and TreeSnapping. This mod supports tree snapping, which I've wondered why the original mod creator never tried.
-This mod is a complete rewrite, taking out bloats and streamlining the serialization process. The concept is the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators.
+#### Requires: Harmony 2.0.x ported over to Cities Skylines by [Bofomer](https://github.com/boformer) -- [Github](https://github.com/boformer/CitiesHarmony)
 
-There are incompletes in this mod as it is at its alpha stage.
+TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and basic support for mods such as Tree Snapping and Tree Anarchy. Both Tree Snapping/Tree Anarchy mods used detours to realize their functions. Thus it is one of the primary goals of this project to convert them to use Harmony in this mod.
 
-1. burning trees saving and loading .. .this takes time for forests to catch fire
-2. tree snapping test
-3. TODO: My tests are only limited to my scope of vision. I need more inputs to find out problems about these codes.
+This mod is a complete rewrite, taking out bloats and streamlining the serialization process. The concept is the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators. Thanks to
+[Knighth](https://github.com/Knighth/TreeUnlimiter), 
+[BloodyPenguin](https://github.com/bloodypenguin), 
+[DRen72](https://steamcommunity.com/id/DRen72/myworkshopfiles/?appid=255710).
 
-Tree anarchy support is included in this mod, otherwise tree snapping cannot be achieved. Thus, you don't need the original tree anarchy mod. Prop & tree anarchy includes patches to the same methods, so my proposal is to separate tree anarchy and prop anarchy.
+This mod is currently __ALPHA__, with the following functions:
+- [x] Support for more than 262144 trees
+- [x] Support Tree Snapping with functionality just like Prop Snapping
+- [ ] Support for random tree rotation
+- [ ] Performance tuning to attempt to increase fps to support more trees
 
-I'm now also working on prop anarchy to support more props (although its not my top priority as there is Procedural Object)
+I need supporters/volunteers to help debug/code to make this mod even better. If you want to contribute, please contact me anytime.
 
 Anyways, these codes are open to the public, as its a hobby of mine. If you wish to contribute to the codes, please join in.
 
