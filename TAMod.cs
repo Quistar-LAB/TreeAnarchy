@@ -2,9 +2,11 @@
 using ColossalFramework.UI;
 using ICities;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using TreeAnarchy.Patches;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using static TreeAnarchy.TAConfig;
 using static TreeAnarchy.Utils.XMLSetting;
 using static TreeAnarchy.TASerializableDataExtension;
@@ -13,10 +15,10 @@ namespace TreeAnarchy
 {
     public class TAMod : LoadingExtensionBase, IUserMod
     {
-        private const string Version = @"0.4.1";
+        private const string Version = @"0.5.7";
         private const string ModName = @"Unlimited Trees: Rebooted";
         public string Name => $"{ModName} - {Version}";
-        public string Description => "Reboot of the Unlimited Trees Mod. Tree snapping is also enabled";
+        public string Description => @"This is a reboot of the original Unlimited Trees Mod. Let's you plant way more trees";
 
         internal class OptionPanel 
         {
@@ -29,8 +31,10 @@ namespace TreeAnarchy
             private UICheckBox WindEffect;
             private UIButton PurgeSnappingData;
             private UICheckBox TreeSnap;
+            private UICheckBox TreeRotation;
             private UICheckBox Debug;
             private UISlider ScaleFactor;
+
             internal bool IsInGame { get; set; } = false;
 
             private void WindEffectHandler(bool b)
@@ -44,11 +48,22 @@ namespace TreeAnarchy
                 UseTreeSnapping = b;
                 SaveSettings();
             }
+            
+            private void TreeRotationHandler(bool b)
+            {
+                RandomTreeRotation = b;
+            }
 
             private void ScaleFactorHandler(float f)
             {
                 TreeScaleFactor = f;
                 MaxTreeLabel.text = $"Maximum Supported Number of Trees: {(uint)(MaxTreeLimit)}";
+                SaveSettings();
+            }
+
+            private void TreeSwayHandler(UIComponent component, float value)
+            {
+                TreeSwayFactor = value;
                 SaveSettings();
             }
 
@@ -83,16 +98,15 @@ namespace TreeAnarchy
 
                 WindEffect = (UICheckBox)group.AddCheckbox(@"Enable Tree Effect on Wind [Original game default is enabled]", TreeEffectOnWind, (b) => WindEffectHandler(b));
                 WindEffect.tooltip = "Enable/Disable the normal game behavior of letting tree's height effect dilute the wind map.\nOption should be set before loading a map.";
-                Space = (UIPanel)group.AddSpace(80);
+                Space = (UIPanel)group.AddSpace(70);
                 WindEffectLabel = (UILabel)Space.AddUIComponent<UILabel>();
                 WindEffectLabel.AlignTo(Space, UIAlignAnchor.TopLeft);
                 WindEffectLabel.width = 600;
-                WindEffectLabel.height = 80;
+                WindEffectLabel.height = 70;
                 WindEffectLabel.autoSize = false;
                 WindEffectLabel.relativePosition = new Vector3(25, 0);
                 WindEffectLabel.wordWrap = true;
                 WindEffectLabel.text = "Enable/Disable the normal game behavior of tree's height \ndiluting and weakening the wind on the map.\nOption should be set before loading a map.";
-                group.AddSpace(10);
 
                 TreeSnap = (UICheckBox)group.AddCheckbox(@"Tree Snapping/Anarchy Support", UseTreeSnapping, (b) => TreeSnapHandler(b));
                 TreeSnap.tooltip = @"Allows Trees to be placed anywhere if enabled";
@@ -100,17 +114,34 @@ namespace TreeAnarchy
                 TreeSnapLabel = (UILabel)panel.AddUIComponent<UILabel>();
                 TreeSnapLabel.AlignTo(Space, UIAlignAnchor.TopLeft);
                 TreeSnapLabel.width = 600;
-                TreeSnapLabel.height = 80;
+                TreeSnapLabel.height = 50;
                 TreeSnapLabel.relativePosition = new Vector3(25, 0);
                 TreeSnapLabel.wordWrap = true;
                 TreeSnapLabel.autoSize = false;
                 TreeSnapLabel.text = "Enables/Disable trees to be placed anywhere imaginable.\nFunctions like the original TreeSnapping Mod";
-                group.AddSpace(10);
 
-                ScaleFactor = (UISlider)group.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => ScaleFactorHandler(f));
+                TreeRotation = (UICheckBox)group.AddCheckbox(@"Random Tree Rotation", RandomTreeRotation, (b) => TreeRotationHandler(b));
+                TreeRotation.tooltip = @"Enable/Disable random tree rotation during placement";
+                TreeRotation.width = 400;
+                UIPanel SwayPanel = panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate")) as UIPanel;
+                SwayPanel.Find<UILabel>("Label").text = "Tree Sway Factor (0 might improve fps)";
+                UISlider uISlider = SwayPanel.Find<UISlider>("Slider");
+                uISlider.minValue = 0f;
+                uISlider.maxValue = 1f;
+                uISlider.stepSize = 0.1f;
+                uISlider.value = TreeSwayFactor;
+                uISlider.eventValueChanged += TreeSwayHandler;
+                SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
+                SwayPanel.relativePosition = new Vector3(300, -5);
+                group.AddSpace(30);
+
+
+                UIHelper ScaleGroup = helper.AddGroup($"Configure Tree Limit") as UIHelper;
+                ScaleFactor = (UISlider)ScaleGroup.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => ScaleFactorHandler(f));
                 ScaleFactor.tooltip = @"Increase or decrease supported number of trees";
-                Space = (UIPanel)group.AddSpace(20);
+                Space = (UIPanel)ScaleGroup.AddSpace(20);
                 ScaleFactor.isVisible = true;
+                ScaleFactor.width = 500;
                 MaxTreeLabel = (UILabel)Space.AddUIComponent<UILabel>();
                 MaxTreeLabel.AlignTo(Space, UIAlignAnchor.TopLeft);
                 MaxTreeLabel.relativePosition = new Vector3(0, 0);
@@ -119,17 +150,17 @@ namespace TreeAnarchy
                 MaxTreeLabel.autoSize = true;
                 MaxTreeLabel.height = 50;
                 MaxTreeLabel.Show();
-                Space = (UIPanel)group.AddSpace(50);
+                Space = (UIPanel)ScaleGroup.AddSpace(50);
                 ImportantLabel = (UILabel)panel.AddUIComponent<UILabel>();
                 ImportantLabel.AlignTo(Space, UIAlignAnchor.TopLeft);
                 ImportantLabel.relativePosition = new Vector3(0, 0);
                 ImportantLabel.text = @"Important! Must be set before entering map";
                 group.AddSpace(20);
 
-                PurgeSnappingData = (UIButton)group.AddButton(@"Purge TreeSnapping Data", () => PurgeDataHandler());
+                PurgeSnappingData = (UIButton)ScaleGroup.AddButton(@"Purge TreeSnapping Data", () => PurgeDataHandler());
 
-                Debug = (UICheckBox)group.AddCheckbox(@"Debug Mode - In-game usage", DebugMode, (b) => DebugHandler(b));
-                Space = (UIPanel)group.AddSpace(20);
+                Debug = (UICheckBox)ScaleGroup.AddCheckbox(@"Debug Mode - In-game usage", DebugMode, (b) => DebugHandler(b));
+                Space = (UIPanel)ScaleGroup.AddSpace(20);
                 PurgeSnappingData.AlignTo(Space, UIAlignAnchor.TopLeft);
                 PurgeSnappingData.Hide();
             }
