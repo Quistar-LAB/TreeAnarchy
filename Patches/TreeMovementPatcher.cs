@@ -78,8 +78,9 @@ namespace TreeAnarchy.Patches
             {
 				if (codes[i].opcode == OpCodes.Callvirt && codes[i].Calls(AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) })))
                 {
-					codes.Insert(i + 1, new CodeInstruction(OpCodes.Mul));
-					codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.TreeSwayFactor))));
+					codes.RemoveRange(i - 2, 3);
+					codes.Insert(i - 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovementPatcher), nameof(TreeMovementPatcher.GetWindSpeed))));
+					codes.Insert(i - 2, new CodeInstruction(OpCodes.Ldarg_2));
 				}
 			}
 
@@ -90,6 +91,15 @@ namespace TreeAnarchy.Patches
 
 			return codes.AsEnumerable();
         }
+
+		private static float GetWindSpeed(Vector3 pos)
+		{
+			int num = Mathf.Clamp(Mathf.FloorToInt(pos.x / 135f + 64f - 0.5f), 0, 127);
+			int num2 = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
+			int totalHeight = (int)WeatherManager.instance.m_windGrid[num2 * 128 + num].m_totalHeight;
+			float num3 = pos.y - (float)totalHeight * 0.015625f;
+			return Mathf.Clamp(num3 * 0.02f + TreeSwayFactor, 0f, 2f);
+		}
 
 		/* I'm making TreeTool::RenderGeometry and MoveIt RenderGeometryClone call this custom RenderInstance instead of the default CO RenderInstance
 		 * which would only affect one tree, instead of the entire tree population on the map.
