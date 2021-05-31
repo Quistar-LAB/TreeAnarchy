@@ -52,6 +52,7 @@ namespace TreeAnarchy
             private void TreeRotationHandler(bool b)
             {
                 RandomTreeRotation = b;
+                SaveSettings();
             }
 
             private void ScaleFactorHandler(float f)
@@ -124,7 +125,7 @@ namespace TreeAnarchy
                 TreeRotation.tooltip = @"Enable/Disable random tree rotation during placement";
                 TreeRotation.width = 400;
                 UIPanel SwayPanel = panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate")) as UIPanel;
-                SwayPanel.Find<UILabel>("Label").text = "Tree Sway Factor (0 might improve fps)";
+                SwayPanel.Find<UILabel>("Label").text = "Tree Sway Factor";
                 UISlider uISlider = SwayPanel.Find<UISlider>("Slider");
                 uISlider.minValue = 0f;
                 uISlider.maxValue = 1f;
@@ -133,8 +134,15 @@ namespace TreeAnarchy
                 uISlider.eventValueChanged += TreeSwayHandler;
                 SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
                 SwayPanel.relativePosition = new Vector3(300, -5);
-                group.AddSpace(30);
-
+                UILabel RotationLabel = (UILabel)panel.AddUIComponent<UILabel>();
+                RotationLabel.AlignTo(TreeRotation, UIAlignAnchor.TopLeft);
+                RotationLabel.width = 600;
+                RotationLabel.height = 50;
+                RotationLabel.relativePosition = new Vector3(25, 55);
+                RotationLabel.wordWrap = true;
+                RotationLabel.autoSize = false;
+                RotationLabel.text = "Useful eyecandy for your pleasure. Reducing tree sway may improve FPS";
+                group.AddSpace(20);
 
                 UIHelper ScaleGroup = helper.AddGroup($"Configure Tree Limit") as UIHelper;
                 ScaleFactor = (UISlider)ScaleGroup.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => ScaleFactorHandler(f));

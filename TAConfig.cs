@@ -19,7 +19,7 @@ namespace TreeAnarchy
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
 
         /* Tree Movement Releated */
-        internal static uint StopDistantTree = 1;
+        internal static bool StopDistantTree = false;
         internal static float TreeSwayFactor = 1f;
         internal static bool RandomTreeRotation = true;
 

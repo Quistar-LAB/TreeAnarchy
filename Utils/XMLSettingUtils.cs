@@ -17,7 +17,7 @@ namespace TreeAnarchy.Utils
             [XmlElement("TreeEffectOnWindEnabled")]
             public bool TreeEffectOnWind { get => TAConfig.TreeEffectOnWind; set => TAConfig.TreeEffectOnWind = value; }
             [XmlElement("TreeSnappingEnabled")]
-            public bool TreeSnapping { get => TAConfig.UseTreeSnapping; set => TAConfig.UseTreeSnapping = value; }
+            public bool UseTreeSnapping { get => TAConfig.UseTreeSnapping; set => TAConfig.UseTreeSnapping = value; }
             [XmlElement("ScaleFactor")]
             public float ScaleFactor { get => TreeScaleFactor; set => TreeScaleFactor = value; }
             [XmlElement("RandomRotation")]
@@ -25,7 +25,7 @@ namespace TreeAnarchy.Utils
             [XmlElement("TreeSwayFactor")]
             public float TreeSwayScale { get => TreeSwayFactor; set => TreeSwayFactor = value; }
             [XmlElement("DistantTree")]
-            public uint DistanctTree { get => StopDistantTree; set => StopDistantTree = value; }
+            public bool DistantTree { get => StopDistantTree; set => StopDistantTree = value; }
 
         }
 
