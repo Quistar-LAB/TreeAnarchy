@@ -13,7 +13,7 @@ This mod is a complete rewrite, taking out bloats and streamlining the serializa
 This mod is currently __ALPHA__, with the following functions:
 - [x] Support for more than 262144 trees
 - [x] Support Tree Snapping with functionality just like Prop Snapping
-- [ ] Support for random tree rotation
+- [x] Support for random tree rotation
 - [ ] Performance tuning to attempt to increase fps to support more trees
 
 I need supporters/volunteers to help debug/code to make this mod even better. If you want to contribute, please contact me anytime.
