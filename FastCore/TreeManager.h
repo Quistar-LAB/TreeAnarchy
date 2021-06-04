@@ -2,8 +2,6 @@
 #ifndef __TREEMANAGER_H__
 #define __TREEMANAGER_H__
 
-using namespace Colo
-
 #ifdef __cplusplus
 extern "C" {
 #endif
