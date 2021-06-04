@@ -2,8 +2,6 @@
 using ColossalFramework.UI;
 using ICities;
 using System;
-using System.Diagnostics;
-using System.Threading;
 using TreeAnarchy.Patches;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -13,13 +11,14 @@ using static TreeAnarchy.TASerializableDataExtension;
 
 namespace TreeAnarchy
 {
-    public class TAMod : LoadingExtensionBase, IUserMod
+    public class TAMod : LoadingExtensionBase, ITerrainExtension, IUserMod
     {
         private const string Version = @"0.5.7";
         private const string ModName = @"Unlimited Trees: Rebooted";
         public string Name => $"{ModName} - {Version}";
         public string Description => @"This is a reboot of the original Unlimited Trees Mod. Let's you plant way more trees";
 
+        #region UIPanel
         internal class OptionPanel 
         {
             private UIHelper group;
@@ -173,11 +172,14 @@ namespace TreeAnarchy
                 PurgeSnappingData.Hide();
             }
         }
+        #endregion
+
         private OptionPanel optionPanel = null;
 
         #region IUserMod
         public void OnEnabled()
         {
+            TAFastCore.PrintDebug();
             LoadSettings();
             Patcher.Setup();
         }
@@ -217,6 +219,13 @@ namespace TreeAnarchy
         }
         public override void OnLevelLoaded(LoadMode mode)
         {
+
+            base.OnLevelLoaded(mode);
+        }
+        #endregion
+
+        void ITerrainExtension.OnCreated(ITerrain terrain)
+        {
             if (OldFormatLoaded)
             {
                 /* When using original CO or Unlimited Trees Mod, the posY is never
@@ -234,7 +243,7 @@ namespace TreeAnarchy
                             Vector3 position = manager.m_trees.m_buffer[i].Position;
                             position.y = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
                             ushort terrainHeight = (ushort)Mathf.Clamp(Mathf.RoundToInt(position.y * 64f), 0, 65535);
-                            if(manager.m_trees.m_buffer[i].m_posY < terrainHeight)
+                            if (manager.m_trees.m_buffer[i].m_posY < terrainHeight)
                             {
                                 manager.m_trees.m_buffer[i].m_posY = terrainHeight;
                             }
@@ -243,9 +252,12 @@ namespace TreeAnarchy
                 }
                 OldFormatLoaded = false;
             }
-
-            base.OnLevelLoaded(mode);
         }
-        #endregion
+
+        void ITerrainExtension.OnAfterHeightsModified(float minX, float minZ, float maxX, float maxZ)
+        {
+            
+        }
+
     }
 }

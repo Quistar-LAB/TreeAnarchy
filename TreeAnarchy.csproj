@@ -37,10 +37,7 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>H:\Games\Cities Skylines Sunset Harbor\Cities_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="CitiesHarmony.API, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\CitiesHarmony.API.2.0.0\lib\net35\CitiesHarmony.API.dll</HintPath>
-    </Reference>
-    <Reference Include="CitiesHarmony.Harmony, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="CitiesHarmony.Harmony">
       <HintPath>packages\CitiesHarmony.Harmony.2.0.4\lib\net35\CitiesHarmony.Harmony.dll</HintPath>
     </Reference>
     <Reference Include="ColossalManaged">
@@ -63,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TAFastCore.cs" />
     <Compile Include="Patches\TreeMovementPatcher.cs" />
     <Compile Include="TASerializableDataExtension.cs" />
     <Compile Include="TADataSerializer.cs" />
@@ -78,7 +76,6 @@
   <ItemGroup>
     <None Include="LICENSE" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"
