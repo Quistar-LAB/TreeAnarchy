@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __TREEMANAGER_H__
-#define __TREEMANAGER_H__
+#ifndef __FASTMATH_H__
+#define __FASTMATH_H__
 
 #ifdef __cplusplus
 extern "C" {
