@@ -158,8 +158,8 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             LoadSettings();
             TAPatcher.Enable();
-            TAWrapper wrapper = new TAWrapper("TreeAnarchy.FastCore.dll");
-            wrapper.PrintDebug();
+//            TAWrapper wrapper = new TAWrapper("TreeAnarchy.FastCore.dll");
+//            wrapper.PrintDebug();
         }
         public void OnDisabled() {
             TAPatcher.Disable();
