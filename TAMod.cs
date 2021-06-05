@@ -120,7 +120,7 @@ namespace TreeAnarchy {
                 ScaleFactor = (UISlider)ScaleGroup.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => {
                     TreeScaleFactor = f;
                     MaxTreeLabel.text = $"Maximum Supported Number of Trees: {(uint)(MaxTreeLimit)}";
-                    Patches.TreeLimit.Resize();
+                    Patches.TreeLimit.InjectResize();
                     SaveSettings();
                 });
                 ScaleFactor.tooltip = @"Increase or decrease supported number of trees";
@@ -158,8 +158,8 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             LoadSettings();
             TAPatcher.Enable();
-//            TAWrapper wrapper = new TAWrapper("TreeAnarchy.FastCore.dll");
-//            wrapper.PrintDebug();
+            TAWrapper wrapper = new TAWrapper("TreeAnarchy.FastCore.dll");
+            wrapper.PrintDebug();
         }
         public void OnDisabled() {
             TAPatcher.Disable();
