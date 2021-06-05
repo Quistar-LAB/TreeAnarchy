@@ -186,8 +186,8 @@ namespace TreeAnarchy.Patches {
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(global::TreeManager), "EndRenderingImpl"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(global::TreeManager), "HandleFireSpread"), transpiler: new HarmonyMethod(replaceLDCI4));
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), transpiler: new HarmonyMethod(replaceLDCI4));
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), "HandleFireSpread"), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), transpiler: new HarmonyMethod(replaceLDCI4));
@@ -216,8 +216,8 @@ namespace TreeAnarchy.Patches {
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(global::TreeManager), @"EndRenderingImpl"), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(global::TreeManager), @"HandleFireSpread"), HarmonyPatchType.Prefix);
+                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), HarmonyPatchType.Prefix);
+                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), HarmonyPatchType.Prefix);
@@ -243,8 +243,9 @@ namespace TreeAnarchy.Patches {
             if(manager.m_trees.m_buffer.Length != MaxTreeLimit) {
                 Array32<TreeInstance> newBuffer = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 newBuffer.CreateItem(out uint _);
-                if(manager.m_trees.ItemCount() > 0) {
-                    for(uint i = 1; i < manager.m_trees.ItemCount(); i++) {
+                uint itemCount = manager.m_trees.ItemCount();
+                if(itemCount > 1) {
+                    for(uint i = 1; i < itemCount; i++) {
                         if(newBuffer.CreateItem(out uint index)) {
                             newBuffer.m_buffer[index].m_flags = oldbuf[i].m_flags;
                             newBuffer.m_buffer[index].m_infoIndex = oldbuf[i].m_infoIndex;
