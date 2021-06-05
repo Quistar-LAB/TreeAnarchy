@@ -1,5 +1,6 @@
 #include "TreeManager.h"
 
+#pragma unmanaged
 int Addition(int x, int y) {
     return x + y;
 }
@@ -18,7 +19,7 @@ float max(float a, float b) {
 }
 
 #define MAXTREE 2000000
-
+#pragma managed
 // TreeManager
 int UpdateTrees(float minX, float minZ, float maxX, float maxZ)
 {
