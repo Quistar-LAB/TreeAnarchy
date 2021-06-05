@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ColossalFramework;
 using ColossalFramework.Math;
+using ColossalFramework.Plugins;
 using UnityEngine;
 using HarmonyLib;
 using MoveIt;
@@ -12,14 +13,25 @@ using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy.Patches {
 	internal class TreeMovement {
+		private bool IsMoveItExists() {
+			foreach(PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+				if(info.name.Contains("Move It")) {
+					return true;
+                }
+			}
+			return false;
+		}
+
 		internal void Enable(Harmony harmony) {
 			harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
 				transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderGeometryTranspiler))));
 			harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
 				new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
 				transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderInstanceTranspiler))));
-			harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
-				prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderClonePrefix))));
+			if(IsMoveItExists()) {
+				harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
+					prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderClonePrefix))));
+			}
 		}
 
 		private static IEnumerable<CodeInstruction> RenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
@@ -69,10 +81,6 @@ namespace TreeAnarchy.Patches {
 					codes.Insert(i - 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetWindSpeed))));
 					codes.Insert(i - 2, new CodeInstruction(OpCodes.Ldarg_2));
 				}
-			}
-
-			foreach(var code in codes) {
-				Debug.Log($"TreeAnarchy: ==> {code}");
 			}
 
 			return codes.AsEnumerable();

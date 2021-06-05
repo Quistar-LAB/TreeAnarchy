@@ -73,7 +73,7 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"));
                 StopDistantTree = bool.Parse(xmlConfig.DocumentElement.GetAttribute("StopDistantTree"));
             } catch {
-                SaveSettings();
+                SaveSettings(); // Create a new save
             }
         }
 

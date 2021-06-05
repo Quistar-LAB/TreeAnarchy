@@ -34,17 +34,13 @@ namespace TreeAnarchy {
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         public delegate int Delegate_Core_Addition(int x, int y);
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-        public delegate float Delegate_Core_Clamp(float f, float min, float max);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         public delegate int Delegate_Core_Test();
 
         readonly Delegate_Core_Addition Addition;
-        readonly Delegate_Core_Clamp Clamp;
         readonly Delegate_Core_Test Test;
 
         public TAWrapper(string name) : base(ExtractResource(name)) {
             Addition = GetDelegateFromFuncName<Delegate_Core_Addition>("Addition");
-            Clamp = GetDelegateFromFuncName<Delegate_Core_Clamp>("Clamp");
             Test = GetDelegateFromFuncName<Delegate_Core_Test>("Test");
         }
 
