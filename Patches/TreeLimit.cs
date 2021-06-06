@@ -154,16 +154,38 @@ namespace TreeAnarchy.Patches {
             PrintDebugIL(codes.ToList(), method);
             return codes.AsEnumerable();
 #else
-            CodeInstruction insertion = new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit - 5);
+            int CheckLowLimit = MaxTreeLimit - 12144;
+            int CheckHighLimit = MaxTreeLimit - 5;
             foreach(var instruction in instructions) {
-                if(instruction.Is(OpCodes.Ldc_I4, 250000))
-                    yield return insertion;
-                else if(instruction.Is(OpCodes.Ldc_I4, 262139))
-                    yield return insertion;
+                if(instruction.Is(OpCodes.Ldc_I4, LastCheckLimitLowVal))
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, CheckLowLimit);
+                else if(instruction.Is(OpCodes.Ldc_I4, LastCheckLimitHighVal))
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, CheckHighLimit);
                 else
                     yield return instruction;
             }
+            LastCheckLimitLowVal = CheckLowLimit;
+            LastCheckLimitHighVal = CheckHighLimit;
 #endif
+        }
+        private static int LastCheckLimitLowVal = 250000;
+        private static int LastCheckLimitHighVal = 262139;
+
+        /* For Forestry Lock */
+        private static IEnumerable<CodeInstruction> NRMTreesModifiedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            var codes = ReplaceLDCI4_MaxTreeLimit(instructions).ToList();
+            Label jump = il.DefineLabel();
+
+            codes[0].labels.Add(jump);
+
+            var snippet = new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.LockForestry))),
+                new CodeInstruction(OpCodes.Brfalse_S, jump),
+                new CodeInstruction(OpCodes.Ret),
+            };
+            codes.InsertRange(0, snippet);
+
+            return codes.AsEnumerable();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -195,6 +217,8 @@ namespace TreeAnarchy.Patches {
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), transpiler: new HarmonyMethod(replaceLDCI4));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), transpiler: new HarmonyMethod(replaceLDCI4));
+            harmony.Patch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(NRMTreesModifiedTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CheckLimitsTranspiler))));
         }
@@ -226,6 +250,7 @@ namespace TreeAnarchy.Patches {
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)), HarmonyPatchType.Prefix);
+                harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Prefix);
             } catch(Exception e) {
                 Debug.LogException(e);

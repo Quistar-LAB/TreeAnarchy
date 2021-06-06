@@ -15,7 +15,7 @@ namespace TreeAnarchy {
         static readonly TreeManagerData m_data = new TreeManagerData();
 
         internal static void Enable() {
-            TATreeManager.Enable(m_harmony);
+            //TATreeManager.Enable(m_harmony);
             m_treeLimit.Ensure(m_harmony);
             m_treeLimit.Enable(m_harmony);
             m_treeMovement.Enable(m_harmony);

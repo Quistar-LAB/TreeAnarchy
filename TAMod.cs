@@ -114,7 +114,23 @@ namespace TreeAnarchy {
                 RotationLabel.wordWrap = true;
                 RotationLabel.autoSize = false;
                 RotationLabel.text = "Useful eyecandy for your pleasure. Reducing tree sway may improve FPS";
-                group.AddSpace(20);
+                group.AddSpace(55);
+                UICheckBox UILockForestry = (UICheckBox)group.AddCheckbox(@"Lock Forestry", LockForestry, (b) =>
+                {
+                    LockForestry = b;
+                    SaveSettings();
+                });
+                UILockForestry.tooltip = @"Enable/Disable forestry natural resources";
+                UILockForestry.width = 400;
+                UILabel LockForestryLabel = (UILabel)panel.AddUIComponent<UILabel>();
+                LockForestryLabel.AlignTo(UILockForestry, UIAlignAnchor.TopLeft);
+                LockForestryLabel.width = 600;
+                LockForestryLabel.height = 50;
+                LockForestryLabel.relativePosition = new Vector3(25, 24);
+                LockForestryLabel.wordWrap = true;
+                LockForestryLabel.autoSize = false;
+                LockForestryLabel.text = @"Enable to prevent trees from creating forestry resources near farm lands";
+
 
                 UIHelper ScaleGroup = helper.AddGroup($"Configure Tree Limit") as UIHelper;
                 ScaleFactor = (UISlider)ScaleGroup.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => {
@@ -158,7 +174,6 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             LoadSettings();
             TAPatcher.Enable();
-            TAWrapper wrapper = new TAWrapper("TreeAnarchy.FastCore.dll");
         }
         public void OnDisabled() {
             TAPatcher.Disable();
