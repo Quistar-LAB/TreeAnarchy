@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Diagnostics;
 using HarmonyLib;
 using ColossalFramework;
@@ -12,7 +13,8 @@ namespace TreeAnarchy.Patches {
             harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
                 postfix: new HarmonyMethod(AccessTools.Method(typeof(TATreeManager), nameof(TATreeManager.EndRenderingImplPostfix))));
         }
-        static Stopwatch timer = new Stopwatch();
+        static readonly Stopwatch timer = new Stopwatch();
+        static readonly Stopwatch utTimer = new Stopwatch();
 
         private static bool EndRenderingImplPrefix(RenderManager.CameraInfo cameraInfo) {
             timer.Reset();
@@ -20,7 +22,6 @@ namespace TreeAnarchy.Patches {
             return true;
         }
         private static void EndRenderingImplPostfix(RenderManager.CameraInfo cameraInfo) {
-            timer.Stop();
             UnityEngine.Debug.Log($"TreeAnarchy: EndRenderingImpl execution time: {timer.ElapsedMilliseconds}ms");
         }
     }

@@ -5,15 +5,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #define APIEXPORT __declspec(dllexport)
-
-int APIEXPORT Addition(int, int);
-float APIEXPORT Clamp(float, float, float);
-float APIEXPORT min(float a, float b);
+float APIEXPORT clamp(float, float, float);
+float APIEXPORT min(float, float);
 float APIEXPORT max(float, float);
-int APIEXPORT Test();
-
+int APIEXPORT calcGridMax(float);
+int APIEXPORT calcGridMin(float);
+float APIEXPORT calcDelta(float, float, float, float, float, float);
 #ifdef __cplusplus
 }
 #endif

@@ -18,15 +18,15 @@
     <ClInclude Include="FastMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TreeCore.h">
+    <ClInclude Include="TreeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FastMath.cpp">
+    <ClCompile Include="TreeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TreeCore.cpp">
+    <ClCompile Include="FastMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

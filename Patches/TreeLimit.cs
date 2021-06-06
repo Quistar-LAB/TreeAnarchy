@@ -241,6 +241,7 @@ namespace TreeAnarchy.Patches {
             TreeInstance[] oldbuf = manager.m_trees.m_buffer;
 
             if(manager.m_trees.m_buffer.Length != MaxTreeLimit) {
+                
                 Array32<TreeInstance> newBuffer = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 newBuffer.CreateItem(out uint _);
                 uint itemCount = manager.m_trees.ItemCount();
