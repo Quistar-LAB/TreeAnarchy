@@ -13,7 +13,7 @@ using static TreeAnarchy.TAConfig;
 namespace TreeAnarchy {
     public class TAMod : ITerrainExtension, ILoadingExtension, IUserMod {
         private const string m_modName = "Unlimited Trees: Reboot";
-        private const string m_modVersion = "0.6.2";
+        private const string m_modVersion = "0.7.1";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 
         #region OptionPanel
