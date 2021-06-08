@@ -22,8 +22,8 @@ namespace TreeAnarchy.Patches {
         internal void Enable(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
+            //harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+            //    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
@@ -74,7 +74,7 @@ namespace TreeAnarchy.Patches {
             foreach(var code in instructions) {
                 if(code.opcode == OpCodes.Beq && code.Branches(out Label? label)) {
                     yield return new CodeInstruction(OpCodes.Bne_Un_S, label1);
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping)));
                     yield return new CodeInstruction(OpCodes.Brfalse_S, label);
                 } else if(code.opcode == OpCodes.Ret && !firstOccurance) {
                     firstOccurance = true;
@@ -208,7 +208,7 @@ namespace TreeAnarchy.Patches {
 
             CodeInstruction[] InsertCode = new CodeInstruction[]
             {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Brtrue_S, exitLabel),
                 new CodeInstruction(OpCodes.Ldarg_0),
                 new CodeInstruction(OpCodes.Ldloc_3),
