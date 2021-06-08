@@ -116,7 +116,10 @@ namespace TreeAnarchy.Patches {
 				uint remainer = prefabCount % 5;
 				uint maxLen = prefabCount - remainer;
 				void RenderLod(TreeInfo prefab) {
-					if (prefab?.m_lodCount != 0) TreeInstance.RenderLod(cameraInfo, prefab);
+					if(prefab != null) {
+						if (prefab.m_lodCount != 0) TreeInstance.RenderLod(cameraInfo, prefab);
+                    }
+					//if (prefab?.m_lodCount != 0) TreeInstance.RenderLod(cameraInfo, prefab);
                 }
 				for (uint i = 0; i < maxLen; i++) {
 					RenderLod(PrefabCollection<TreeInfo>.GetPrefab(i++));
