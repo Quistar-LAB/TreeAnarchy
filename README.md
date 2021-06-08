@@ -14,6 +14,7 @@ This mod is currently __ALPHA__, with the following functions:
 - [x] Support for more than 262144 trees
 - [x] Support Tree Snapping with functionality just like Prop Snapping
 - [x] Support for random tree rotation
+- [x] Lock Forestry (especially useful if you want to control where forestry resources are created)
 - [ ] Performance tuning to attempt to increase fps to support more trees
 
 I need supporters/volunteers to help debug/code to make this mod even better. If you want to contribute, please contact me anytime.
