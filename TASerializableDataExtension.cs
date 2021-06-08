@@ -27,7 +27,7 @@ namespace TreeAnarchy {
 
         public void OnSaveData() {
             PurgeData(); // remove old data if it exists
-            EnsurePosY();
+            //EnsurePosY();
             try {
                 // hmmmm assuming 1 million trees... this is around ~10mb of data
                 // lets see if compression helps improve File IO
