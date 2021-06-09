@@ -34,6 +34,10 @@ namespace TreeAnarchy.Patches {
 			}
 		}
 
+		internal void Disable(Harmony harmony) {
+			harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)), HarmonyPatchType.Prefix, TAPatcher.HARMONYID);
+		}
+
 		private static IEnumerable<CodeInstruction> RenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
 			bool sigFound = false;
 			Label branch = il.DefineLabel(), exit = il.DefineLabel();
@@ -51,7 +55,7 @@ namespace TreeAnarchy.Patches {
 					brightness = codes[i].operand as LocalBuilder;
 					CodeInstruction[] insertCodes = new CodeInstruction[]
 					{
-						new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.RandomTreeRotation))),
+						new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(RandomTreeRotation))),
 						new CodeInstruction(OpCodes.Brfalse_S, branch),
 						new CodeInstruction(OpCodes.Ldnull),
 						new CodeInstruction(OpCodes.Ldloc_0),
@@ -99,7 +103,7 @@ namespace TreeAnarchy.Patches {
 		 */
 		private static void RenderRotation(RenderManager.CameraInfo _, TreeInfo info, Vector3 position, float scale, float brightness, Vector4 objectIndex) {
 			if(info.m_prefabInitialized) {
-				global::TreeManager instance = Singleton<global::TreeManager>.instance;
+				TreeManager instance = Singleton<TreeManager>.instance;
 				MaterialPropertyBlock materialBlock = instance.m_materialBlock;
 				Matrix4x4 matrix = default;
 				matrix.SetTRS(position, Quaternion.Euler(0f, (((long)position.magnitude) << 5) % 360L, 0f), new Vector3(scale, scale, scale));
@@ -110,6 +114,123 @@ namespace TreeAnarchy.Patches {
 				materialBlock.SetVector(instance.ID_ObjectIndex, objectIndex);
 				instance.m_drawCallData.m_defaultCalls++;
 				Graphics.DrawMesh(info.m_mesh, matrix, info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
+			}
+		}
+
+		private static bool RayCast(ToolBase.RaycastInput input, out ToolBase.RaycastOutput output) {
+			Vector3 origin = input.m_ray.origin;
+			Vector3 normalized = input.m_ray.direction.normalized;
+			Vector3 vector = input.m_ray.origin + normalized * input.m_length;
+			Segment3 ray = new Segment3(origin, vector);
+			output.m_hitPos = vector;
+			output.m_overlayButtonIndex = 0;
+			output.m_netNode = 0;
+			output.m_netSegment = 0;
+			output.m_building = 0;
+			output.m_propInstance = 0;
+			output.m_treeInstance = 0u;
+			output.m_vehicle = 0;
+			output.m_parkedVehicle = 0;
+			output.m_citizenInstance = 0;
+			output.m_transportLine = 0;
+			output.m_transportStopIndex = 0;
+			output.m_transportSegmentIndex = 0;
+			output.m_district = 0;
+			output.m_park = 0;
+			output.m_disaster = 0;
+			output.m_currentEditObject = false;
+			bool result = false;
+			float num = input.m_length;
+			if (!input.m_ignoreTerrain && Singleton<TerrainManager>.instance.RayCast(ray, out Vector3 vector2)) {
+				float num2 = Vector3.Distance(vector2, origin) + 100f;
+				if (num2 < num) {
+					output.m_hitPos = vector2;
+					result = true;
+					num = num2;
+				}
+			}
+			if ((input.m_ignoreNodeFlags != NetNode.Flags.All || input.m_ignoreSegmentFlags != NetSegment.Flags.All) && Singleton<NetManager>.instance.RayCast(input.m_buildObject as NetInfo, ray, input.m_netSnap, input.m_segmentNameOnly, input.m_netService.m_service, input.m_netService2.m_service, input.m_netService.m_subService, input.m_netService2.m_subService, input.m_netService.m_itemLayers, input.m_netService2.m_itemLayers, input.m_ignoreNodeFlags, input.m_ignoreSegmentFlags, out vector2, out output.m_netNode, out output.m_netSegment)) {
+				float num3 = Vector3.Distance(vector2, origin);
+				if (num3 < num) {
+					output.m_hitPos = vector2;
+					result = true;
+					num = num3;
+				} else {
+					output.m_netNode = 0;
+					output.m_netSegment = 0;
+				}
+			}
+			if (input.m_ignoreBuildingFlags != Building.Flags.All && Singleton<BuildingManager>.instance.RayCast(ray, input.m_buildingService.m_service, input.m_buildingService.m_subService, input.m_buildingService.m_itemLayers, input.m_ignoreBuildingFlags, out vector2, out output.m_building)) {
+				float num4 = Vector3.Distance(vector2, origin);
+				if (num4 < num) {
+					output.m_hitPos = vector2;
+					output.m_netNode = 0;
+					output.m_netSegment = 0;
+					result = true;
+					num = num4;
+				} else {
+					output.m_building = 0;
+				}
+			}
+			if (input.m_currentEditObject && Singleton<ToolManager>.instance.m_properties.RaycastEditObject(ray, out vector2)) {
+				float num6 = Vector3.Distance(vector2, origin);
+				if (num6 < num) {
+					output.m_hitPos = vector2;
+					output.m_netNode = 0;
+					output.m_netSegment = 0;
+					output.m_building = 0;
+					output.m_disaster = 0;
+					output.m_currentEditObject = true;
+					result = true;
+					num = num6;
+				}
+			}
+			if (input.m_ignorePropFlags != PropInstance.Flags.All && Singleton<PropManager>.instance.RayCast(ray, input.m_propService.m_service, input.m_propService.m_subService, input.m_propService.m_itemLayers, input.m_ignorePropFlags, out vector2, out output.m_propInstance)) {
+				float num7 = Vector3.Distance(vector2, origin) - 0.5f;
+				if (num7 < num) {
+					output.m_hitPos = vector2;
+					output.m_netNode = 0;
+					output.m_netSegment = 0;
+					output.m_building = 0;
+					output.m_disaster = 0;
+					output.m_currentEditObject = false;
+					result = true;
+					num = num7;
+				} else {
+					output.m_propInstance = 0;
+				}
+			}
+			return result;
+		}
+
+		// These codes should really live in the MoveIt mod space and not here!!
+		private static void RenderCollision(TreeState treeState, RenderManager.CameraInfo cameraInfo, TreeInfo info, Vector3 position, float scale, float brightness, Vector4 objectIndex) {
+			Ray mouseRay;
+			float mouseRayLength;
+
+			if (info.m_prefabInitialized && UseTreeSnapping) {
+				/*
+				Vector3 mousePosition = Input.mousePosition;
+				mouseRay = Camera.main.ScreenPointToRay(mousePosition);
+				mouseRayLength = Camera.main.farClipPlane;
+                ToolBase.RaycastInput input = new ToolBase.RaycastInput(mouseRay, mouseRayLength) {
+                    m_currentEditObject = true,
+                    m_ignoreBuildingFlags = Building.Flags.None,
+                    m_ignoreNodeFlags = NetNode.Flags.None,
+                    m_ignoreSegmentFlags = NetSegment.Flags.None,
+					m_ignorePropFlags = PropInstance.Flags.None,
+                    m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+					m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+					m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+                    m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default)
+                };
+				if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
+					position = raycastOutput.m_hitPos;
+					treeState.position.y = position.y;
+				}
+				*/
+				if(RandomTreeRotation) RenderRotation(cameraInfo, info, position, scale, brightness, objectIndex);
+				else TreeInstance.RenderInstance(cameraInfo, info, position, scale, brightness, objectIndex);
 			}
 		}
 
@@ -126,11 +247,7 @@ namespace TreeAnarchy.Patches {
 			if(followTerrain) {
 				vector.y = vector.y - treeState.terrainHeight + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
 			}
-			if(RandomTreeRotation) {
-				RenderRotation(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
-			} else {
-				TreeInstance.RenderInstance(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
-			}
+			RenderCollision(treeState, cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
 
 			return false;
 		}

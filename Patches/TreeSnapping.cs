@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using ColossalFramework;
 using HarmonyLib;
 using UnityEngine;
 using MoveIt;
@@ -29,10 +30,58 @@ namespace TreeAnarchy.Patches {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CreateTree)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.DebugCreateTreeTranspiler))));
         }
 
         internal void Disable(Harmony harmony, string id) {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, id);
+        }
+
+        public static IEnumerable<CodeInstruction> CreateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method) {
+            ParameterInfo position = default;
+            Label branch = il.DefineLabel();
+            bool SigFound = false;
+
+            foreach (var arg in method.GetParameters()) {
+                if (arg.Name.Contains("position")) {
+                    position = arg;
+                }
+            }
+            foreach (var code in instructions) {
+                if (code.StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)))) {
+                    SigFound = true;
+                    yield return code;
+                    yield return new CodeInstruction(OpCodes.Ldarg_S, position.Position + 1);
+                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Singleton<TerrainManager>), "get_instance"));
+                    yield return new CodeInstruction(OpCodes.Ldarg_S, position.Position + 1);
+                    yield return new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) }));
+                    yield return new CodeInstruction(OpCodes.Cgt);
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping)));
+                    yield return new CodeInstruction(OpCodes.And);
+                    yield return new CodeInstruction(OpCodes.Brfalse_S, branch);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees)));
+                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer)));
+                    yield return new CodeInstruction(OpCodes.Ldarg_1);
+                    yield return new CodeInstruction(OpCodes.Ldind_U4);
+                    yield return new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance));
+                    yield return new CodeInstruction(OpCodes.Ldc_I4_1);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstance), "set_FixedHeight"));
+                } else if (code.opcode == OpCodes.Ldarg_0 & SigFound) {
+                    SigFound = false;
+                    yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(branch);
+                } else yield return code;
+            }
+        }
+
+        public static IEnumerable<CodeInstruction> DebugCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method) {
+            foreach (var code in CreateTreeTranspiler(instructions, il, method)) {
+                Debug.Log($"TreeAnarchy: ==>  {code}");
+            }
+
+            return CreateTreeTranspiler(instructions, il, method);
         }
 
         private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
