@@ -25,6 +25,7 @@ namespace TreeAnarchy {
             static private UICheckBox TreeRotation;
             static private UICheckBox Debug;
             static private UISlider ScaleFactor;
+            static UICheckBox uiExperimental;
 
             internal static bool IsInGame = false;
 
@@ -43,13 +44,15 @@ namespace TreeAnarchy {
                 //=> TASerializableDataExtension.PurgeData();
             }
 
-            internal static void UpdateState() {
+            internal static void UpdateState(bool isInGame) {
                 if(isInGame) {
                     WindEffect.Disable();
                     ScaleFactor.Disable();
+                    uiExperimental.Disable();
                     Debug.Enable();
                     return;
                 }
+                uiExperimental.Enable();
                 WindEffect.Enable();
                 ScaleFactor.Enable();
                 Debug.Disable();
@@ -130,7 +133,7 @@ namespace TreeAnarchy {
                 LockForestryLabel.wordWrap = true;
                 LockForestryLabel.autoSize = false;
                 LockForestryLabel.text = @"Enable to prevent trees from creating forestry resources near farm lands";
-
+                group.AddSpace(20);
 
                 UIHelper ScaleGroup = helper.AddGroup($"Configure Tree Limit") as UIHelper;
                 ScaleFactor = (UISlider)ScaleGroup.AddSlider(@"Max Supported Tree", MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (f) => {
@@ -156,7 +159,7 @@ namespace TreeAnarchy {
                 ImportantLabel.AlignTo(Space, UIAlignAnchor.TopLeft);
                 ImportantLabel.relativePosition = new Vector3(0, 0);
                 ImportantLabel.text = @"Important! Must be set before entering map";
-                group.AddSpace(20);
+                ScaleGroup.AddSpace(20);
 
                 PurgeSnappingData = (UIButton)ScaleGroup.AddButton(@"Purge TreeSnapping Data", () => PurgeDataHandler());
 
@@ -164,6 +167,23 @@ namespace TreeAnarchy {
                 Space = (UIPanel)ScaleGroup.AddSpace(20);
                 PurgeSnappingData.AlignTo(Space, UIAlignAnchor.TopLeft);
                 PurgeSnappingData.Hide();
+
+                uiExperimental = (UICheckBox)ScaleGroup.AddCheckbox(@"Enable Experimental Acceleration", UseExperimental, (b) => {
+                    UseExperimental = b;
+                    TAPatcher.EnableExperimental(b);
+                    SaveSettings();
+                });
+                uiExperimental.tooltip = @"Experimental FPS acceleration";
+                uiExperimental.width = 400;
+                UILabel experimenLabel = (UILabel)panel.AddUIComponent<UILabel>();
+                experimenLabel.AlignTo(uiExperimental, UIAlignAnchor.TopLeft);
+                experimenLabel.width = 600;
+                experimenLabel.height = 50;
+                experimenLabel.relativePosition = new Vector3(25, 24);
+                experimenLabel.wordWrap = true;
+                experimenLabel.autoSize = false;
+                experimenLabel.text = @"Experimental acceleration is achieved by disabling (assumed) redundant checks and unrolling loops within potential bottelnecks when rendering trees. This is considered unsafe, thus use at your own risk";
+                ScaleGroup.AddSpace(35);
             }
         }
         #endregion
@@ -182,7 +202,7 @@ namespace TreeAnarchy {
 
         public void OnSettingsUI(UIHelperBase helper) {
             OptionPanel.CreatePanel(helper);
-            OptionPanel.UpdateState();
+            OptionPanel.UpdateState(false);
         }
         #endregion
         #region ILoadingExtension
@@ -193,7 +213,7 @@ namespace TreeAnarchy {
         }
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
-            OptionPanel.UpdateState();
+            OptionPanel.UpdateState(true);
         }
 
         void ILoadingExtension.OnLevelUnloading() {

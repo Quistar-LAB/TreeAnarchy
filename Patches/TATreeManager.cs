@@ -16,6 +16,11 @@ namespace TreeAnarchy.Patches {
 			harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
 				transpiler: new HarmonyMethod(AccessTools.Method(typeof(TATreeManager), nameof(TATreeManager.BeginRenderingImplTranspiler))));
 		}
+
+		internal static void Disable(Harmony harmony) {
+			harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), HarmonyPatchType.Prefix, TAPatcher.HARMONYID);
+			harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
+		}
 		static Stopwatch timer = new Stopwatch();
 		static Stopwatch Endtimer = new Stopwatch();
 
@@ -44,7 +49,7 @@ namespace TreeAnarchy.Patches {
 						prefab.m_lodMaterial.SetTexture(instance.ID_ShadowAMap, instance.m_renderShadowTexture);
 					}
 				}
-				// unroll loop
+				// unroll loop... wish we had .net5 so these can be done automatically by the compiler
 				uint maxCount = (uint)PrefabCollection<TreeInfo>.PrefabCount();
 				uint remainder = maxCount % 5;
 				uint prefabCount = maxCount - remainder;

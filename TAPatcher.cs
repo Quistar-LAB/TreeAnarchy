@@ -15,12 +15,16 @@ namespace TreeAnarchy {
         static readonly TreeManagerData m_data = new TreeManagerData();
 
         internal static void Enable() {
-            TATreeManager.Enable(m_harmony);
             m_treeLimit.Ensure(m_harmony);
             m_treeLimit.Enable(m_harmony);
             m_treeMovement.Enable(m_harmony);
             m_treeSnapping.Enable(m_harmony);
             m_data.Enable(m_harmony);
+        }
+
+        internal static void EnableExperimental(bool enable) {
+            if (enable) TATreeManager.Enable(m_harmony);
+            else TATreeManager.Disable(m_harmony);
         }
 
         internal static void Disable() {

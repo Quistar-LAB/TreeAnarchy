@@ -12,6 +12,9 @@ namespace TreeAnarchy {
         internal const int DefaultTreeLimit = 262144;
         internal const int DefaultTreeUpdateCount = 4096;
 
+        /* Experimental mode */
+        internal static bool UseExperimental = false;
+
         /* Lock Forestry */
         internal static bool LockForestry = false;
 
@@ -76,6 +79,7 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"));
                 StopDistantTree = bool.Parse(xmlConfig.DocumentElement.GetAttribute("StopDistantTree"));
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
+                UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
             } catch {
                 SaveSettings(); // Create a new save
             }
@@ -92,6 +96,7 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "StopDistantTree", StopDistantTree));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
