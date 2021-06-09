@@ -195,11 +195,6 @@ ReadData:
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [ResourceExposure(ResourceScope.None)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalBlockCopy(Array src, int srcOffsetBytes, Array dst, int dstOffsetBytes, int byteCount);
-
         public byte[] Serialize() {
             int orgTreeCount = 0;
             int extraTreeCount = 0;
@@ -253,11 +248,6 @@ ReadData:
             byte[] array = new byte[Length];
             Debug.Log($"TreeAnarchy: Created {Length} bytes");
             Buffer.BlockCopy(_buffer, 0, array, 0, (int)Length);
-            for (int i = 0; i < Length; i++) {
-                if (_buffer[i] != array[i]) {
-                    Debug.Log($"TreeAnarchy: bytes not equal at {i}");
-                }
-            }
             Debug.Log("TreeAnarchy: Success");
             return array;
         }

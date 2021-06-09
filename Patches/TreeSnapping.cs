@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using UnityEngine;
 using MoveIt;
 using static TreeAnarchy.TAConfig;
 
@@ -22,8 +23,8 @@ namespace TreeAnarchy.Patches {
         internal void Enable(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
-            //harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-            //    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
@@ -67,22 +68,97 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            Label label1 = il.DefineLabel();
-            bool firstOccurance = false;
+        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method) {
+            int FirstIndex = 0, LastIndex = 0;
+            Label UseTerrainHeight = il.DefineLabel(), ExitBranch = il.DefineLabel(), FirstJump = il.DefineLabel();
+            LocalBuilder terrainHeight = il.DeclareLocal(typeof(float));
+            CodeInstruction stlocTerrainHeight = default;
+            CodeInstruction ldlocTerrainHeight = default;
+            
+            var codes = new List<CodeInstruction>(instructions);
 
-            foreach(var code in instructions) {
-                if(code.opcode == OpCodes.Beq && code.Branches(out Label? label)) {
-                    yield return new CodeInstruction(OpCodes.Bne_Un_S, label1);
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping)));
-                    yield return new CodeInstruction(OpCodes.Brfalse_S, label);
-                } else if(code.opcode == OpCodes.Ret && !firstOccurance) {
-                    firstOccurance = true;
-                    yield return new CodeInstruction(OpCodes.Ret).WithLabels(new Label[] { label1 });
-                } else {
-                    yield return code;
+            switch(terrainHeight.LocalIndex) {
+                case 1: 
+                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_1);
+                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_1);
+                break;
+                case 2:
+                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_2);
+                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_2);
+                break;
+                case 3:
+                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_3);
+                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_3);
+                break;
+            }
+
+            for (int i = 0; i < codes.Count; i++) {
+                if(codes[i].opcode == OpCodes.Beq) {
+                    FirstIndex = i;
+                }
+                if(codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
+                    LastIndex = i + 2;
                 }
             }
+
+           var snippet = new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Beq_S, FirstJump),
+                new CodeInstruction(OpCodes.Ret),
+                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(FirstJump),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
+                new CodeInstruction(OpCodes.Ldc_I4_S, 32),
+                new CodeInstruction(OpCodes.And),
+                new CodeInstruction(OpCodes.Brtrue_S, ExitBranch),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstance), "get_Position")),
+                new CodeInstruction(OpCodes.Stloc_0),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ColossalFramework.Singleton<TerrainManager>), "get_instance")),
+                new CodeInstruction(OpCodes.Ldloc_0),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) })),
+                stlocTerrainHeight,
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
+                new CodeInstruction(OpCodes.Ldloc_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
+                ldlocTerrainHeight,
+                new CodeInstruction(OpCodes.Cgt),
+                new CodeInstruction(OpCodes.And),
+                new CodeInstruction(OpCodes.Brfalse_S, UseTerrainHeight),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
+                new CodeInstruction(OpCodes.Ldc_I4_S, 32),
+                new CodeInstruction(OpCodes.Or),
+                new CodeInstruction(OpCodes.Conv_U2),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldloc_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
+                new CodeInstruction(OpCodes.Ldc_R4, 64f),
+                new CodeInstruction(OpCodes.Mul),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) })),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4, 65535),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) })),
+                new CodeInstruction(OpCodes.Conv_U2),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))),
+                new CodeInstruction(OpCodes.Br_S, ExitBranch),
+                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(UseTerrainHeight),
+                ldlocTerrainHeight,
+                new CodeInstruction(OpCodes.Ldc_R4, 64f),
+                new CodeInstruction(OpCodes.Mul),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) })),
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Ldc_I4, 65535),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) })),
+                new CodeInstruction(OpCodes.Conv_U2),
+                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))),
+                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(ExitBranch)
+            };
+
+            codes.RemoveRange(FirstIndex, LastIndex - FirstIndex);
+            codes.InsertRange(FirstIndex, snippet);
+
+            return codes.AsEnumerable();
         }
 
         /* Inefficient, but more readable, performance here is insignificant */
@@ -205,14 +281,12 @@ namespace TreeAnarchy.Patches {
                     leaveOp = new CodeInstruction(codes[i].opcode, codes[i].operand); // catch and store opcode
                 }
             }
-
             CodeInstruction[] InsertCode = new CodeInstruction[]
             {
                 new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
-                new CodeInstruction(OpCodes.Brtrue_S, exitLabel),
+                new CodeInstruction(OpCodes.Brfalse_S, exitLabel),
                 new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldloc_3),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeTool), "m_fixedHeight")),
                 leaveOp.WithLabels(tempLabels)
             };
@@ -230,7 +304,7 @@ namespace TreeAnarchy.Patches {
         private static IEnumerable<CodeInstruction> SimulationStepTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             var codes = InsertCodeSnippet1(instructions, il);
             codes = InsertCodeSnippet2(codes);
-            //codes = InsertCodeSnippet3(codes, il);
+            codes = InsertCodeSnippet3(codes, il);
 
             return codes.AsEnumerable();
         }

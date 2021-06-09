@@ -26,7 +26,7 @@ namespace TreeAnarchy {
         }
 
         public void OnSaveData() {
-            PurgeData(); // remove old data if it exists
+            //PurgeData(); // remove old data if it exists
             //EnsurePosY();
             try {
                 // hmmmm assuming 1 million trees... this is around ~10mb of data
