@@ -1,29 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using ColossalFramework;
 using ColossalFramework.IO;
 using static TreeAnarchy.TAConfig;
 using UnityEngine;
 
 namespace TreeAnarchy {
-    [Serializable]
-    public unsafe abstract class TADataSerializer : IDisposable {
+    public abstract class TADataSerializer : IDisposable {
         private const int FormatVersion1TreeLimit = 1048576;
-        private readonly byte[] _buffer;
-        private byte* pBuffer;
-        private readonly byte* pOrigin;
-        private readonly GCHandle gcHandle;
-        private bool disposed = false;
-
-        public virtual long Length => pBuffer - pOrigin;
-        public virtual long Position {
-            get => pBuffer - pOrigin;
-            set => pBuffer = pOrigin + value;
-        }
         private enum Format : ushort {
             Version1 = 1,
             Version2 = 2,
@@ -43,31 +28,20 @@ namespace TreeAnarchy {
             OLDFORMAT = 4,
         }
 
+        private bool disposed = false;
+        private readonly MemoryStream m_Stream = null;
         public MemoryStream m_tempBuf = null;
 
         protected TADataSerializer() {
-            const int headerSize = 10 * sizeof(ushort);
-            const int bodySize = sizeof(ushort) // m_infoIndex
-                               + sizeof(short)  // m_posX
-                               + sizeof(short)  // m_posZ
-                               + sizeof(ushort); // m_posY
-            int size = sizeof(ushort) + MaxTreeLimit;
-            size += headerSize + (bodySize * MaxTreeLimit) + 100 /* extra safety space */;
-            _buffer = new byte[size];
-            gcHandle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-            pOrigin = pBuffer = (byte*)gcHandle.AddrOfPinnedObject();
+            m_Stream = new MemoryStream();
         }
 
         protected TADataSerializer(byte[] data) {
-            gcHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
-            _buffer = data;
-            pOrigin = pBuffer = (byte*)gcHandle.AddrOfPinnedObject();
+            m_Stream = new MemoryStream(data);
         }
 
         protected TADataSerializer(int size) {
-            _buffer = new byte[size];
-            gcHandle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-            pOrigin = pBuffer = (byte*)gcHandle.AddrOfPinnedObject();
+            m_Stream = new MemoryStream(size);
         }
 
         public abstract void FinalizeSave();
@@ -109,20 +83,20 @@ namespace TreeAnarchy {
                 treeLimit = FormatVersion1TreeLimit;
                 break;
                 case Format.Version2:
-                treeLimit = FixEndian(ReadInt()); // Fixing ushort reorder
+                treeLimit = FixEndian(ReadInt32()); // Fixing ushort reorder
                 break;
                 case Format.Version3:
-                treeLimit = FixEndian(ReadInt()); // Fixing ushort reorder
-                treeCount = FixEndian(ReadInt()); // Fixing ushort reorder
-                ReadInt(); // Reserved for future use
-                ReadInt(); // Reserved for future use
+                treeLimit = FixEndian(ReadInt32()); // Fixing ushort reorder
+                treeCount = FixEndian(ReadInt32()); // Fixing ushort reorder
+                ReadInt32(); // Reserved for future use
+                ReadInt32(); // Reserved for future use
                 flags = (SaveFlags)ReadUShort();
                 break;
                 case Format.Version4:
-                treeLimit = ReadInt();
-                treeCount = ReadInt();
-                orgTreeCount = ReadInt(); // used for reading posY between 0~262144 trees
-                ReadInt(); // Reserved for future use
+                treeLimit = ReadInt32();
+                treeCount = ReadInt32();
+                orgTreeCount = ReadInt32(); // used for reading posY between 0~262144 trees
+                ReadInt32(); // Reserved for future use
                 flags = (SaveFlags)ReadUShort();
                 break;
                 default:
@@ -166,11 +140,9 @@ ReadData:
                 errorFlags |= (ErrorFlags.SUCCESS | ErrorFlags.OLDFORMAT);
                 return true;
                 case Format.Version4:
-                int treeAddCount = 0;
                 for (uint i = 1; i < DefaultTreeLimit; i++) {
                     if (trees[i].m_flags != 0) {
                         trees[i].m_posY = ReadUShort();
-                        treeAddCount++;
                     }
                 }
                 for (uint i = DefaultTreeLimit; i < MaxTreeLimit; i++) {
@@ -202,10 +174,10 @@ ReadData:
             TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
 
             WriteUShort((ushort)Format.Version4); // 2 bytes for version
-            WriteInt(treeLimit);                // 4 bytes for limit
-            WriteInt(0);         // Reserved for treeCount;    4 bytes
-            WriteInt(0);        // treeCount for posY in 0~262144 trees    4 bytes
-            WriteUInt(0);        // Reserved for future use    4 bytes
+            WriteInt32(treeLimit);                // 4 bytes for limit
+            WriteInt32(0);         // Reserved for treeCount;    4 bytes
+            WriteInt32(0);        // treeCount for posY in 0~262144 trees    4 bytes
+            WriteUInt32(0);        // Reserved for future use    4 bytes
             WriteUShort(0);        // flags.. this is ignore in our version 2 bytes
 
             /* Apparently, the trees could be located anywhere in the buffer
@@ -232,8 +204,9 @@ ReadData:
                 }
             }
             // Set header information now
-            WriteIntAt(6, extraTreeCount);
-            WriteIntAt(10, orgTreeCount);
+            m_Stream.Position = 6;
+            WriteInt32(extraTreeCount);
+            WriteInt32(orgTreeCount);
 
 #if FALSE // Burning tree handled in prefix method
             // Let original codes handle the extra burning tree list. Hope it works
@@ -245,11 +218,7 @@ ReadData:
                 WriteUShort(s, instance.m_burningTrees.m_buffer[m].m_fireDamage);
             }
 #endif
-            byte[] array = new byte[Length];
-            Debug.Log($"TreeAnarchy: Created {Length} bytes");
-            Buffer.BlockCopy(_buffer, 0, array, 0, (int)Length);
-            Debug.Log("TreeAnarchy: Success");
-            return array;
+            return m_Stream.ToArray();
         }
 
         private int FixEndian(int num) {
@@ -257,65 +226,60 @@ ReadData:
             return n | ((num >> 16) & 0xffff);
         }
 
-        private short ReadShort() => (short)(*pBuffer++ | *pBuffer++ << 8);
+        private short ReadShort() {
+            short num = (short)m_Stream.ReadByte();
+            return (short)(num |= (short)(m_Stream.ReadByte() << 8));
 
-        private ushort ReadUShort() => (ushort)(*pBuffer++ | *pBuffer++ << 8);
-
-        private int ReadInt() => *pBuffer++ | *pBuffer++ << 8 | *pBuffer++ << 16 | *pBuffer++ << 24;
-
-        private void WriteShort(short val) {
-            unchecked {
-                *pBuffer++ = (byte)val;
-                *pBuffer++ = (byte)(val >> 8);
-            }
         }
 
-        private void WriteUShort(ushort val) {
-            unchecked {
-                *pBuffer++ = (byte)val;
-                *pBuffer++ = (byte)(val >> 8);
-            }
+        private int ReadInt32() {
+            int num = m_Stream.ReadByte();
+            num |= m_Stream.ReadByte() << 8;
+            num |= m_Stream.ReadByte() << 16;
+            return num | m_Stream.ReadByte() << 24;
         }
 
-        private void WriteInt(int val) {
-            unchecked {
-                *pBuffer++ = (byte)val;
-                *pBuffer++ = (byte)(val >> 8);
-                *pBuffer++ = (byte)(val >> 16);
-                *pBuffer++ = (byte)(val >> 24);
-            }
+        private ushort ReadUShort() {
+            ushort num = (ushort)(m_Stream.ReadByte() & 0xff);
+            return (ushort)(num | (m_Stream.ReadByte() << 8));
         }
 
-        private void WriteIntAt(int pos, int val) {
-            unchecked {
-                *(pOrigin + pos++) = (byte)val;
-                *(pOrigin + pos++) = (byte)(val >> 8);
-                *(pOrigin + pos++) = (byte)(val >> 16);
-                *(pOrigin + pos) = (byte)(val >> 24);
-            }
+        public void WriteShort(short value) {
+            m_Stream.WriteByte((byte)(value));
+            m_Stream.WriteByte((byte)(value >> 8));
         }
 
+        private void WriteInt32(int value) {
+            m_Stream.WriteByte((byte)value);
+            m_Stream.WriteByte((byte)(value >> 8));
+            m_Stream.WriteByte((byte)(value >> 16));
+            m_Stream.WriteByte((byte)(value >> 24));
+        }
 
-        private void WriteUInt(uint val) {
-            unchecked {
-                *pBuffer++ = (byte)val;
-                *pBuffer++ = (byte)(val >> 8);
-                *pBuffer++ = (byte)(val >> 16);
-                *pBuffer++ = (byte)(val >> 24);
-            }
+        private void WriteUShort(ushort value) {
+            m_Stream.WriteByte((byte)value);
+            m_Stream.WriteByte((byte)(value >> 8));
+        }
+
+        private void WriteUInt32(uint value) {
+            m_Stream.WriteByte((byte)value);
+            m_Stream.WriteByte((byte)(value >> 8));
+            m_Stream.WriteByte((byte)(value >> 16));
+            m_Stream.WriteByte((byte)(value >> 24));
         }
 
         public void Dispose() {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing) {
-            if(!disposed) {
-                if(disposing) {
-                    if(m_tempBuf != null)
+            if (!disposed) {
+                if (disposing) {
+                    m_Stream.Dispose();
+                    if (m_tempBuf != null)
                         m_tempBuf.Dispose();
                 }
-                gcHandle.Free();
                 disposed = true;
             }
         }

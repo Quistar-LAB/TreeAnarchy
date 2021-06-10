@@ -107,10 +107,14 @@ namespace TreeAnarchy.Patches {
             int MaxTreeLen = MaxTreeLimit;
             for(uint i = 1; i < MaxTreeLen; i++) {
                 buffer[i].m_nextGridTree = 0u;
+                if (OldFormatLoaded) {
+                    buffer[i].FixedHeight = false;
+                    buffer[i].m_posY = 0;
+                }
                 if(buffer[i].m_flags != 0) {
-                    InitializeTree(Singleton<global::TreeManager>.instance, i, ref buffer[i], assetEditor);
+                    InitializeTree(Singleton<TreeManager>.instance, i, ref buffer[i], assetEditor);
                 } else {
-                    Singleton<global::TreeManager>.instance.m_trees.ReleaseItem(i);
+                    Singleton<TreeManager>.instance.m_trees.ReleaseItem(i);
                 }
             }
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndDeserialize(s, "TreeManager");
