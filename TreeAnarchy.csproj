@@ -68,7 +68,7 @@
     <Compile Include="Patches\TreeLimit.cs" />
     <Compile Include="Patches\TreeManagerData.cs" />
     <Compile Include="TASerializableDataExtension.cs" />
-    <Compile Include="TADataSerializer.cs" />
+    <Compile Include="TAOldDataSerializer.cs" />
     <Compile Include="TAConfig.cs" />
     <Compile Include="TAMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

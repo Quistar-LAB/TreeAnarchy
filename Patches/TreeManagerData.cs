@@ -25,8 +25,8 @@ namespace TreeAnarchy.Patches {
         internal void Enable(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerData), nameof(TreeManagerData.DataDeserializePrefix))));
-            //            harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
-            //                postfix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerDataPatcher), nameof(TreeManagerDataPatcher.AfterDeserializePostfix))));
+///            harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
+///                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerData), nameof(TreeManagerData.AfterDeserializePrefix))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerData), nameof(TreeManagerData.SerializePrefix))));
         }
@@ -42,9 +42,6 @@ namespace TreeAnarchy.Patches {
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.BeginDeserialize(s, "TreeManager");
             treeManager.m_trees.ClearUnused();
             treeManager.m_burningTrees.Clear();
-            if((treeManager.m_burningTrees.m_buffer == null) == false && treeManager.m_burningTrees.m_buffer.Length > 128) {
-                treeManager.m_burningTrees.Trim();
-            }
             SimulationManager.UpdateMode updateMode = Singleton<SimulationManager>.instance.m_metaData.m_updateMode;
             bool assetEditor = updateMode == SimulationManager.UpdateMode.NewAsset || updateMode == SimulationManager.UpdateMode.LoadAsset;
             for(int i = 0; i < gridlen; i++) {
@@ -80,7 +77,6 @@ namespace TreeAnarchy.Patches {
                 } else {
                     buffer[i].m_posZ = 0;
                 }
-                buffer[i].m_posY = 0; // Set posY to 0 to prevent trees from floating
             }
             short2.EndRead();
             if(s.version >= 266u) {
@@ -101,16 +97,11 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            if(UseModifiedTreeCap)
-                TASerializableDataExtension.Deserialize();
+            TASerializableDataExtension.IntegratedDeserialize();
 
-            int MaxTreeLen = MaxTreeLimit;
-            for(uint i = 1; i < MaxTreeLen; i++) {
+            int maxLen = MaxTreeLimit;
+            for (uint i = 1; i < maxLen; i++) {
                 buffer[i].m_nextGridTree = 0u;
-                if (OldFormatLoaded) {
-                    buffer[i].FixedHeight = false;
-                    buffer[i].m_posY = 0;
-                }
                 if(buffer[i].m_flags != 0) {
                     InitializeTree(Singleton<TreeManager>.instance, i, ref buffer[i], assetEditor);
                 } else {
@@ -118,12 +109,8 @@ namespace TreeAnarchy.Patches {
                 }
             }
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndDeserialize(s, "TreeManager");
-            return false;
-        }
 
-        private static void AfterDeserializePostfix(DataSerializer s) {
-            using TASerializableDataExtension.DataSerializer serializer = new TASerializableDataExtension.DataSerializer();
-            serializer.AfterDeserialize(s);
+            return false;
         }
 
         private static bool SerializePrefix(DataSerializer s) {
@@ -167,6 +154,7 @@ namespace TreeAnarchy.Patches {
                 s.WriteUInt8((uint)instance.m_burningTrees.m_buffer[m].m_fireDamage);
             }
             Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndSerialize(s, "TreeManager");
+
             return false; // don't run original codes
         }
 
@@ -174,7 +162,7 @@ namespace TreeAnarchy.Patches {
          * private in TreeManager. This is called inside a loop and would be expensive to use the Invoke
          * method
          */
-        private static void InitializeTree(global::TreeManager tm, uint tree, ref global::TreeInstance data, bool assetEditor) {
+        internal static void InitializeTree(global::TreeManager tm, uint tree, ref global::TreeInstance data, bool assetEditor) {
             int num;
             int num2;
             if(assetEditor) {
