@@ -1,19 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using UnityEngine;
-using ColossalFramework;
+﻿using ColossalFramework;
 using ColossalFramework.UI;
-using ColossalFramework.Plugins;
 using ICities;
+using UnityEngine;
 using static TreeAnarchy.TAConfig;
 
 
 namespace TreeAnarchy {
     public class TAMod : ITerrainExtension, ILoadingExtension, IUserMod {
         private const string m_modName = "Unlimited Trees: Reboot";
-        private const string m_modVersion = "0.7.8";
+        internal const string m_modVersion = "0.7.8";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 
         #region OptionPanel
@@ -41,11 +36,11 @@ namespace TreeAnarchy {
             }
 
             private static void PurgeDataHandler() {
-                //=> TASerializableDataExtension.PurgeData();
+                TASerializableDataExtension.PurgeOldData();
             }
 
             internal static void UpdateState(bool isInGame) {
-                if(isInGame) {
+                if (isInGame) {
                     WindEffect.Disable();
                     ScaleFactor.Disable();
                     uiExperimental.Disable();
@@ -118,8 +113,7 @@ namespace TreeAnarchy {
                 RotationLabel.autoSize = false;
                 RotationLabel.text = "Useful eyecandy for your pleasure. Reducing tree sway may improve FPS";
                 group.AddSpace(55);
-                UICheckBox UILockForestry = (UICheckBox)group.AddCheckbox(@"Lock Forestry", LockForestry, (b) =>
-                {
+                UICheckBox UILockForestry = (UICheckBox)group.AddCheckbox(@"Lock Forestry", LockForestry, (b) => {
                     LockForestry = b;
                     SaveSettings();
                 });
@@ -193,10 +187,10 @@ namespace TreeAnarchy {
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
             LoadSettings();
-            TAPatcher.Enable();
+            TAPatcher.EnableCore();
         }
         public void OnDisabled() {
-            TAPatcher.Disable();
+            TAPatcher.DisableCore();
             SaveSettings();
         }
 

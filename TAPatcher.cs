@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using ColossalFramework;
+using ColossalFramework.Plugins;
 using HarmonyLib;
 using TreeAnarchy.Patches;
+using UnityEngine;
 
 namespace TreeAnarchy {
     internal static class TAPatcher {
@@ -14,12 +13,28 @@ namespace TreeAnarchy {
         static readonly TreeSnapping m_treeSnapping = new TreeSnapping();
         static readonly TreeManagerData m_data = new TreeManagerData();
 
-        internal static void Enable() {
+        private static bool IsPluginExists(string name) {
+            foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+                if (info.name.Contains(name)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static void EnableCore() {
             m_treeLimit.Ensure(m_harmony);
             m_treeLimit.Enable(m_harmony);
-            m_treeMovement.Enable(m_harmony);
             m_treeSnapping.Enable(m_harmony);
             m_data.Enable(m_harmony);
+        }
+
+        internal static void LateEnable() {
+            if (!IsPluginExists("Random Tree Rotation")) {
+                m_treeMovement.Enable(m_harmony);
+            } else {
+                Debug.Log($"Tree Anarchy: Found Random Tree Rotation mod, Disabling tree movement");
+            }
         }
 
         internal static void EnableExperimental(bool enable) {
@@ -27,7 +42,7 @@ namespace TreeAnarchy {
             else TATreeManager.Disable(m_harmony);
         }
 
-        internal static void Disable() {
+        internal static void DisableCore() {
             m_treeLimit.Disable(m_harmony);
         }
     }

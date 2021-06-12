@@ -1,12 +1,9 @@
-﻿using System;
+﻿using ColossalFramework;
 using System.IO;
 using System.Xml;
-using ColossalFramework;
-using UnityEngine;
 
 namespace TreeAnarchy {
-    public static class TAConfig
-    {
+    public static class TAConfig {
         internal const float MaxScaleFactor = 6.0f;
         internal const float MinScaleFactor = 1.5f;
         internal const int DefaultTreeLimit = 262144;
@@ -43,20 +40,19 @@ namespace TreeAnarchy {
         }
         internal static float LastTreeScaleFactor { get; private set; } = m_ScaleFactor;
         internal static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
-        internal static bool UseModifiedTreeCap
-        {
+        internal static bool UseModifiedTreeCap {
             get {
                 switch (Singleton<SimulationManager>.instance.m_metaData.m_updateMode) {
-                case SimulationManager.UpdateMode.LoadGame:
-                case SimulationManager.UpdateMode.LoadMap:
-                case SimulationManager.UpdateMode.NewGameFromMap:
-                case SimulationManager.UpdateMode.NewGameFromScenario:
-                case SimulationManager.UpdateMode.NewMap:
-                case SimulationManager.UpdateMode.LoadScenario:
-                case SimulationManager.UpdateMode.NewScenarioFromGame:
-                case SimulationManager.UpdateMode.NewScenarioFromMap:
-                case SimulationManager.UpdateMode.UpdateScenarioFromGame:
-                case SimulationManager.UpdateMode.UpdateScenarioFromMap:
+                    case SimulationManager.UpdateMode.LoadGame:
+                    case SimulationManager.UpdateMode.LoadMap:
+                    case SimulationManager.UpdateMode.NewGameFromMap:
+                    case SimulationManager.UpdateMode.NewGameFromScenario:
+                    case SimulationManager.UpdateMode.NewMap:
+                    case SimulationManager.UpdateMode.LoadScenario:
+                    case SimulationManager.UpdateMode.NewScenarioFromGame:
+                    case SimulationManager.UpdateMode.NewScenarioFromMap:
+                    case SimulationManager.UpdateMode.UpdateScenarioFromGame:
+                    case SimulationManager.UpdateMode.UpdateScenarioFromMap:
                     return true;
                 }
                 return false;
@@ -64,8 +60,7 @@ namespace TreeAnarchy {
         }
 
         private const string SettingsFileName = "TreeAnarchyConfig.xml";
-        internal static void LoadSettings()
-        {
+        internal static void LoadSettings() {
             try {
                 if (!File.Exists(SettingsFileName)) {
                     SaveSettings();
@@ -85,8 +80,7 @@ namespace TreeAnarchy {
             }
         }
 
-        internal static void SaveSettings()
-        {
+        internal static void SaveSettings() {
             XmlDocument xmlConfig = new XmlDocument();
             XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
             root.Attributes.Append(AddElement<float>(xmlConfig, "ScaleFactor", m_ScaleFactor));

@@ -8,17 +8,16 @@
 #undef QUIETVERBOSE
 #endif
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Linq;
-using UnityEngine;
 using ColossalFramework;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 using static TreeAnarchy.TAConfig;
-using static TreeAnarchy.Patches.TreeManagerData;
 
 namespace TreeAnarchy.Patches {
     internal class TreeLimit {
@@ -58,8 +57,8 @@ namespace TreeAnarchy.Patches {
             PrintDebugIL(codes.ToList(), method);
             return codes;
 #else
-            foreach(var instruction in instructions) {
-                if(instruction.LoadsConstant(LastMaxTreeLimit))
+            foreach (var instruction in instructions) {
+                if (instruction.LoadsConstant(LastMaxTreeLimit))
                     yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
                 else
                     yield return instruction;
@@ -82,14 +81,14 @@ namespace TreeAnarchy.Patches {
             LocalBuilder num2 = null, a = null; // local variables in WeatherManager::CalculateSelfHeight()
 
             // extract two important variables
-            for(int i = 0; i < codes.Count - 1; i++) // -1 since we will be checking i + 1
+            for (int i = 0; i < codes.Count - 1; i++) // -1 since we will be checking i + 1
             {
-                if(codes[i].opcode == OpCodes.Call && codes[i].ToString().Contains("TreeManager")) {
+                if (codes[i].opcode == OpCodes.Call && codes[i].ToString().Contains("TreeManager")) {
                     insertionIndex = i;
                     // rewind and find num2 and a
                     int k = i - 10; // should be within 10 instructions
-                    for(int j = i; j > k; j--) {
-                        if(codes[j].opcode == OpCodes.Callvirt) {
+                    for (int j = i; j > k; j--) {
+                        if (codes[j].opcode == OpCodes.Callvirt) {
                             num2 = (LocalBuilder)codes[j - 2].operand;
                             a = (LocalBuilder)codes[j - 1].operand;
                             break;
@@ -99,7 +98,7 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            if(insertionIndex != -1) {
+            if (insertionIndex != -1) {
                 var instructionsToInsert = new List<CodeInstruction>
                 {
                     /*
@@ -156,10 +155,10 @@ namespace TreeAnarchy.Patches {
 #else
             int CheckLowLimit = MaxTreeLimit - 12144;
             int CheckHighLimit = MaxTreeLimit - 5;
-            foreach(var instruction in instructions) {
-                if(instruction.Is(OpCodes.Ldc_I4, LastCheckLimitLowVal))
+            foreach (var instruction in instructions) {
+                if (instruction.Is(OpCodes.Ldc_I4, LastCheckLimitLowVal))
                     yield return new CodeInstruction(OpCodes.Ldc_I4, CheckLowLimit);
-                else if(instruction.Is(OpCodes.Ldc_I4, LastCheckLimitHighVal))
+                else if (instruction.Is(OpCodes.Ldc_I4, LastCheckLimitHighVal))
                     yield return new CodeInstruction(OpCodes.Ldc_I4, CheckHighLimit);
                 else
                     yield return instruction;
@@ -223,12 +222,12 @@ namespace TreeAnarchy.Patches {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CheckLimitsTranspiler))));
         }
 
-        internal void Enable(Harmony harmony) { 
+        internal void Enable(Harmony harmony) {
             try {
                 InjectResize();
                 harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
                 //m_Harmony.Patch(AccessTools.Method(typeof(TreeManager), "TrySpreadFire"), prefix: new HarmonyMethod(AccessTools.Method(typeof(Patcher), nameof(Patcher.TrySpreadFirePrefix))));
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Debug.LogException(e);
             }
         }
@@ -252,7 +251,7 @@ namespace TreeAnarchy.Patches {
                 harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Prefix);
                 harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Prefix);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Debug.LogException(e);
             }
         }
@@ -265,14 +264,14 @@ namespace TreeAnarchy.Patches {
             global::TreeManager manager = Singleton<global::TreeManager>.instance;
             TreeInstance[] oldbuf = manager.m_trees.m_buffer;
 
-            if(manager.m_trees.m_buffer.Length != MaxTreeLimit) {
-                
+            if (manager.m_trees.m_buffer.Length != MaxTreeLimit) {
+
                 Array32<TreeInstance> newBuffer = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 newBuffer.CreateItem(out uint _);
                 uint itemCount = manager.m_trees.ItemCount();
-                if(itemCount > 1) {
-                    for(uint i = 1; i < itemCount; i++) {
-                        if(newBuffer.CreateItem(out uint index)) {
+                if (itemCount > 1) {
+                    for (uint i = 1; i < itemCount; i++) {
+                        if (newBuffer.CreateItem(out uint index)) {
                             newBuffer.m_buffer[index].m_flags = oldbuf[i].m_flags;
                             newBuffer.m_buffer[index].m_infoIndex = oldbuf[i].m_infoIndex;
                             newBuffer.m_buffer[index].m_nextGridTree = oldbuf[i].m_nextGridTree;
