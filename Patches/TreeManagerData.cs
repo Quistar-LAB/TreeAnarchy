@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using UnityEngine;
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy.Patches {
@@ -72,7 +71,7 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method) {
+        private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool sigFound = false;
             var codes = instructions.ToList();
 
@@ -83,10 +82,6 @@ namespace TreeAnarchy.Patches {
                     codes.Insert(index, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
                     sigFound = true;
                 }
-            }
-
-            foreach (var code in codes) {
-                Debug.Log($"TreeAnarchy: ==> {code}");
             }
 
             return codes.AsEnumerable();

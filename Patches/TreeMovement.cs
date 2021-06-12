@@ -205,8 +205,8 @@ namespace TreeAnarchy.Patches {
 
         // These codes should really live in the MoveIt mod space and not here!!
         private static void RenderCollision(TreeState treeState, RenderManager.CameraInfo cameraInfo, TreeInfo info, Vector3 position, float scale, float brightness, Vector4 objectIndex) {
-            Ray mouseRay;
-            float mouseRayLength;
+            //Ray mouseRay;
+            //float mouseRayLength;
 
             if (info.m_prefabInitialized && UseTreeSnapping) {
                 /*

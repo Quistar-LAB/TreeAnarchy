@@ -64,6 +64,8 @@ namespace TreeAnarchy {
                 for (int i = 1; i < maxLen; i++) {
                     if ((trees[i].m_flags & (ushort)TreeInstance.Flags.FixedHeight) != 0) {
                         trees[i].m_posY = uShort.Read();
+                    } else {
+                        trees[i].m_posY = 0;
                     }
                 }
                 uShort.EndRead();
@@ -120,7 +122,6 @@ namespace TreeAnarchy {
                     }
                 }
                 uShort.EndWrite();
-
 #if FALSE // Burning tree handled in prefix method
             // Let original codes handle the extra burning tree list. Hope it works
             WriteUInt24(s, (uint)instance.m_burningTrees.m_size);

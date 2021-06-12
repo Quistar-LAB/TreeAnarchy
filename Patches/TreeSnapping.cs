@@ -319,8 +319,8 @@ namespace TreeAnarchy.Patches {
         }
 
         private static bool TransformPrefix(MoveableTree __instance, float deltaHeight) {
-            if (!global::TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
-                global::TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
+            if (!TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
+                TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
             }
             return true;
         }
