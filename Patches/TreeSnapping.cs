@@ -8,22 +8,21 @@
 #undef QUIETVERBOSE
 #endif
 
+using HarmonyLib;
+using MoveIt;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using ColossalFramework;
-using HarmonyLib;
 using UnityEngine;
-using MoveIt;
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy.Patches {
     internal class TreeSnapping {
         internal void Enable(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
+            //            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
+            //                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
@@ -44,8 +43,8 @@ namespace TreeAnarchy.Patches {
 
             var codes = new List<CodeInstruction>(instructions);
             // search for first occurance of growstate
-            for(int i = 0; i < codes.Count; i++) {
-                if(codes[i].Calls(AccessTools.DeclaredPropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)))) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].Calls(AccessTools.DeclaredPropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)))) {
                     i += 2; // increment by two instructions
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Brfalse_S, ThirdLabel));
@@ -75,11 +74,11 @@ namespace TreeAnarchy.Patches {
             LocalBuilder terrainHeight = il.DeclareLocal(typeof(float));
             CodeInstruction stlocTerrainHeight = default;
             CodeInstruction ldlocTerrainHeight = default;
-            
+
             var codes = new List<CodeInstruction>(instructions);
 
-            switch(terrainHeight.LocalIndex) {
-                case 1: 
+            switch (terrainHeight.LocalIndex) {
+                case 1:
                 stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_1);
                 ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_1);
                 break;
@@ -94,15 +93,15 @@ namespace TreeAnarchy.Patches {
             }
 
             for (int i = 0; i < codes.Count; i++) {
-                if(codes[i].opcode == OpCodes.Beq) {
+                if (codes[i].opcode == OpCodes.Beq) {
                     FirstIndex = i;
                 }
-                if(codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
+                if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
                     LastIndex = i + 2;
                 }
             }
 
-           var snippet = new CodeInstruction[] {
+            var snippet = new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Beq_S, FirstJump),
                 new CodeInstruction(OpCodes.Ret),
                 new CodeInstruction(OpCodes.Ldarg_0).WithLabels(FirstJump),
@@ -173,18 +172,18 @@ namespace TreeAnarchy.Patches {
 
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             /* First make sure to catch the RaycastInput variable */
-            for(int i = 0; i < codes.Count; i++) {
-                if(codes[i].operand is LocalBuilder input && input.LocalType == typeof(ToolBase.RaycastInput)) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].operand is LocalBuilder input && input.LocalType == typeof(ToolBase.RaycastInput)) {
                     RaycastInput = input;
                     break;
                 }
             }
 
-            for(int i = 0; i < codes.Count; i++) {
-                if(codes[i].LoadsField(AccessTools.Field(typeof(ToolController), nameof(ToolController.m_mode)))) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].LoadsField(AccessTools.Field(typeof(ToolController), nameof(ToolController.m_mode)))) {
                     occuranceCount++;
                 }
-                if(codes[i].opcode == OpCodes.Brfalse && occuranceCount == 2) {
+                if (codes[i].opcode == OpCodes.Brfalse && occuranceCount == 2) {
                     insertIndex = i;
                     break;
                 }
@@ -251,17 +250,17 @@ namespace TreeAnarchy.Patches {
         }
 
         private static List<CodeInstruction> InsertCodeSnippet2(List<CodeInstruction> codes) {
-            for(int i = 0; i < codes.Count; i++) {
+            for (int i = 0; i < codes.Count; i++) {
                 // First Insert
-                if(codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
-                    if(codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
+                if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
+                    if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Brtrue, label.Value));
                     }
                 }
                 // Second Insert
-                if(codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
-                    if(codes[i - 2].opcode == OpCodes.Ldfld) {
+                if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
+                    if (codes[i - 2].opcode == OpCodes.Ldfld) {
                         codes.RemoveRange(i - 1, 2);
                         codes.Insert(i - 1, new CodeInstruction(OpCodes.Ceq));
                         codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldc_I4_0));
@@ -278,16 +277,16 @@ namespace TreeAnarchy.Patches {
             List<Label> tempLabels = null;
             CodeInstruction leaveOp = null;
 
-            for(int i = 0; i < codes.Count; i++) {
-                if(codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
-                    if(codes[i - 1].opcode == OpCodes.Ldfld) {
-                        if(codes[i + 1].Branches(out Label? label)) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
+                    if (codes[i - 1].opcode == OpCodes.Ldfld) {
+                        if (codes[i + 1].Branches(out Label? label)) {
                             exitLabel = label.Value;
                             tempLabels = codes[i + 1].labels;
                         }
                     }
                 }
-                if(codes[i].opcode == OpCodes.Leave) {
+                if (codes[i].opcode == OpCodes.Leave) {
                     leaveOp = new CodeInstruction(codes[i].opcode, codes[i].operand); // catch and store opcode
                 }
             }
@@ -300,9 +299,9 @@ namespace TreeAnarchy.Patches {
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeTool), "m_fixedHeight")),
                 leaveOp.WithLabels(tempLabels)
             };
-            for(int i = 0; i < codes.Count; i++) {
-                if(codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_placementErrors"))) {
-                    if(codes[i + 1].opcode == OpCodes.Ldarg_0 && codes[i - 1].opcode == OpCodes.Ldloc_S) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_placementErrors"))) {
+                    if (codes[i + 1].opcode == OpCodes.Ldarg_0 && codes[i - 1].opcode == OpCodes.Ldloc_S) {
                         codes.RemoveRange(i + 1, 5);
                         codes.InsertRange(i + 1, InsertCode);
                     }
@@ -320,7 +319,7 @@ namespace TreeAnarchy.Patches {
         }
 
         private static bool TransformPrefix(MoveableTree __instance, float deltaHeight) {
-            if(!global::TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
+            if (!global::TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
                 global::TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
             }
             return true;

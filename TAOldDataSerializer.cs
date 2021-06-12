@@ -1,10 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.IO.Compression;
-using ColossalFramework;
-using ColossalFramework.IO;
 using static TreeAnarchy.TAConfig;
-using UnityEngine;
 
 namespace TreeAnarchy {
     public abstract class TAOldDataSerializer : IDisposable {
@@ -42,7 +38,7 @@ namespace TreeAnarchy {
         public abstract void AfterDeserialize();
 
         private ushort FixPrefabAssociation(ushort index) {
-            if(index > PrefabCollection<TreeInfo>.PrefabCount()) {
+            if (index > PrefabCollection<TreeInfo>.PrefabCount()) {
                 return 0;
             }
             try {
@@ -117,7 +113,7 @@ ReadData:
                         trees[i].m_flags = (ushort)m_flags;
                         if (trees[i].m_flags != 0) {
                             ushort infoIndex = FixPrefabAssociation(ReadUShort());
-                            if(infoIndex > 0) {
+                            if (infoIndex > 0) {
                                 trees[i].m_posX = ReadShort();
                                 trees[i].m_posZ = ReadShort();
                                 trees[i].m_posY = 0; // old format doesn't save this
