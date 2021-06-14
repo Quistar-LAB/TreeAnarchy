@@ -35,11 +35,9 @@ namespace TreeAnarchy {
             } else {
                 Debug.Log($"Tree Anarchy: Found Random Tree Rotation mod, Disabling tree movement");
             }
-        }
-
-        internal static void EnableExperimental(bool enable) {
-            if (enable) TATreeManager.Enable(m_harmony);
-            else TATreeManager.Disable(m_harmony);
+            if (TAConfig.UseExperimental) {
+                TATreeManager.Enable(m_harmony);
+            }
         }
 
         internal static void DisableCore() {
