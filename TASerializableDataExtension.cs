@@ -23,7 +23,7 @@ namespace TreeAnarchy {
 
         public class Data : IDataContainer {
             public void Deserialize(DataSerializer s) {
-                TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                ref TreeInstance[] trees = ref Singleton<TreeManager>.instance.m_trees.m_buffer;
                 int maxLen = s.ReadInt32(); // Read in Max limit
                 if (maxLen > MaxTreeLimit) {
                     maxLen = MaxTreeLimit;
@@ -64,8 +64,6 @@ namespace TreeAnarchy {
                 for (int i = 1; i < maxLen; i++) {
                     if ((trees[i].m_flags & (ushort)TreeInstance.Flags.FixedHeight) != 0) {
                         trees[i].m_posY = uShort.Read();
-                    } else {
-                        trees[i].m_posY = 0;
                     }
                 }
                 uShort.EndRead();
@@ -84,7 +82,7 @@ namespace TreeAnarchy {
                 /* Apparently, the trees could be located anywhere in the buffer
                  * even if there's only 1 tree in the buffer. I'm assuming this is
                  * due to performance concerns.
-                 * So have to save the entire buffer.
+                 * So have to look through the entire buffer.
                  */
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginWrite(s);
                 for (int i = DefaultTreeLimit; i < treeLimit; i++) {

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
+using UnityEngine;
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy {
@@ -37,14 +39,16 @@ namespace TreeAnarchy {
 
         public abstract void AfterDeserialize();
 
-        private ushort FixPrefabAssociation(ushort index) {
-            if (index > PrefabCollection<TreeInfo>.PrefabCount()) {
-                return 0;
+        private int DeserializePrefab(ushort index) {
+            int count = PrefabCollection<TreeInfo>.PrefabCount();
+            if(index > count) {
+                // Most likely the tree asset doesn't exist
+                return -1;
             }
             try {
                 TreeInfo info = PrefabCollection<TreeInfo>.GetPrefab(index);
             } catch {
-                index = 0;
+                return -1;
             }
             return index;
         }
@@ -71,13 +75,6 @@ namespace TreeAnarchy {
                 case Format.Version3:
                 treeLimit = FixEndian(ReadInt32()); // Fixing ushort reorder
                 treeCount = FixEndian(ReadInt32()); // Fixing ushort reorder
-                ReadInt32(); // Reserved for future use
-                ReadInt32(); // Reserved for future use
-                flags = (SaveFlags)ReadUShort();
-                break;
-                case Format.Version4:
-                treeLimit = ReadInt32(); // Irrelevant in format version 4
-                treeCount = ReadInt32(); // Irrelevant in format version 4
                 ReadInt32(); // Reserved for future use
                 ReadInt32(); // Reserved for future use
                 flags = (SaveFlags)ReadUShort();
@@ -112,16 +109,20 @@ ReadData:
                         m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
                         trees[i].m_flags = (ushort)m_flags;
                         if (trees[i].m_flags != 0) {
-                            ushort infoIndex = FixPrefabAssociation(ReadUShort());
-                            if (infoIndex > 0) {
-                                trees[i].m_posX = ReadShort();
-                                trees[i].m_posZ = ReadShort();
-                                trees[i].m_posY = 0; // old format doesn't save this
+                            int infoIndex = DeserializePrefab(ReadUShort());
+                            short x = ReadShort();
+                            short y = ReadShort();
+                            if (infoIndex >= 0) {
+                                trees[i].m_infoIndex = (ushort)infoIndex;
+                                trees[i].m_posX = x;
+                                trees[i].m_posZ = y;
+                                trees[i].m_posY = 0;
                             } else {
-                                ReadShort();    // Tree doesn't exist in prefab. ignore data
-                                ReadShort();
-                                trees[i].m_flags = 0;
                                 trees[i].m_infoIndex = 0;
+                                trees[i].m_posX = 0;
+                                trees[i].m_posZ = 0;
+                                trees[i].m_posY = 0;
+                                trees[i].m_flags = 0;
                             }
                         }
                     }
