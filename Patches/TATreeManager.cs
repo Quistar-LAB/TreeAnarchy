@@ -1,13 +1,16 @@
-﻿using ColossalFramework;
-using HarmonyLib;
-using System.Collections.Generic;
+﻿using System.Linq;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection.Emit;
+using System.Collections.Generic;
+using ColossalFramework;
+using HarmonyLib;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace TreeAnarchy.Patches {
     static class TATreeManager {
+        private static Stopwatch timer = new Stopwatch();
+
         internal static void Enable(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TATreeManager), nameof(TATreeManager.EndRenderingImplPrefix))));
@@ -19,20 +22,18 @@ namespace TreeAnarchy.Patches {
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), HarmonyPatchType.Prefix, TAPatcher.HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
         }
-        static Stopwatch timer = new Stopwatch();
-        static Stopwatch Endtimer = new Stopwatch();
 
         private unsafe static void BeginRedenderingLoopOpt(TreeManager instance) {
             unchecked {
                 void refreshLod(ref RenderGroup.MeshData data, ref Mesh mesh) {
-                    if (data != null) {
+                    if (!(data is null)) {
                         mesh ??= new Mesh();
                         data.PopulateMesh(mesh);
                         data = null;
                     }
                 }
                 void setTexture(TreeInfo prefab) {
-                    if (prefab != null) {
+                    if (!(prefab is null)) {
                         refreshLod(ref prefab.m_lodMeshData1, ref prefab.m_lodMesh1);
                         refreshLod(ref prefab.m_lodMeshData4, ref prefab.m_lodMesh4);
                         refreshLod(ref prefab.m_lodMeshData8, ref prefab.m_lodMesh8);
@@ -51,12 +52,12 @@ namespace TreeAnarchy.Patches {
                 uint maxCount = (uint)PrefabCollection<TreeInfo>.PrefabCount();
                 uint remainder = maxCount % 5;
                 uint prefabCount = maxCount - remainder;
-                for (uint i = 0; i < prefabCount; i++) {
+                for (uint i = 0; i < prefabCount;) {
                     setTexture(PrefabCollection<TreeInfo>.GetPrefab(i++));
                     setTexture(PrefabCollection<TreeInfo>.GetPrefab(i++));
                     setTexture(PrefabCollection<TreeInfo>.GetPrefab(i++));
                     setTexture(PrefabCollection<TreeInfo>.GetPrefab(i++));
-                    setTexture(PrefabCollection<TreeInfo>.GetPrefab(i));
+                    setTexture(PrefabCollection<TreeInfo>.GetPrefab(i++));
                 }
                 for (uint i = prefabCount; i < maxCount; i++) {
                     setTexture(PrefabCollection<TreeInfo>.GetPrefab(i));
