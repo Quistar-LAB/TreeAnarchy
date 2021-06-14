@@ -8,7 +8,7 @@ using static TreeAnarchy.TAConfig;
 namespace TreeAnarchy {
     public class TAMod : ITerrainExtension, ILoadingExtension, IUserMod {
         private const string m_modName = "Unlimited Trees: Reboot";
-        internal const string m_modVersion = "0.7.8";
+        internal const string m_modVersion = "0.7.9";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 
         #region OptionPanel
@@ -164,7 +164,6 @@ namespace TreeAnarchy {
 
                 uiExperimental = (UICheckBox)ScaleGroup.AddCheckbox(@"Enable Experimental Acceleration", UseExperimental, (b) => {
                     UseExperimental = b;
-                    TAPatcher.EnableExperimental(b);
                     SaveSettings();
                 });
                 uiExperimental.tooltip = @"Experimental FPS acceleration";
@@ -201,6 +200,7 @@ namespace TreeAnarchy {
         #endregion
         #region ILoadingExtension
         void ILoadingExtension.OnCreated(ILoading loading) {
+            TAPatcher.LateEnable();
         }
 
         void ILoadingExtension.OnReleased() {
