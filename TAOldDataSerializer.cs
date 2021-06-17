@@ -100,7 +100,7 @@ namespace TreeAnarchy {
                     goto ReadData;
                     case SaveFlags.PACKED:
                     if (treeCount > MaxTreeLimit - DefaultTreeLimit)
-                        maxLen = MaxTreeLimit - DefaultTreeLimit;
+                        maxLen = MaxTreeLimit;
                     else
                         maxLen = DefaultTreeLimit + treeCount; // offset MaxLen from DefaultTreeLimit
 ReadData:
