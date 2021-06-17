@@ -1,11 +1,10 @@
-﻿using System.Linq;
-using System.Diagnostics;
-using System.Reflection.Emit;
-using System.Collections.Generic;
-using ColossalFramework;
+﻿using ColossalFramework;
 using HarmonyLib;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Emit;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace TreeAnarchy.Patches {
     static class TATreeManager {

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
-using UnityEngine;
 using static TreeAnarchy.TAConfig;
 
 namespace TreeAnarchy {
@@ -41,7 +39,7 @@ namespace TreeAnarchy {
 
         private int DeserializePrefab(ushort index) {
             int count = PrefabCollection<TreeInfo>.PrefabCount();
-            if(index > count) {
+            if (index > count) {
                 // Most likely the tree asset doesn't exist
                 return -1;
             }
