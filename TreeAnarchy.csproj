@@ -64,6 +64,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TAUI.cs" />
     <Compile Include="Patches\TATreeManager.cs" />
     <Compile Include="Patches\TreeSnapping.cs" />
     <Compile Include="Patches\TreeMovement.cs" />
