@@ -11,7 +11,7 @@ namespace TreeAnarchy {
         static readonly TreeLimit m_treeLimit = new TreeLimit();
         static readonly TreeMovement m_treeMovement = new TreeMovement();
         static readonly TreeSnapping m_treeSnapping = new TreeSnapping();
-        static readonly TreeManagerData m_data = new TreeManagerData();
+        static readonly TreeManagerData m_treedata = new TreeManagerData();
 
         private static bool IsPluginExists(string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
@@ -25,11 +25,11 @@ namespace TreeAnarchy {
         internal static void EnableCore() {
             m_treeLimit.Ensure(m_harmony);
             m_treeLimit.Enable(m_harmony);
-            m_treeSnapping.Enable(m_harmony);
-            m_data.Enable(m_harmony);
+            m_treedata.Enable(m_harmony);
         }
 
         internal static void LateEnable() {
+            m_treeSnapping.Enable(m_harmony);
             if (!IsPluginExists("Random Tree Rotation")) {
                 m_treeMovement.Enable(m_harmony);
             } else {

@@ -49,12 +49,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>H:\Games\Cities Skylines Train Stations\Cities_Data\Managed\ICities.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Simd">
-      <HintPath>C:\Program Files (x86)\Mono-2.6.4\lib\mono\2.0\Mono.Simd.dll</HintPath>
-    </Reference>
-    <Reference Include="MoveIt, Version=2.9.2.37591, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Users\Quistar\AppData\Local\Colossal Order\Cities_Skylines\Addons\Mods\1619685021 Move It\MoveIt.dll</HintPath>
+    <Reference Include="MoveIt">
+      <HintPath>.\MoveIt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.XML" />

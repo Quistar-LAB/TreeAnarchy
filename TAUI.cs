@@ -126,9 +126,7 @@ namespace TreeAnarchy {
             label = panel.AddUIComponent<UILabel>();
             label.AlignTo(alignTo, UIAlignAnchor.BottomLeft);
             label.width = panel.width - 80;
-            //label.width = 600;
             label.wordWrap = true;
-            //label.autoSize = true;
             label.autoHeight = true;
             label.text = text;
             label.relativePosition = new Vector3(25, 25);
