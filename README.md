@@ -3,7 +3,7 @@
 
 #### Requires: Harmony 2.0.x ported over to Cities Skylines by [Bofomer](https://github.com/boformer) -- [Github](https://github.com/boformer/CitiesHarmony)
 
-TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and basic support for mods such as Tree Snapping and Tree Anarchy. Both Tree Snapping/Tree Anarchy mods used detours to realize their functions. Thus it is one of the primary goals of this project to convert them to use Harmony in this mod.
+TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and added functionality of tree random rotation and tree snapping. Both Tree Snapping/Tree Anarchy mods used detours to realize their functions. Thus it is one of the primary goals of this project to convert them to use Harmony in this mod.
 
 This mod is a complete rewrite, taking out bloats and streamlining the serialization process. The concept is the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators. Thanks to
 [Knighth](https://github.com/Knighth/TreeUnlimiter), 
@@ -16,6 +16,26 @@ This mod is currently __ALPHA__, with the following functions:
 - [x] Support for random tree rotation
 - [x] Lock Forestry (especially useful if you want to control where forestry resources are created)
 - [ ] Performance tuning to attempt to increase fps to support more trees
+
+This mod fixes a couple issues that existed in the old unlimited trees mod:
+- When enabling the old Unlimited Trees mod, forestry resources could not be created. This mod fixes that issue.
+- In the old Unlimited Trees mod, the core framework of rendering trees were detoured, and was never updated to reflect the current status of the game for 3 years. This caused poor rendering performance of trees.
+- Trees would appear below the terrain if tree assets are missing when loading a map with more than 262144 trees. This is due to the old mod never associating its infoindex with PrefabCollection.
+- Old mod was not friendly with ULOD due to its use of detours.
+
+Reasons for including random tree rotation, lock forestry and tree snapping in to this mod:
+- This mod utilizes the default in-game fixed height variable to realize tree snapping behavior, thus removes the random bugs of trees flying in the old tree snapping mod, when used with the old unlimited trees mod.
+- Tree Movement Control and Random Tree Rotation mods both utilize Eular calculation in the function that renders all trees on the map. This causes the rendering of each tree to increase approximately 0.03ms per tree on my computer, and if you have lots of trees in your camera view, the rendering time will increase drastically reducing your FPS. I implemented a different framework for random tree rotation effect so that FPS would not be hit when rotating trees.
+
+This mod is incompatible with the following mods:
+- All previous versions of Unlimited Trees and Unlimited Trees: Revisited mods.
+- Tree Snapping mod
+
+The following mods can be used along with this mod, but is not recommended:
+- Tree Movement Control and Random Tree Rotation mod. Both these mods will override the effects rotation effect of this mod.
+
+This mod requires:
+- MoveIt mod
 
 I need supporters/volunteers to help debug/code to make this mod even better. If you want to contribute, please contact me anytime.
 
