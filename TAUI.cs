@@ -20,6 +20,8 @@ namespace TreeAnarchy {
             internal static string ExperimentalLabel = @"Experimental acceleration is achieved by disabling (assumed) redundant checks and " +
                                                        @"unrolling loops within potential bottelnecks when rendering trees. This is considered " +
                                                        @"unsafe, thus use at your own risk";
+            internal static string EnableProfiling = @"Enable Profiling";
+            internal static string EnableProfilingLabel = @"Will profile TreeManager::BeginRenderingImpl and TreeManager::EndRenderingImpl, saving the result in TAProfile.txt";
         }
 
         private static UILabel MaxTreeLabel = default;
@@ -30,6 +32,7 @@ namespace TreeAnarchy {
         private static UICheckBox TreeRotation = default;
         private static UICheckBox LockForestry = default;
         private static UICheckBox Experimental = default;
+        private static UICheckBox EnableProfiling = default;
         private static UISlider TreeSwayFactor = default;
         private static UISlider TreeScaleFactor = default;
 
@@ -64,6 +67,11 @@ namespace TreeAnarchy {
             SaveSettings();
         }
 
+        private static void OnEnableProfilingCheckChanged(UIComponent component, bool isChecked) {
+            TAConfig.EnableProfiling = isChecked;
+            SaveSettings();
+        }
+
         internal static void ShowStandardOptions(UIHelper option) {
             UILabel swayLabel = default;
             UIPanel panel = (UIPanel)option.self;
@@ -90,6 +98,7 @@ namespace TreeAnarchy {
         internal static void ShowTreeLimitOption(UIHelper option) {
             UILabel ImportantMsg = default;
             UILabel ExperimentalLabel = default;
+            UILabel EnableProfilingLabel = default;
             UIPanel panel = (UIPanel)option.self;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
@@ -104,6 +113,9 @@ namespace TreeAnarchy {
             AddCheckBox(ref panel, ref Experimental, Msg.Experimental, TAConfig.UseExperimental, OnExperimentalCheckChanged);
             AddLabel(ref panel, Experimental, ref ExperimentalLabel, Msg.ExperimentalLabel);
             option.AddSpace((int)ExperimentalLabel.height);
+            AddCheckBox(ref panel, ref EnableProfiling, Msg.EnableProfiling, TAConfig.EnableProfiling, OnEnableProfilingCheckChanged);
+            AddLabel(ref panel, EnableProfiling, ref EnableProfilingLabel, Msg.EnableProfilingLabel);
+            option.AddSpace((int)EnableProfilingLabel.height);
         }
 
         internal static void UpdateState(bool isInGame) {
@@ -111,8 +123,10 @@ namespace TreeAnarchy {
                 WindEffect.Disable();
                 TreeScaleFactor.Disable();
                 Experimental.Disable();
+                EnableProfiling.Disable();
                 return;
             }
+            EnableProfiling.Enable();
             Experimental.Enable();
             WindEffect.Enable();
             TreeScaleFactor.Enable();
