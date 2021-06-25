@@ -32,6 +32,8 @@ namespace TreeAnarchy.Patches {
         }
 
         internal void Disable(Harmony harmony, string id) {
+            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)), HarmonyPatchType.Transpiler, id);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, id);
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, id);
         }
 
@@ -324,5 +326,17 @@ namespace TreeAnarchy.Patches {
             }
             return true;
         }
+
+        public static void Transform(InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain) {
+            Vector3 vector = matrix4x.MultiplyPoint(state.position - center);
+            vector.y = state.position.y + deltaHeight;
+            if (followTerrain) {
+                vector.y = vector.y + ColossalFramework.Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector) - state.terrainHeight;
+            } else if (!ColossalFramework.Singleton<TreeManager>.instance.m_trees.m_buffer[state.id].FixedHeight && deltaHeight > 0) {
+                ColossalFramework.Singleton<TreeManager>.instance.m_trees.m_buffer[state.id].FixedHeight = true;
+            }
+            //this.Move(vector, 0f);
+        }
+
     }
 }
