@@ -181,7 +181,7 @@ namespace TreeAnarchy {
         public void OnSaveData() {
             try {
                 byte[] data;
-                if(OldFormatLoaded) m_Serializer?.EraseData(OldTreeUnlimiterKey);
+                if (OldFormatLoaded) m_Serializer?.EraseData(OldTreeUnlimiterKey);
                 using (var stream = new MemoryStream()) {
                     DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version4, new Data());
                     data = stream.ToArray();
