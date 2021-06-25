@@ -2,7 +2,6 @@
 using ColossalFramework.Plugins;
 using HarmonyLib;
 using TreeAnarchy.Patches;
-using UnityEngine;
 
 namespace TreeAnarchy {
     internal static class TAPatcher {
@@ -13,9 +12,14 @@ namespace TreeAnarchy {
         static readonly TreeSnapping m_treeSnapping = new TreeSnapping();
         static readonly TreeManagerData m_treedata = new TreeManagerData();
 
-        private static bool IsPluginExists(string name) {
+        static bool isCorePatched = false;
+        static bool isTreeSnapPatched = false;
+        static bool isTreeMovementPatched = false;
+        static bool isExperimentalPatched = false;
+
+        private static bool IsPluginExists(string id, string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
-                if (info.name.Contains(name)) {
+                if (info.name.Contains(id) || info.ToString().Contains(name)) {
                     return true;
                 }
             }
@@ -23,25 +27,44 @@ namespace TreeAnarchy {
         }
 
         internal static void EnableCore() {
-            m_treeLimit.Ensure(m_harmony);
-            m_treeLimit.Enable(m_harmony);
-            m_treedata.Enable(m_harmony);
+            if (!isCorePatched) {
+                m_treeLimit.Ensure(m_harmony);
+                m_treeLimit.Enable(m_harmony);
+                m_treedata.Enable(m_harmony);
+                isCorePatched = true;
+            }
         }
 
         internal static void LateEnable() {
-            m_treeSnapping.Enable(m_harmony);
-            if (!IsPluginExists("Random Tree Rotation")) {
-                m_treeMovement.Enable(m_harmony);
-            } else {
-                Debug.Log($"Tree Anarchy: Found Random Tree Rotation mod, Disabling tree movement");
+            EnableCore();
+            if (!isTreeSnapPatched) {
+                /* for tree snapping */
+                m_treeSnapping.Enable(m_harmony);
+                /* for tree rotation */
+                if (!IsPluginExists("1388613752", "Random Tree Rotation") && !isTreeMovementPatched) {
+                    m_treeMovement.Enable(m_harmony);
+                    isTreeMovementPatched = true;
+                }
+                isTreeSnapPatched = true;
             }
-            if (TAConfig.UseExperimental) {
+
+            if (TAConfig.UseExperimental && !isExperimentalPatched) {
                 TATreeManager.Enable(m_harmony);
+                isExperimentalPatched = true;
             }
         }
 
         internal static void DisableCore() {
-            m_treeLimit.Disable(m_harmony);
+            if (isCorePatched) {
+                m_treeLimit.Disable(m_harmony);
+                isCorePatched = false;
+            }
+            if (isTreeSnapPatched) {
+                m_treeSnapping.Disable(m_harmony, HARMONYID);
+            }
+            if (isTreeMovementPatched) {
+                m_treeMovement.Disable(m_harmony);
+            }
         }
     }
 }
