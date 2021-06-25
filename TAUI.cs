@@ -1,5 +1,5 @@
-﻿using System;
-using ColossalFramework.UI;
+﻿using ColossalFramework.UI;
+using System;
 using UnityEngine;
 using static TreeAnarchy.TAConfig;
 
@@ -74,15 +74,17 @@ namespace TreeAnarchy {
             AddLabel(ref panel, TreeSnap, ref TreeSnapLabel, Msg.TreeSnapLabel);
             option.AddSpace((int)TreeSnapLabel.height);
             AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, TAConfig.RandomTreeRotation, OnTreeRotationCheckChanged);
-            TreeRotation.width = 400;
+            TreeRotation.width = 300;
             UIPanel SwayPanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             SwayPanel.Find<UILabel>("Label").text = Msg.TreeSwayFactor;
             AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAConfig.TreeSwayFactor, OnTreeSwayFactorChanged);
             SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(320, -5);
             AddCheckBox(ref panel, ref LockForestry, Msg.LockForestry, TAConfig.LockForestry, OnLockForestryCheckChanged);
+            LockForestry.width = 300;
             AddLabel(ref panel, LockForestry, ref swayLabel, Msg.SwayLabel);
             option.AddSpace((int)SwayPanel.height);
+            SwayPanel.zOrder = TreeRotation.zOrder - 1;
         }
 
         internal static void ShowTreeLimitOption(UIHelper option) {
@@ -120,6 +122,7 @@ namespace TreeAnarchy {
             cb = (UICheckBox)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsCheckBoxTemplate"));
             cb.text = name;
             cb.isChecked = defaultVal;
+            cb.autoSize = false;
             cb.eventCheckChanged += new PropertyChangedEventHandler<bool>(callback);
         }
         private static void AddLabel(ref UIPanel panel, UIComponent alignTo, ref UILabel label, string text) {
