@@ -3,9 +3,9 @@
 
 #### Requires: Harmony 2.0.x ported over to Cities Skylines by [Bofomer](https://github.com/boformer) -- [Github](https://github.com/boformer/CitiesHarmony)
 
-TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and added functionality of tree random rotation and tree snapping. Both Tree Snapping/Tree Anarchy mods used detours to realize their functions. Thus it is one of the primary goals of this project to convert them to use Harmony in this mod.
+TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and added functionality of tree random rotation and tree snapping.
 
-This mod is a complete rewrite, taking out bloats and streamlining the serialization process. The concept is the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators. Thanks to
+This mod is a complete rewrite, taking out bloats, fixing bugs and streamlining the serialization process. The concept is almost the same, and I wouldn't have been able to write this code this fast without the original Unlimited Trees mod creators. Thanks to
 [Knighth](https://github.com/Knighth/TreeUnlimiter), 
 [BloodyPenguin](https://github.com/bloodypenguin), 
 [DRen72](https://steamcommunity.com/id/DRen72/myworkshopfiles/?appid=255710).
