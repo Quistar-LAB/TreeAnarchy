@@ -109,11 +109,11 @@ ReadData:
                         if (trees[i].m_flags != 0) {
                             int infoIndex = DeserializePrefab(ReadUShort());
                             short x = ReadShort();
-                            short y = ReadShort();
+                            short z = ReadShort();
                             if (infoIndex >= 0) {
                                 trees[i].m_infoIndex = (ushort)infoIndex;
                                 trees[i].m_posX = x;
-                                trees[i].m_posZ = y;
+                                trees[i].m_posZ = z;
                                 trees[i].m_posY = 0;
                             } else {
                                 trees[i].m_infoIndex = 0;

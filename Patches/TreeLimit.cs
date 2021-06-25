@@ -257,7 +257,7 @@ namespace TreeAnarchy.Patches {
         }
 
         internal void Disable(Harmony harmony) {
-            harmony.UnpatchAll(TAPatcher.HARMONYID);
+            Ensure(harmony);
         }
 
         internal static void EnsureCapacity() {
