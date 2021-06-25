@@ -21,18 +21,21 @@ namespace TreeAnarchy.Patches {
             }
             return false;
         }
+        static bool transpilerPatched = false;
 
         internal void Enable(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderGeometryTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
-                new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderInstanceTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(NetLane), nameof(NetLane.RenderInstance)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(GenericRenderInstanceTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(DefaultTool), nameof(DefaultTool.RenderGeometry)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(GenericRenderInstanceTranspiler))));
-
+            if (!transpilerPatched) {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderGeometryTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
+                    new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderInstanceTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(NetLane), nameof(NetLane.RenderInstance)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(GenericRenderInstanceTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(DefaultTool), nameof(DefaultTool.RenderGeometry)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(GenericRenderInstanceTranspiler))));
+                transpilerPatched = true;
+            }
             if (IsMoveItExists()) {
                 harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(RenderClonePrefix))));
@@ -40,12 +43,12 @@ namespace TreeAnarchy.Patches {
         }
 
         internal void Disable(Harmony harmony) {
-            harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
-                new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
-                HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(NetLane), nameof(NetLane.RenderInstance)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(DefaultTool), nameof(DefaultTool.RenderGeometry)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
+            //    new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
+            //    HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(NetLane), nameof(NetLane.RenderInstance)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(DefaultTool), nameof(DefaultTool.RenderGeometry)), HarmonyPatchType.Transpiler, TAPatcher.HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)), HarmonyPatchType.Prefix, TAPatcher.HARMONYID);
         }
 
@@ -132,7 +135,7 @@ namespace TreeAnarchy.Patches {
                 TreeManager instance = Singleton<TreeManager>.instance;
                 MaterialPropertyBlock materialBlock = instance.m_materialBlock;
                 Matrix4x4 matrix = default;
-                matrix.SetTRS(position, Quaternion.Euler(0f, (((long)position.magnitude) * 1000) % 360L, 0f), new Vector3(scale, scale, scale));
+                matrix.SetTRS(position, Quaternion.Euler(0f, (((long)position.magnitude) * 100) % 360L, 0f), new Vector3(scale, scale, scale));
                 Color value = info.m_defaultColor * brightness;
                 value.a = Singleton<WeatherManager>.instance.GetWindSpeed(position) * TreeSwayFactor;
                 materialBlock.Clear();
@@ -255,8 +258,8 @@ namespace TreeAnarchy.Patches {
                             if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
                                 vector = raycastOutput.m_hitPos;
                                 Matrix4x4 matrix4x = default;
-                                matrix4x.SetTRS(vector + deltaPosition, Quaternion.AngleAxis(0, Vector3.down), Vector3.one);
-                                treeState.position = matrix4x.MultiplyPoint(treeState.position - vector);
+                                matrix4x.SetTRS(center + deltaPosition, Quaternion.AngleAxis(0, Vector3.down), Vector3.one);
+                                treeState.position = matrix4x.MultiplyPoint(position - vector) - deltaPosition;
                                 treeState.position.y = vector.y;
                             }
                         }

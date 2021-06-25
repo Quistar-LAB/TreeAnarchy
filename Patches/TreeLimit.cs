@@ -222,10 +222,14 @@ namespace TreeAnarchy.Patches {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CheckLimitsTranspiler))));
         }
 
+        static bool isTranspilerPatched = false;
         internal void Enable(Harmony harmony) {
             try {
-                InjectResize();
-                harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
+                if(!isTranspilerPatched) {
+                    InjectResize();
+                    harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
+                    isTranspilerPatched = true;
+                }
                 //m_Harmony.Patch(AccessTools.Method(typeof(TreeManager), "TrySpreadFire"), prefix: new HarmonyMethod(AccessTools.Method(typeof(Patcher), nameof(Patcher.TrySpreadFirePrefix))));
             } catch (Exception e) {
                 Debug.LogException(e);
@@ -233,6 +237,7 @@ namespace TreeAnarchy.Patches {
         }
 
         internal void Ensure(Harmony harmony) {
+#if FALSE
             try {
                 // Make sure no prefixes are attached to the following methods. If found, remove!
                 harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Prefix);
@@ -254,11 +259,10 @@ namespace TreeAnarchy.Patches {
             } catch (Exception e) {
                 Debug.LogException(e);
             }
+#endif
         }
 
-        internal void Disable(Harmony harmony) {
-            Ensure(harmony);
-        }
+        internal void Disable(Harmony _) { /* Disabling doesn't work for transpilers, keep current state */ }
 
         internal static void EnsureCapacity() {
             global::TreeManager manager = Singleton<global::TreeManager>.instance;
