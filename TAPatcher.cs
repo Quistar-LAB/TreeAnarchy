@@ -16,6 +16,7 @@ namespace TreeAnarchy {
         static bool isTreeSnapPatched = false;
         static bool isTreeMovementPatched = false;
         static bool isExperimentalPatched = false;
+        static bool isExperimentalTranspilerPatched = false;
 
         private static bool IsPluginExists(string id, string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
@@ -49,22 +50,56 @@ namespace TreeAnarchy {
             }
 
             if (TAConfig.UseExperimental && !isExperimentalPatched) {
-                TATreeManager.Enable(m_harmony);
+                if (TAConfig.EnableProfiling) {
+                    m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
+                        prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPrefixProfiled))),
+                        postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPostfix))));
+                    if (!isExperimentalTranspilerPatched) {
+                        m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                            prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPrefix))),
+                            postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPostfix))),
+                            transpiler: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplTranspiler))));
+                        isExperimentalTranspilerPatched = true;
+                    } else {
+                        m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                            prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPrefix))),
+                            postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPostfix))));
+                    }
+                } else {
+                    m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
+                        prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPrefix))));
+                    if (!isExperimentalTranspilerPatched) {
+                        m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                            transpiler: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplTranspiler))));
+                        isExperimentalTranspilerPatched = true;
+                    }
+                }
                 isExperimentalPatched = true;
+            } else if(TAConfig.EnableProfiling) {
+                m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPrefixProfiledWithoutAccel))),
+                    postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPostfix))));
+                m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPrefix))),
+                    postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.BeginRenderingImplPostfix))));
             }
         }
 
-        internal static void DisableCore() {
-            if (isCorePatched) {
-                m_treeLimit.Disable(m_harmony);
-                isCorePatched = false;
-            }
+        internal static void DisableLatePatch() {
             if (isTreeSnapPatched) {
                 m_treeSnapping.Disable(m_harmony, HARMONYID);
             }
             if (isTreeMovementPatched) {
                 m_treeMovement.Disable(m_harmony);
             }
+            if (isExperimentalPatched) {
+                m_harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), HarmonyPatchType.All);
+                m_harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"), HarmonyPatchType.All);
+                isExperimentalPatched = false;
+            }
+        }
+
+        internal static void DisableCore() {
         }
     }
 }

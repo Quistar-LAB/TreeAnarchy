@@ -11,6 +11,7 @@ namespace TreeAnarchy {
 
         /* Experimental mode */
         internal static bool UseExperimental = false;
+        internal static bool EnableProfiling = false;
 
         /* Lock Forestry */
         internal static bool LockForestry = false;
@@ -75,6 +76,7 @@ namespace TreeAnarchy {
                 StopDistantTree = bool.Parse(xmlConfig.DocumentElement.GetAttribute("StopDistantTree"));
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
+                EnableProfiling = bool.Parse(xmlConfig.DocumentElement.GetAttribute("EnableProfiling"));
             } catch {
                 SaveSettings(); // Create a new save
             }
@@ -91,6 +93,7 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<bool>(xmlConfig, "StopDistantTree", StopDistantTree));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "EnableProfiling", EnableProfiling));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
