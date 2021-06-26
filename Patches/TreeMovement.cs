@@ -135,7 +135,7 @@ namespace TreeAnarchy.Patches {
                 TreeManager instance = Singleton<TreeManager>.instance;
                 MaterialPropertyBlock materialBlock = instance.m_materialBlock;
                 Matrix4x4 matrix = default;
-                matrix.SetTRS(position, Quaternion.Euler(0f, (((long)position.magnitude) * 100) % 360L, 0f), new Vector3(scale, scale, scale));
+                matrix.SetTRS(position, Quaternion.Euler(0f, (((long)position.magnitude) * 1000) % 360L, 0f), new Vector3(scale, scale, scale));
                 Color value = info.m_defaultColor * brightness;
                 value.a = Singleton<WeatherManager>.instance.GetWindSpeed(position) * TreeSwayFactor;
                 materialBlock.Clear();

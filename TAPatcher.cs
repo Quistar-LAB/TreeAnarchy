@@ -38,15 +38,18 @@ namespace TreeAnarchy {
 
         internal static void LateEnable() {
             EnableCore();
-            if (!isTreeSnapPatched) {
-                /* for tree snapping */
-                m_treeSnapping.Enable(m_harmony);
-                /* for tree rotation */
-                if (!IsPluginExists("1388613752", "Random Tree Rotation") && !isTreeMovementPatched) {
+            if (IsPluginExists("1619685021", "MoveIt")) {
+                if (!isTreeSnapPatched) {
+                    /* for tree snapping */
+                    m_treeSnapping.Enable(m_harmony);
+                    /* for tree rotation */
+                    isTreeSnapPatched = true;
+                }
+                if (!IsPluginExists("1388613752", "Tree Movement Control") ||
+                    !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
                     m_treeMovement.Enable(m_harmony);
                     isTreeMovementPatched = true;
                 }
-                isTreeSnapPatched = true;
             }
 
             if (TAConfig.UseExperimental && !isExperimentalPatched) {

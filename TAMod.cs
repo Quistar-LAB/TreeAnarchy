@@ -3,9 +3,9 @@ using static TreeAnarchy.TAConfig;
 
 
 namespace TreeAnarchy {
-    public class TAMod : ITerrainExtension, ILoadingExtension, IUserMod {
+    public class TAMod : ILoadingExtension, IUserMod {
         private const string m_modName = "Unlimited Trees: Reboot";
-        internal const string m_modVersion = "0.8.2";
+        internal const string m_modVersion = "0.8.3";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 
         internal static bool IsInGame = false;
@@ -38,20 +38,11 @@ namespace TreeAnarchy {
         }
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
+            IsInGame = true;
             TAUI.UpdateState(true);
         }
 
         void ILoadingExtension.OnLevelUnloading() {
-        }
-        #endregion
-        #region ITerrainExtension
-        void ITerrainExtension.OnCreated(ITerrain terrain) {
-        }
-
-        void ITerrainExtension.OnReleased() {
-        }
-
-        void ITerrainExtension.OnAfterHeightsModified(float minX, float minZ, float maxX, float maxZ) {
         }
         #endregion
     }

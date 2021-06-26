@@ -22,7 +22,7 @@ namespace TreeAnarchy.Patches {
     internal class TreeSnapping {
         private static bool isTranspilerPatched = false;
         internal void Enable(Harmony harmony) {
-            if (!isTranspilerPatched) {
+            if (!isTranspilerPatched && UseTreeSnapping) {
                 //            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
                 //                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
@@ -31,8 +31,10 @@ namespace TreeAnarchy.Patches {
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
                 isTranspilerPatched = true;
             }
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
+            if(UseTreeSnapping) {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
+            }
         }
 
         internal void Disable(Harmony harmony, string id) {
