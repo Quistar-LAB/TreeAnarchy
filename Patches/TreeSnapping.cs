@@ -39,39 +39,6 @@ namespace TreeAnarchy.Patches {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, id);
         }
 
-        private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            Label ExitLabel = il.DefineLabel();
-            Label FirstLabel = il.DefineLabel();
-            Label SecondLabel = il.DefineLabel();
-            Label ThirdLabel = il.DefineLabel();
-
-            var codes = new List<CodeInstruction>(instructions);
-            // search for first occurance of growstate
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].Calls(AccessTools.DeclaredPropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)))) {
-                    i += 2; // increment by two instructions
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Brfalse_S, ThirdLabel));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Bgt_S, FirstLabel));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Br_S, SecondLabel));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0).WithLabels(new Label[] { FirstLabel }));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))).WithLabels(new Label[] { SecondLabel }));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Br_S, ExitLabel));
-                    codes[i] = codes[i].WithLabels(ThirdLabel);
-                    codes[i + 3] = codes[i + 3].WithLabels(ExitLabel);
-                    break; // found first occurance, so insert codes and break out
-                }
-            }
-
-            return codes.AsEnumerable();
-        }
-
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             int FirstIndex = 0, LastIndex = 0;
             Label UseTerrainHeight = il.DefineLabel(), ExitBranch = il.DefineLabel(), FirstJump = il.DefineLabel();

@@ -1,14 +1,4 @@
-﻿#define FULLVERBOSE
-#define QUIETVERBOSE
-#define SILENT
-#undef FULLVERBOSE
-#if SILENT
-#undef DEBUG
-#undef FULLVERBOSE
-#undef QUIETVERBOSE
-#endif
-
-using HarmonyLib;
+﻿using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;

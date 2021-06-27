@@ -13,7 +13,6 @@ void __clrcall __identifier(".cctor")() { }
 #define refreshLOD(data, mesh) if (data) { if (!mesh) mesh = gcnew Mesh(); data->PopulateMesh(mesh); data = nullptr; }
 namespace TreeAnarchy {
     void AccelLayer::BeginRedenderingLoopOpt(TreeManager^ instance) {
-        // unroll loop... wish we had .net5 so these can be done automatically by the compiler
         unsigned int maxCount = PrefabCollection<TreeInfo^>::PrefabCount();
         for (unsigned int i = 0; i < maxCount; i++) {
             TreeInfo^ prefab = PrefabCollection<TreeInfo^>::GetPrefab(i);

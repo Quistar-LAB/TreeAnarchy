@@ -1,6 +1,6 @@
 ﻿#define FULLVERBOSE
 #define QUIETVERBOSE
-//#define SILENT
+#define SILENT
 #define FULLVERBOSE
 #if SILENT
 #undef DEBUG
@@ -13,9 +13,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -46,24 +44,13 @@ namespace TreeAnarchy.Patches {
             }
         }
 #endif
-#if DEBUG
-        private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions, MethodBase method)
-#else
-        private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions)
-#endif
-        {
-#if DEBUG
-            var codes = ReplaceLDCI4_Debug(instructions);
-            PrintDebugIL(codes.ToList(), method);
-            return codes;
-#else
+        private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
                 if (instruction.LoadsConstant(LastMaxTreeLimit))
                     yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
                 else
                     yield return instruction;
             }
-#endif
         }
 
         // Patch WeatherManager::CalculateSelfHeight()
@@ -178,7 +165,7 @@ namespace TreeAnarchy.Patches {
             codes[0].labels.Add(jump);
 
             var snippet = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.LockForestry))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(LockForestry))),
                 new CodeInstruction(OpCodes.Brfalse_S, jump),
                 new CodeInstruction(OpCodes.Ret),
             };
@@ -187,35 +174,30 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool TrySpreadFirePrefix() {
-            return false; // Skip the original codes completely
-        }
-
         internal static void InjectResize() {
             Harmony harmony = TAPatcher.m_harmony;
-            MethodInfo replaceLDCI4 = AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit));
+            HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
 
-            harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(DisasterHelpers), nameof(DisasterHelpers.DestroyTrees)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(FireCopterAI), @"FindBurningTree"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(ForestFireAI), @"FindClosestTree"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), @"ApplyBrush"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.SampleSmoothHeight)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), transpiler: new HarmonyMethod(replaceLDCI4));
-            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), transpiler: new HarmonyMethod(replaceLDCI4));
+            harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(DisasterHelpers), nameof(DisasterHelpers.DestroyTrees)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(FireCopterAI), @"FindBurningTree"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(ForestFireAI), @"FindClosestTree"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeTool), @"ApplyBrush"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.SampleSmoothHeight)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), transpiler: replaceLDCI4);
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(NRMTreesModifiedTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)),
