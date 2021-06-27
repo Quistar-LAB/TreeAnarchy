@@ -13,11 +13,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal class TreeManagerData {
-        internal void Enable(Harmony harmony) {
+    internal static class TreeManagerData {
+        internal static void Enable(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerData), nameof(TreeManagerData.DeserializeTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),

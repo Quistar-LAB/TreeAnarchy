@@ -8,6 +8,8 @@
 #undef QUIETVERBOSE
 #endif
 
+using ColossalFramework;
+using ColossalFramework.Math;
 using HarmonyLib;
 using MoveIt;
 using System;
@@ -16,32 +18,24 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using ColossalFramework;
-using ColossalFramework.Math;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal class TreeSnapping {
+    internal static class TreeSnapping {
         private static bool isTranspilerPatched = false;
-        internal void Enable(Harmony harmony) {
-            if (!isTranspilerPatched && UseTreeSnapping) {
-                //            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
-                //                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.AfterTerrainUpdatedTranspiler))));
+        internal static void Enable(Harmony harmony) {
+            if (!isTranspilerPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
                 isTranspilerPatched = true;
             }
-            if(UseTreeSnapping) {
-                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
-            }
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
         }
 
-        internal void Disable(Harmony harmony, string id) {
-            //harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)), HarmonyPatchType.Transpiler, id);
-            //harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, id);
+        internal static void Disable(Harmony harmony, string id) {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, id);
         }
 
@@ -56,7 +50,7 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].Calls(AccessTools.DeclaredPropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)))) {
                     i += 2; // increment by two instructions
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Brfalse_S, ThirdLabel));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
@@ -78,7 +72,7 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method) {
+        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             int FirstIndex = 0, LastIndex = 0;
             Label UseTerrainHeight = il.DefineLabel(), ExitBranch = il.DefineLabel(), FirstJump = il.DefineLabel();
             LocalBuilder terrainHeight = il.DeclareLocal(typeof(float));
@@ -126,7 +120,7 @@ namespace TreeAnarchy.Patches {
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) })),
                 stlocTerrainHeight,
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
                 ldlocTerrainHeight,
@@ -253,7 +247,7 @@ namespace TreeAnarchy.Patches {
 
             codes.RemoveRange(insertIndex + 1, 3);
             codes.InsertRange(insertIndex + 1, insertCodes);
-            codes.Insert(insertIndex, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
+            codes.Insert(insertIndex, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
             codes.Insert(insertIndex, new CodeInstruction(OpCodes.Brtrue_S, jumpLabel));
 
             return codes;
@@ -264,7 +258,7 @@ namespace TreeAnarchy.Patches {
                 // First Insert
                 if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
                     if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Brtrue, label.Value));
                     }
                 }
@@ -274,7 +268,7 @@ namespace TreeAnarchy.Patches {
                         codes.RemoveRange(i - 1, 2);
                         codes.Insert(i - 1, new CodeInstruction(OpCodes.Ceq));
                         codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldc_I4_0));
-                        codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.UseTreeSnapping))));
+                        codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
                         break; // can break out now
                     }
                 }
@@ -302,10 +296,10 @@ namespace TreeAnarchy.Patches {
             }
             CodeInstruction[] InsertCode = new CodeInstruction[]
             {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Brfalse_S, exitLabel),
                 new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(UseTreeSnapping))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeTool), "m_fixedHeight")),
                 leaveOp.WithLabels(tempLabels)
             };
@@ -329,7 +323,7 @@ namespace TreeAnarchy.Patches {
         }
 
         private static bool TransformPrefix(MoveableTree __instance, float deltaHeight, bool followTerrain) {
-            if(!followTerrain) {
+            if (!followTerrain) {
                 if (!TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
                     TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
                 }

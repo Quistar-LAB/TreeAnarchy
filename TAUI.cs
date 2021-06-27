@@ -1,10 +1,13 @@
 ﻿using ColossalFramework.UI;
 using System;
 using UnityEngine;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
     internal static class TAUI {
+        private const float MaxScaleFactor = 6.0f;
+        private const float MinScaleFactor = 1.5f;
+
         private struct Msg {
             internal static string MaxTreeLimit = "Maximum Tree Limit:  {0} trees";
             internal static string WindEffect = @"Enable Tree Effect on Wind [Original game default is enabled]";
@@ -49,15 +52,15 @@ namespace TreeAnarchy {
             SaveSettings();
         }
         private static void OnTreeSwayFactorChanged(UIComponent component, float val) {
-            TAConfig.TreeSwayFactor = val;
+            TAMod.TreeSwayFactor = val;
             SaveSettings();
         }
         private static void OnLockForestryCheckChanged(UIComponent component, bool isChecked) {
-            TAConfig.LockForestry = isChecked;
+            TAMod.LockForestry = isChecked;
             SaveSettings();
         }
         private static void OnTreeScaleFactorChanged(UIComponent component, float val) {
-            TAConfig.TreeScaleFactor = val;
+            TAMod.TreeScaleFactor = val;
             MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, MaxTreeLimit);
             Patches.TreeLimit.InjectResize();
             SaveSettings();
@@ -68,27 +71,27 @@ namespace TreeAnarchy {
         }
 
         private static void OnEnableProfilingCheckChanged(UIComponent component, bool isChecked) {
-            TAConfig.EnableProfiling = isChecked;
+            TAMod.EnableProfiling = isChecked;
             SaveSettings();
         }
 
         internal static void ShowStandardOptions(UIHelper option) {
             UILabel swayLabel = default;
             UIPanel panel = (UIPanel)option.self;
-            AddCheckBox(ref panel, ref WindEffect, Msg.WindEffect, TAConfig.TreeEffectOnWind, OnTreeWindCheckChanged);
+            AddCheckBox(ref panel, ref WindEffect, Msg.WindEffect, TAMod.TreeEffectOnWind, OnTreeWindCheckChanged);
             AddLabel(ref panel, WindEffect, ref WindEffectLabel, Msg.WindEffectLabel);
             option.AddSpace((int)WindEffectLabel.height);
-            AddCheckBox(ref panel, ref TreeSnap, Msg.TreeSnap, TAConfig.UseTreeSnapping, OnTreeSnapCheckChanged);
+            AddCheckBox(ref panel, ref TreeSnap, Msg.TreeSnap, TAMod.UseTreeSnapping, OnTreeSnapCheckChanged);
             AddLabel(ref panel, TreeSnap, ref TreeSnapLabel, Msg.TreeSnapLabel);
             option.AddSpace((int)TreeSnapLabel.height);
-            AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, TAConfig.RandomTreeRotation, OnTreeRotationCheckChanged);
+            AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, TAMod.RandomTreeRotation, OnTreeRotationCheckChanged);
             TreeRotation.width = 300;
             UIPanel SwayPanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             SwayPanel.Find<UILabel>("Label").text = Msg.TreeSwayFactor;
-            AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAConfig.TreeSwayFactor, OnTreeSwayFactorChanged);
+            AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAMod.TreeSwayFactor, OnTreeSwayFactorChanged);
             SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(320, -5);
-            AddCheckBox(ref panel, ref LockForestry, Msg.LockForestry, TAConfig.LockForestry, OnLockForestryCheckChanged);
+            AddCheckBox(ref panel, ref LockForestry, Msg.LockForestry, TAMod.LockForestry, OnLockForestryCheckChanged);
             LockForestry.width = 300;
             AddLabel(ref panel, LockForestry, ref swayLabel, Msg.SwayLabel);
             option.AddSpace((int)SwayPanel.height);
@@ -102,18 +105,18 @@ namespace TreeAnarchy {
             UIPanel panel = (UIPanel)option.self;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
-            MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, TAConfig.MaxTreeLimit);
+            MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, TAMod.MaxTreeLimit);
             MaxTreeLabel.width = panel.width - 100;
             MaxTreeLabel.autoSize = false;
             MaxTreeLabel.autoHeight = true;
-            AddSlider(ref ScalePanel, ref TreeScaleFactor, TAConfig.MinScaleFactor, TAConfig.MaxScaleFactor, 0.5f, TAConfig.TreeScaleFactor, OnTreeScaleFactorChanged);
+            AddSlider(ref ScalePanel, ref TreeScaleFactor, MinScaleFactor, MaxScaleFactor, 0.5f, TAMod.TreeScaleFactor, OnTreeScaleFactorChanged);
             TreeScaleFactor.width = panel.width - 150;
             AddLabel(ref panel, ScalePanel, ref ImportantMsg, Msg.Important);
             option.AddSpace((int)ImportantMsg.height);
-            AddCheckBox(ref panel, ref Experimental, Msg.Experimental, TAConfig.UseExperimental, OnExperimentalCheckChanged);
+            AddCheckBox(ref panel, ref Experimental, Msg.Experimental, TAMod.UseExperimental, OnExperimentalCheckChanged);
             AddLabel(ref panel, Experimental, ref ExperimentalLabel, Msg.ExperimentalLabel);
             option.AddSpace((int)ExperimentalLabel.height);
-            AddCheckBox(ref panel, ref EnableProfiling, Msg.EnableProfiling, TAConfig.EnableProfiling, OnEnableProfilingCheckChanged);
+            AddCheckBox(ref panel, ref EnableProfiling, Msg.EnableProfiling, TAMod.EnableProfiling, OnEnableProfilingCheckChanged);
             AddLabel(ref panel, EnableProfiling, ref EnableProfilingLabel, Msg.EnableProfilingLabel);
             option.AddSpace((int)EnableProfilingLabel.height);
         }

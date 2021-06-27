@@ -17,10 +17,10 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal class TreeLimit {
+    internal static class TreeLimit {
 #if DEBUG
         internal static void PrintDebugIL(List<CodeInstruction> codes, MethodBase method)
         {
@@ -108,7 +108,7 @@ namespace TreeAnarchy.Patches {
                         return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
                     }
                     */
-                    new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TreeEffectOnWind))),
+                    new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind))),
                     new CodeInstruction(OpCodes.Brfalse_S, returnTreeManagerLabel),
                     new CodeInstruction(OpCodes.Ldloc_S, num2),
                     new CodeInstruction(OpCodes.Ldloc_S, a),
@@ -178,7 +178,7 @@ namespace TreeAnarchy.Patches {
             codes[0].labels.Add(jump);
 
             var snippet = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAConfig), nameof(TAConfig.LockForestry))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.LockForestry))),
                 new CodeInstruction(OpCodes.Brfalse_S, jump),
                 new CodeInstruction(OpCodes.Ret),
             };
@@ -223,9 +223,9 @@ namespace TreeAnarchy.Patches {
         }
 
         static bool isTranspilerPatched = false;
-        internal void Enable(Harmony harmony) {
+        internal static void Enable(Harmony harmony) {
             try {
-                if(!isTranspilerPatched) {
+                if (!isTranspilerPatched) {
                     InjectResize();
                     harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
                     isTranspilerPatched = true;
@@ -235,34 +235,6 @@ namespace TreeAnarchy.Patches {
                 Debug.LogException(e);
             }
         }
-
-        internal void Ensure(Harmony harmony) {
-#if FALSE
-            try {
-                // Make sure no prefixes are attached to the following methods. If found, remove!
-                harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.SampleSmoothHeight)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Prefix);
-                harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Prefix);
-            } catch (Exception e) {
-                Debug.LogException(e);
-            }
-#endif
-        }
-
-        internal void Disable(Harmony _) { /* Disabling doesn't work for transpilers, keep current state */ }
 
         internal static void EnsureCapacity() {
             global::TreeManager manager = Singleton<global::TreeManager>.instance;

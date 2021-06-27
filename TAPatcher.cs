@@ -5,18 +5,14 @@ using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
     internal static class TAPatcher {
-        internal const string HARMONYID = @"quistar.treeanarchy.mod";
+        private const string HARMONYID = @"quistar.treeanarchy.mod";
         internal static readonly Harmony m_harmony = new Harmony(HARMONYID);
-        static readonly TreeLimit m_treeLimit = new TreeLimit();
-        static readonly TreeMovement m_treeMovement = new TreeMovement();
-        static readonly TreeSnapping m_treeSnapping = new TreeSnapping();
-        static readonly TreeManagerData m_treedata = new TreeManagerData();
 
-        static bool isCorePatched = false;
-        static bool isTreeSnapPatched = false;
-        static bool isTreeMovementPatched = false;
-        static bool isExperimentalPatched = false;
-        static bool isExperimentalTranspilerPatched = false;
+        private static bool isCorePatched = false;
+        private static bool isTreeSnapPatched = false;
+        private static bool isTreeMovementPatched = false;
+        private static bool isExperimentalPatched = false;
+        private static bool isExperimentalTranspilerPatched = false;
 
         private static bool IsPluginExists(string id, string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
@@ -29,9 +25,8 @@ namespace TreeAnarchy {
 
         internal static void EnableCore() {
             if (!isCorePatched) {
-                m_treeLimit.Ensure(m_harmony);
-                m_treeLimit.Enable(m_harmony);
-                m_treedata.Enable(m_harmony);
+                TreeLimit.Enable(m_harmony);
+                TreeManagerData.Enable(m_harmony);
                 isCorePatched = true;
             }
         }
@@ -41,19 +36,19 @@ namespace TreeAnarchy {
             if (IsPluginExists("1619685021", "MoveIt")) {
                 if (!isTreeSnapPatched) {
                     /* for tree snapping */
-                    m_treeSnapping.Enable(m_harmony);
+                    if (TAMod.UseTreeSnapping) TreeSnapping.Enable(m_harmony);
                     /* for tree rotation */
                     isTreeSnapPatched = true;
                 }
                 if (!IsPluginExists("1388613752", "Tree Movement Control") ||
                     !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
-                    m_treeMovement.Enable(m_harmony);
+                    TreeMovement.Enable(m_harmony);
                     isTreeMovementPatched = true;
                 }
             }
 
-            if (TAConfig.UseExperimental && !isExperimentalPatched) {
-                if (TAConfig.EnableProfiling) {
+            if (TAMod.UseExperimental && !isExperimentalPatched) {
+                if (TAMod.EnableProfiling) {
                     m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
                         prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPrefixProfiled))),
                         postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPostfix))));
@@ -78,7 +73,7 @@ namespace TreeAnarchy {
                     }
                 }
                 isExperimentalPatched = true;
-            } else if(TAConfig.EnableProfiling) {
+            } else if (TAMod.EnableProfiling) {
                 m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPrefixProfiledWithoutAccel))),
                     postfix: new HarmonyMethod(AccessTools.Method(typeof(AccelLayer), nameof(AccelLayer.EndRenderingImplPostfix))));
@@ -90,10 +85,7 @@ namespace TreeAnarchy {
 
         internal static void DisableLatePatch() {
             if (isTreeSnapPatched) {
-                m_treeSnapping.Disable(m_harmony, HARMONYID);
-            }
-            if (isTreeMovementPatched) {
-                m_treeMovement.Disable(m_harmony);
+                TreeSnapping.Disable(m_harmony, HARMONYID);
             }
             if (isExperimentalPatched) {
                 m_harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), HarmonyPatchType.All);

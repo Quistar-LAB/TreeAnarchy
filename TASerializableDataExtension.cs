@@ -4,7 +4,7 @@ using ICities;
 using System;
 using System.IO;
 using UnityEngine;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
 
 namespace TreeAnarchy {
@@ -21,7 +21,7 @@ namespace TreeAnarchy {
             }
         }
 
-        public class Data : IDataContainer {
+        private class Data : IDataContainer {
             public void Deserialize(DataSerializer s) {
                 ref TreeInstance[] trees = ref Singleton<TreeManager>.instance.m_trees.m_buffer;
                 int maxLen = s.ReadInt32(); // Read in Max limit
@@ -152,11 +152,9 @@ namespace TreeAnarchy {
                             return;
                         }
                         using OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
-                        if (oldSerializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer, out ErrorFlags errors)) {
-                            if ((errors & ErrorFlags.OLDFORMAT) != ErrorFlags.NONE) {
-                                Debug.Log("TreeAnarchy: Old Format Loaded");
-                                OldFormatLoaded = true;
-                            }
+                        if (oldSerializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer)) {
+                            Debug.Log("TreeAnarchy: Old Format Loaded");
+                            OldFormatLoaded = true;
                         } else {
                             Debug.Log("TreeAnarchy: Invalid Data Format");
                         }

@@ -62,7 +62,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TAUI.cs" />
-    <Compile Include="Patches\TATreeManager.cs" />
     <Compile Include="Patches\TreeSnapping.cs" />
     <Compile Include="Patches\TreeMovement.cs" />
     <Compile Include="TAPatcher.cs" />
@@ -70,7 +69,6 @@
     <Compile Include="Patches\TreeManagerData.cs" />
     <Compile Include="TASerializableDataExtension.cs" />
     <Compile Include="TAOldDataSerializer.cs" />
-    <Compile Include="TAConfig.cs" />
     <Compile Include="TAMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

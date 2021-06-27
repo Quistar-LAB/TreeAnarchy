@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
-using static TreeAnarchy.TAConfig;
+using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
     public abstract class TAOldDataSerializer : IDisposable {
         private const int FormatVersion1TreeLimit = 1048576;
-        public const string OldTreeUnlimiterKey = @"mabako/unlimiter";
+        internal const string OldTreeUnlimiterKey = @"mabako/unlimiter";
 
         private enum Format : ushort {
             Version1 = 1,
@@ -19,17 +19,8 @@ namespace TreeAnarchy {
             PACKED = 1,
             ENCODED = 2,
         }
-        [Flags]
-        public enum ErrorFlags : ushort {
-            NONE = 0,
-            SUCCESS = 1,
-            FAILED = 2,
-            OLDFORMAT = 4,
-        }
-
         private bool disposed = false;
         private readonly MemoryStream m_Stream = null;
-        public MemoryStream m_tempBuf = null;
 
         protected TAOldDataSerializer(byte[] data) {
             m_Stream = new MemoryStream(data);
@@ -37,7 +28,7 @@ namespace TreeAnarchy {
 
         public abstract void AfterDeserialize();
 
-        private int DeserializePrefab(ushort index) {
+        private static int DeserializePrefab(ushort index) {
             int count = PrefabCollection<TreeInfo>.PrefabCount();
             if (index > count) {
                 // Most likely the tree asset doesn't exist
@@ -55,13 +46,12 @@ namespace TreeAnarchy {
         // a bit long because of all the different formats we have to consider
         // Keeping compatibility almost broke my brain reading the old codes,
         // but was a fun challenge
-        public bool Deserialize(TreeInstance[] trees, out ErrorFlags errorFlags) {
+        public bool Deserialize(TreeInstance[] trees) {
             int treeCount = 0;
             int treeLimit;
             int maxLen;
             SaveFlags flags = 0;
 
-            errorFlags = ErrorFlags.NONE;
             Format version = (Format)ReadUShort();
             switch (version) {
                 case Format.Version1:
@@ -78,12 +68,10 @@ namespace TreeAnarchy {
                 flags = (SaveFlags)ReadUShort();
                 break;
                 default:
-                errorFlags |= ErrorFlags.FAILED;
                 return false;
             }
             /* Sanity check */
             if (treeLimit < 1 && treeCount < 0) {
-                errorFlags |= ErrorFlags.FAILED;
                 return false;
             }
             if (treeLimit > MaxTreeLimit)
@@ -126,13 +114,12 @@ ReadData:
                     }
                     break;
                 }
-                errorFlags |= (ErrorFlags.SUCCESS | ErrorFlags.OLDFORMAT);
                 return true;
             }
             return false;
         }
 
-        private int FixEndian(int num) {
+        private static int FixEndian(int num) {
             int n = ((num & 0xffff) << 16);
             return n | ((num >> 16) & 0xffff);
         }
@@ -169,8 +156,6 @@ ReadData:
             if (!disposed) {
                 if (disposing) {
                     m_Stream.Dispose();
-                    if (m_tempBuf != null)
-                        m_tempBuf.Dispose();
                 }
                 disposed = true;
             }

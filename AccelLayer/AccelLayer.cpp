@@ -9,13 +9,6 @@ void __clrcall __identifier(".cctor")() { }
 #define GetField(type, name) AccessTools::Field(type::typeid, name)
 #define GetPropertyGetter(type, name) AccessTools::PropertyGetter(type::typeid, name)
 #define GetPropertySetter(type, name) AccessTools::PropertySetter(type::typeid, name)
-#define HarmonyPatchTranspiler(type, name, transpiler) harmony->Patch(GetMethod(type, name), nullptr, nullptr, gcnew HarmonyMethod(AccelLayer::typeid, transpiler, nullptr), nullptr)
-#define HarmonyPatchTranspilerArgs(type, name, args, transpiler) harmony->Patch(GetMethodArgs(type, name, args), nullptr, nullptr, gcnew HarmonyMethod(AccelLayer::typeid, transpiler, nullptr), nullptr)
-#define HarmonyPatchPrefix(type, name, prefix) harmony->Patch(GetMethod(type, name), gcnew HarmonyMethod(AccelLayer::typeid, prefix, nullptr), nullptr, nullptr, nullptr)
-#define HarmonyPatchPrefixArgs(type, name, args, prefix) harmony->Patch(GetMethodArgs(type, name, args), gcnew HarmonyMethod(AccelLayer::typeid, prefix, nullptr), nullptr, nullptr, nullptr)
-#define HarmonyUnpatch(method, name, type) harmony->Unpatch(GetMethod(method, name), type, nullptr)
-#define HarmonyUnpatchArgs(method, name, args, type) harmony->Unpatch(GetMethodArgs(method, name, args), type, nullptr)
-
 
 #define refreshLOD(data, mesh) if (data) { if (!mesh) mesh = gcnew Mesh(); data->PopulateMesh(mesh); data = nullptr; }
 namespace TreeAnarchy {

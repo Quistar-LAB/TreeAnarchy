@@ -1,4 +1,5 @@
 #pragma once
+#pragma warning( disable : 4691 )
 #ifndef __ACCELLAYER_H__
 #define __ACCELLAYER_H__
 
@@ -11,7 +12,7 @@ using namespace HarmonyLib;
 using namespace UnityEngine;
 using namespace ColossalFramework;
 
-#define PROFILE_LENGTH  50
+#define PROFILE_LENGTH  64
 namespace TreeAnarchy {
 	public ref class AccelLayer
 	{
@@ -22,16 +23,18 @@ namespace TreeAnarchy {
         //static FileStream^ m_fileStream = gcnew FileStream(fileName, FileMode::Open);
         static StreamWriter^ m_Output = gcnew StreamWriter(fileName);
         ref struct Profiler {
-            array<long long>^ m_profile = gcnew array<long long>(PROFILE_LENGTH);
+            array<double>^ m_profile = gcnew array<double>(PROFILE_LENGTH);
             int index = 0;
             bool profileFull = false;
-            int averageProfile = 0;
-            int minProfile = 10000; /* arbitrary default max number */
-            int maxProfile = 0;
-            void Profile(int elapsedTime) {
-                int average = 0;
-                minProfile = Mathf::Min(minProfile, elapsedTime);
-                maxProfile = Mathf::Max(maxProfile, elapsedTime);
+            double averageProfile = 0;
+            double minProfile = 10000; /* arbitrary default max number */
+            double maxProfile = 0;
+            double min(double a, double b) { if (a < b) return a; return b; }
+            double max(double a, double b) { if (a > b) return a; return b; }
+            void Profile(double elapsedTime) {
+                double average = 0;
+                minProfile = min(minProfile, elapsedTime);
+                maxProfile = max(maxProfile, elapsedTime);
                 if (index == PROFILE_LENGTH) {
                     index = 0;
                     profileFull = true;
