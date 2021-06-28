@@ -3,6 +3,8 @@
 #pragma warning(disable:4483)
 void __clrcall __identifier(".cctor")() { }
 
+using namespace TreeAnarchy;
+
 #define DebugPrint(msg) UnityEngine::Debug::Log("TreeAnarchy: " + msg)
 #define GetMethod(type, name) AccessTools::Method(type::typeid, name, nullptr, nullptr)
 #define GetMethodArgs(type, name, args) AccessTools::Method(type::typeid, name, args, nullptr)
@@ -180,5 +182,17 @@ namespace TreeAnarchy {
         m_Output->BaseStream->SetLength(0);
         m_Output->WriteLine(output);
         m_Output->Flush();
+    }
+
+    void AccelLayer::Setup() {
+        array<unsigned char>^ buf;
+        String^ fileName = "NativeCore.dll";
+        Assembly^ assembly = Assembly::GetExecutingAssembly();
+        {
+            Stream^ resFileStream = assembly->GetManifestResourceStream(fileName);
+            if (!resFileStream) return;
+            buf = gcnew array<unsigned char>(resFileStream->Length);
+            resFileStream->Read(buf, 0, buf->Length);
+        }
     }
 }

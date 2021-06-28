@@ -6,15 +6,17 @@
 using namespace System;
 using namespace System::IO;
 using namespace System::Diagnostics;
+using namespace System::Reflection;
 using namespace System::Reflection::Emit;
 using namespace System::Collections::Generic;
+using namespace System::Runtime::InteropServices;
 using namespace HarmonyLib;
-using namespace UnityEngine;
 using namespace ColossalFramework;
+using namespace UnityEngine;
 
 #define PROFILE_LENGTH  64
 namespace TreeAnarchy {
-	public ref class AccelLayer
+    public ref class AccelLayer
 	{
     private:
         literal String^ fileName = "TAProfile.txt";
@@ -66,8 +68,8 @@ namespace TreeAnarchy {
         __declspec(noinline) static bool BeginRenderingImplPrefix();
         __declspec(noinline) static void BeginRenderingImplPostfix();
 
-        static void StartProfile() {
-        }
+        static void StartProfile() {}
+        static void Setup();
     };
 }
 
