@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.8.5";
+        internal const string m_modVersion = "0.8.6";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 
@@ -71,6 +71,7 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             LoadSettings();
             LockForestry = true; // Always load Lockforestry enabled just in case player forgets
+            AccelLayer.Setup();
             TAPatcher.EnableCore();
         }
         public void OnDisabled() {
@@ -95,13 +96,19 @@ namespace TreeAnarchy {
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
             IsInGame = true;
+            TAUI.UpdateState(IsInGame);
         }
 
         void ILoadingExtension.OnLevelUnloading() {
             IsInGame = false;
+            TAUI.UpdateState(IsInGame);
         }
         #endregion
+/*
+        internal static Utils.MemoryModule setupMemModule(byte[] buf) {
 
+        }
+*/
         private const string SettingsFileName = "TreeAnarchyConfig.xml";
         internal static void LoadSettings() {
             try {

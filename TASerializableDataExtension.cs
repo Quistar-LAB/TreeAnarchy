@@ -76,7 +76,7 @@ namespace TreeAnarchy {
                 int treeLimit = MaxTreeLimit;
                 TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
 
-                // Set header information now. Header is saved now for compatibility reasons
+                // Important to save treelimit as it is an adjustable variable on every load
                 s.WriteInt32(treeLimit);
 
                 /* Apparently, the trees could be located anywhere in the buffer
@@ -120,16 +120,6 @@ namespace TreeAnarchy {
                     }
                 }
                 uShort.EndWrite();
-#if FALSE // Burning tree handled in prefix method
-            // Let original codes handle the extra burning tree list. Hope it works
-            WriteUInt24(s, (uint)instance.m_burningTrees.m_size);
-            for (int m = 0; m < instance.m_burningTrees.m_size; m++)
-            {
-                WriteUInt24(s, instance.m_burningTrees.m_buffer[m].m_treeIndex);
-                WriteUShort(s, instance.m_burningTrees.m_buffer[m].m_fireIntensity);
-                WriteUShort(s, instance.m_burningTrees.m_buffer[m].m_fireDamage);
-            }
-#endif
             }
         }
 

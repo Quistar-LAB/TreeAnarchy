@@ -53,6 +53,7 @@ namespace TreeAnarchy {
         }
         private static void OnTreeSwayFactorChanged(UIComponent component, float val) {
             TAMod.TreeSwayFactor = val;
+            if(IsInGame) Patches.TreeMovement.UpdateTreeSway();
             SaveSettings();
         }
         private static void OnLockForestryCheckChanged(UIComponent component, bool isChecked) {
