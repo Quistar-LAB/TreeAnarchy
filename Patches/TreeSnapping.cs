@@ -7,16 +7,15 @@
 #undef FULLVERBOSE
 #undef QUIETVERBOSE
 #endif
-
-using ColossalFramework;
-using ColossalFramework.Math;
-using HarmonyLib;
-using MoveIt;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using ColossalFramework;
+using ColossalFramework.Math;
+using HarmonyLib;
+using MoveIt;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -33,6 +32,13 @@ namespace TreeAnarchy.Patches {
             }
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TransformPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneGeometryPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneOverlayPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
+                new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(), typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ClonePrefix))));
         }
 
         internal static void Disable(Harmony harmony, string id) {
@@ -289,28 +295,77 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static bool TransformPrefix(MoveableTree __instance, float deltaHeight, bool followTerrain) {
-            if (!followTerrain) {
-                if (!TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight && deltaHeight != 0) {
-                    TreeManager.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
-                }
-            }
-            return true;
-        }
-
-        public static bool Transform(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain) {
+        public static bool TransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain) {
             Vector3 vector = matrix4x.MultiplyPoint(state.position - center);
             vector.y = state.position.y + deltaHeight;
-            if (followTerrain) {
-                vector.y = vector.y + ColossalFramework.Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector) - state.terrainHeight;
-            } else if (!ColossalFramework.Singleton<TreeManager>.instance.m_trees.m_buffer[state.id].FixedHeight && deltaHeight > 0) {
-                ColossalFramework.Singleton<TreeManager>.instance.m_trees.m_buffer[state.id].FixedHeight = true;
+            float rawTerrainHeight = Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
+            if (!UseTreeSnapping) {
+                vector.y = vector.y + rawTerrainHeight - state.terrainHeight;
+            } else {
+                vector = TreeSnapRayCast(vector);
             }
             __instance.Move(vector, 0f);
             return false;
         }
 
+        // MoveIt.MoveableTree
+        private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, float deltaAngle, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
+            TreeState treeState = instanceState as TreeState;
+            TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
+            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
+            float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
+            float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
+            Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
+            vector.y = treeState.position.y + deltaPosition.y;
+            if (!UseTreeSnapping) {
+                vector.y = vector.y - treeState.terrainHeight + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
+            } else {
+                vector = TreeSnapRayCast(vector);
+            }
+            TreeInstance.RenderInstance(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
+            return false;
+        }
+
+        private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, float deltaAngle, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
+//            if (MoveItTool.m_isLowSensitivity) {
+//                return false;
+//            }
+            TreeState treeState = instanceState as TreeState;
+            TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
+            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
+            float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
+            Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
+            vector.y = treeState.position.y + deltaPosition.y;
+            if (!UseTreeSnapping) {
+                vector.y = vector.y - treeState.terrainHeight + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
+            } else {
+                vector = TreeSnapRayCast(vector);
+            }
+            TreeTool.RenderOverlay(cameraInfo, treeInfo, vector, scale, toolColor);
+            return false;
+        }
+
+        private static bool ClonePrefix(ref Instance __result, InstanceState instanceState, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain, Dictionary<ushort, ushort> clonedNodes, MoveIt.Action action) {
+            TreeState treeState = instanceState as TreeState;
+            Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
+            vector.y = treeState.position.y + deltaHeight;
+            if (!UseTreeSnapping) {
+                vector.y = vector.y - treeState.terrainHeight + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
+            } else {
+                vector = TreeSnapRayCast(vector);
+            }
+            __result = null;
+            if (Singleton<TreeManager>.instance.CreateTree(out uint tree, ref Singleton<SimulationManager>.instance.m_randomizer, treeState.Info.Prefab as TreeInfo, vector, treeState.single)) {
+                __result = new MoveableTree(new InstanceID {
+                    Tree = tree
+                });
+            }
+            return false;
+        }
+
+
         private static bool RayCast(ToolBase.RaycastInput input, out ToolBase.RaycastOutput output) {
+            float tempRayLength;
             Vector3 origin = input.m_ray.origin;
             Vector3 normalized = input.m_ray.direction.normalized;
             Vector3 vector = input.m_ray.origin + normalized * input.m_length;
@@ -333,41 +388,42 @@ namespace TreeAnarchy.Patches {
             output.m_disaster = 0;
             output.m_currentEditObject = false;
             bool result = false;
-            float num = input.m_length;
+            float mouseRayLength = input.m_length;
             if (!input.m_ignoreTerrain && Singleton<TerrainManager>.instance.RayCast(ray, out Vector3 vector2)) {
-                float num2 = Vector3.Distance(vector2, origin) + 100f;
-                if (num2 < num) {
+                float rayLength = Vector3.Distance(vector2, origin) + 100f;
+                if (rayLength < mouseRayLength) {
                     output.m_hitPos = vector2;
                     result = true;
-                    num = num2;
+                    mouseRayLength = rayLength;
                 }
             }
-            if ((input.m_ignoreNodeFlags != NetNode.Flags.All || input.m_ignoreSegmentFlags != NetSegment.Flags.All) && Singleton<NetManager>.instance.RayCast(input.m_buildObject as NetInfo, ray, input.m_netSnap, input.m_segmentNameOnly, input.m_netService.m_service, input.m_netService2.m_service, input.m_netService.m_subService, input.m_netService2.m_subService, input.m_netService.m_itemLayers, input.m_netService2.m_itemLayers, input.m_ignoreNodeFlags, input.m_ignoreSegmentFlags, out vector2, out output.m_netNode, out output.m_netSegment)) {
-                float num3 = Vector3.Distance(vector2, origin);
-                if (num3 < num) {
+            if ((input.m_ignoreNodeFlags != NetNode.Flags.All ||
+                 input.m_ignoreSegmentFlags != NetSegment.Flags.All) && Singleton<NetManager>.instance.RayCast(input.m_buildObject as NetInfo, ray, input.m_netSnap, input.m_segmentNameOnly, input.m_netService.m_service, input.m_netService2.m_service, input.m_netService.m_subService, input.m_netService2.m_subService, input.m_netService.m_itemLayers, input.m_netService2.m_itemLayers, input.m_ignoreNodeFlags, input.m_ignoreSegmentFlags, out vector2, out output.m_netNode, out output.m_netSegment)) {
+                tempRayLength = Vector3.Distance(vector2, origin);
+                if (tempRayLength < mouseRayLength) {
                     output.m_hitPos = vector2;
                     result = true;
-                    num = num3;
+                    mouseRayLength = tempRayLength;
                 } else {
                     output.m_netNode = 0;
                     output.m_netSegment = 0;
                 }
             }
             if (input.m_ignoreBuildingFlags != Building.Flags.All && Singleton<BuildingManager>.instance.RayCast(ray, input.m_buildingService.m_service, input.m_buildingService.m_subService, input.m_buildingService.m_itemLayers, input.m_ignoreBuildingFlags, out vector2, out output.m_building)) {
-                float num4 = Vector3.Distance(vector2, origin);
-                if (num4 < num) {
+                tempRayLength = Vector3.Distance(vector2, origin);
+                if (tempRayLength < mouseRayLength) {
                     output.m_hitPos = vector2;
                     output.m_netNode = 0;
                     output.m_netSegment = 0;
                     result = true;
-                    num = num4;
+                    mouseRayLength = tempRayLength;
                 } else {
                     output.m_building = 0;
                 }
             }
             if (input.m_currentEditObject && Singleton<ToolManager>.instance.m_properties.RaycastEditObject(ray, out vector2)) {
-                float num6 = Vector3.Distance(vector2, origin);
-                if (num6 < num) {
+                tempRayLength = Vector3.Distance(vector2, origin);
+                if (tempRayLength < mouseRayLength) {
                     output.m_hitPos = vector2;
                     output.m_netNode = 0;
                     output.m_netSegment = 0;
@@ -375,12 +431,11 @@ namespace TreeAnarchy.Patches {
                     output.m_disaster = 0;
                     output.m_currentEditObject = true;
                     result = true;
-                    num = num6;
+                    mouseRayLength = tempRayLength;
                 }
             }
             if (input.m_ignorePropFlags != PropInstance.Flags.All && Singleton<PropManager>.instance.RayCast(ray, input.m_propService.m_service, input.m_propService.m_subService, input.m_propService.m_itemLayers, input.m_ignorePropFlags, out vector2, out output.m_propInstance)) {
-                float num7 = Vector3.Distance(vector2, origin) - 0.5f;
-                if (num7 < num) {
+                if (Vector3.Distance(vector2, origin) - 0.5f < mouseRayLength) {
                     output.m_hitPos = vector2;
                     output.m_netNode = 0;
                     output.m_netSegment = 0;
@@ -388,7 +443,6 @@ namespace TreeAnarchy.Patches {
                     output.m_disaster = 0;
                     output.m_currentEditObject = false;
                     result = true;
-                    num = num7;
                 } else {
                     output.m_propInstance = 0;
                 }
@@ -401,38 +455,30 @@ namespace TreeAnarchy.Patches {
          * but apparently MoveIt calculates position differently than CO Framework. If this was ever to 
          * be realized, I think it has to be done from within MoveIt mod.
          */
-        private static void RenderCollision(MoveableTree tree, TreeState treeState, RenderManager.CameraInfo cameraInfo, TreeInfo info, Vector3 deltaPosition, Vector3 center, Vector3 position, float scale, float brightness, Vector4 objectIndex) {
-            /*
-                        Ray mouseRay;
-                        float mouseRayLength;
-                        Vector3 vector = position;
+        private static Vector3 TreeSnapRayCast(Vector3 position) {
+            Ray mouseRay;
+            float mouseRayLength;
 
-                        if (info.m_prefabInitialized && UseTreeSnapping) {
-                            Vector3 mousePosition = Input.mousePosition;
-                            //mouseRay = Camera.main.ScreenPointToRay(mousePosition);
-                            mouseRay = Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(position));
-                            mouseRayLength = Camera.main.farClipPlane;
-                            ToolBase.RaycastInput input = new ToolBase.RaycastInput(mouseRay, mouseRayLength) {
-                                m_currentEditObject = true,
-                                m_ignoreBuildingFlags = Building.Flags.None,
-                                m_ignoreNodeFlags = NetNode.Flags.None,
-                                m_ignoreSegmentFlags = NetSegment.Flags.None,
-                                m_ignorePropFlags = PropInstance.Flags.None,
-                                m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
-                                m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
-                                m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
-                                m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default)
-                            };
-                            if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
-                                vector = raycastOutput.m_hitPos;
-                                Matrix4x4 matrix4x = default;
-                                matrix4x.SetTRS(center + deltaPosition, Quaternion.AngleAxis(0, Vector3.down), Vector3.one);
-                                treeState.position = matrix4x.MultiplyPoint(position - vector) - deltaPosition;
-                                treeState.position.y = vector.y;
-                            }
-                        }
-            */
-            TreeInstance.RenderInstance(cameraInfo, info, position, scale, brightness, objectIndex);
+            Vector3 mousePosition = Input.mousePosition;
+            //mouseRay = Camera.main.ScreenPointToRay(mousePosition);
+            mouseRay = Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(position));
+            mouseRayLength = Camera.main.farClipPlane;
+            ToolBase.RaycastInput input = new ToolBase.RaycastInput(mouseRay, mouseRayLength) {
+                m_currentEditObject = true,
+                m_ignoreTerrain = false,
+                m_ignoreBuildingFlags = Building.Flags.None,
+                m_ignoreNodeFlags = NetNode.Flags.None,
+                m_ignoreSegmentFlags = NetSegment.Flags.None,
+                m_ignorePropFlags = PropInstance.Flags.None,
+                m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+                m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+                m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default),
+                m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default)
+            };
+            if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
+                return raycastOutput.m_hitPos;
+            }
+            return new Vector3(0, 0, 0);
         }
     }
 }
