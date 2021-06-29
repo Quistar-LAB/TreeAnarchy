@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -12,6 +13,7 @@ namespace TreeAnarchy.Patches {
     internal static class TreeMovement {
         private static bool transpilerPatched = false;
         private static readonly Quaternion[] treeQuaternion = new Quaternion[360];
+        private static bool updateLODTreeSway = false;
 
         internal static void Enable(Harmony harmony) {
             for (int i = 0; i < 360; i++) {
@@ -24,9 +26,9 @@ namespace TreeAnarchy.Patches {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
                     new Type[] { typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(),
                                  typeof(Vector3), typeof(RenderGroup.MeshData), typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(PopulateGroupDataPrefix))),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(PopulateGroupDataTranspiler))));
-
+                harmony.Patch(AccessTools.Method(typeof(OptionsMainPanel), nameof(OptionsMainPanel.OnClosed)),
+                    postfix: new HarmonyMethod(AccessTools.Method(typeof(TreeMovement), nameof(OnOptionPanelClosed))));
                 transpilerPatched = true;
             }
         }
@@ -66,9 +68,11 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static bool PopulateGroupDataPrefix(TreeInfo info, Vector3 position, float scale, float brightness, Vector4 objectIndex, ref int vertexIndex, ref int triangleIndex, Vector3 groupPosition, RenderGroup.MeshData data, ref Vector3 min, ref Vector3 max, ref float maxRenderDistance, ref float maxInstanceDistance) {
-            Debug.Log($"TreeAnarchy: PopulateGroupData ==> vertexIndex: {vertexIndex}");
-            return true;
+        private static void OnOptionPanelClosed() {
+            if(updateLODTreeSway) {
+                UpdateLODProc();
+                updateLODTreeSway = false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -83,24 +87,25 @@ namespace TreeAnarchy.Patches {
             int y = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
             int totalHeight = (int)WeatherManager.instance.m_windGrid[y * 128 + x].m_totalHeight;
             float windHeight = pos.y - (float)totalHeight * 0.015625f;
-            return Mathf.Clamp(windHeight * 0.02f + TreeSwayFactor, 0f, 2f);
+            return Mathf.Clamp(windHeight * 0.02f + 1, 0f, 2f) * TreeSwayFactor;
         }
 
-        public static void UpdateTreeSway() {
-            TreeManager tm = Singleton<TreeManager>.instance;
+        
+        private static void UpdateLODProc() {
+            int layerID = Singleton<TreeManager>.instance.m_treeLayer;
             FastList<RenderGroup> renderedGroups = Singleton<RenderManager>.instance.m_renderedGroups;
             for (int i = 0; i < renderedGroups.m_size; i++) {
                 RenderGroup renderGroup = renderedGroups.m_buffer[i];
-                RenderGroup.MeshLayer meshLayer = renderGroup.GetLayer(tm.m_treeLayer);
-                if(meshLayer != null) {
-                    if(meshLayer.m_tempData != null) {
-                        byte alpha = (byte)GetWindSpeed(renderGroup.m_position);
-                        for (int j = 0; j < meshLayer.m_tempData.m_colors.Length; j++) {
-                            meshLayer.m_tempData.m_colors[j].a = alpha;
-                        }
-                    }
+                RenderGroup.MeshLayer layer = renderGroup.GetLayer(layerID);
+                if (layer != null) {
+                    layer.m_dataDirty = true;
                 }
+                renderGroup.UpdateMeshData();
             }
+        }
+
+        public static void UpdateTreeSway() {
+            updateLODTreeSway = true;
         }
     }
 }
