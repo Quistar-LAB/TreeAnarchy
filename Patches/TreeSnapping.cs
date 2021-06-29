@@ -478,7 +478,7 @@ namespace TreeAnarchy.Patches {
             if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
                 return raycastOutput.m_hitPos;
             }
-            return new Vector3(0, 0, 0);
+            return position;
         }
     }
 }
