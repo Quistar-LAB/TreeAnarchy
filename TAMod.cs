@@ -8,6 +8,7 @@ using System.Xml;
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
         internal const string m_modVersion = "0.8.7";
+        internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
 

@@ -35,7 +35,7 @@ namespace TreeAnarchy {
             if (IsPluginExists("1619685021", "MoveIt")) {
                 if (!isTreeSnapPatched) {
                     /* for tree snapping */
-                    if (TAMod.UseTreeSnapping) TreeSnapping.Enable(m_harmony);
+                    TreeSnapping.Enable(m_harmony);
                     /* for tree rotation */
                     isTreeSnapPatched = true;
                 }

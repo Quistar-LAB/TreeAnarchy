@@ -8,7 +8,7 @@ using static TreeAnarchy.TAMod;
 [assembly: AssemblyTitle("TreeAnarchy")]
 [assembly: AssemblyDescription("Unlimited Trees: Reboot")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Quistar")]
 [assembly: AssemblyProduct("TreeAnarchy")]
 [assembly: AssemblyCopyright("Copyright ©Simon Ueng<simon.ueng@gmail.com> 2021")]
 [assembly: AssemblyTrademark("")]
@@ -32,5 +32,5 @@ using static TreeAnarchy.TAMod;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion(m_modVersion)]
+[assembly: AssemblyVersion(m_assemblyVersion)]
 [assembly: AssemblyFileVersion(m_modVersion)]
