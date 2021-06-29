@@ -66,7 +66,6 @@
     <Compile Include="Patches\TreeMovement.cs" />
     <Compile Include="TAPatcher.cs" />
     <Compile Include="Patches\TreeLimit.cs" />
-    <Compile Include="Patches\TreeManagerData.cs" />
     <Compile Include="TASerializableDataExtension.cs" />
     <Compile Include="TAOldDataSerializer.cs" />
     <Compile Include="TAMod.cs" />

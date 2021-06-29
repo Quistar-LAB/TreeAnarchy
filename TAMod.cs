@@ -104,11 +104,11 @@ namespace TreeAnarchy {
             TAUI.UpdateState(IsInGame);
         }
         #endregion
-/*
-        internal static Utils.MemoryModule setupMemModule(byte[] buf) {
+        /*
+                internal static Utils.MemoryModule setupMemModule(byte[] buf) {
 
-        }
-*/
+                }
+        */
         private const string SettingsFileName = "TreeAnarchyConfig.xml";
         internal static void LoadSettings() {
             try {

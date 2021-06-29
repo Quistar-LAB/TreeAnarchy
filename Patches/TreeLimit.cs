@@ -13,6 +13,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
@@ -174,6 +175,69 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
+        private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            bool firstSig = false, secondSig = false;
+            LocalBuilder maxLen = il.DeclareLocal(typeof(int)), num4;
+            Label IsFixedHeight = il.DefineLabel();
+            MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
+
+            var codes = instructions.ToList();
+            codes.Insert(0, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.EnsureCapacity))));
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].opcode == OpCodes.Stloc_3 && !firstSig) {
+                    firstSig = true;
+                    var snippet = new CodeInstruction[] {
+
+                        new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit),
+                        new CodeInstruction(OpCodes.Stloc_S, maxLen),
+                    };
+                    codes.InsertRange(i + 1, snippet);
+                }
+                if (codes[i].opcode == OpCodes.Ldloc_3) {
+                    if (codes[i - 1].operand != null) {
+                        var local = codes[i - 1].operand as LocalBuilder;
+                        if (local.LocalIndex != 19) {
+                            codes[i] = new CodeInstruction(OpCodes.Ldloc_S, maxLen);
+                        }
+                    }
+                }
+                if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree))) && !secondSig) {
+                    secondSig = true;
+                    num4 = codes[i + 2].operand as LocalBuilder;
+                    var snippet = new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldloc_1),
+                        new CodeInstruction(OpCodes.Ldloc_S, num4),
+                        new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
+                        new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
+                        new CodeInstruction(OpCodes.Brtrue_S, IsFixedHeight),
+                    };
+                    codes.InsertRange(i + 1, snippet);
+                    codes.Insert(i - 7, new CodeInstruction(OpCodes.Call, integratedDeserialize));
+                }
+                if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))) && secondSig) {
+                    codes[i + 1] = codes[i + 1].WithLabels(IsFixedHeight);
+                }
+            }
+
+            return codes.AsEnumerable();
+        }
+
+        private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions) {
+            bool sigFound = false;
+            var codes = instructions.ToList();
+
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].opcode == OpCodes.Stloc_2 && !sigFound) {
+                    int index = i - 3;
+                    codes.RemoveRange(index, 3);
+                    codes.Insert(index, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
+                    sigFound = true;
+                }
+            }
+
+            return codes.AsEnumerable();
+        }
+
         internal static void InjectResize() {
             Harmony harmony = TAPatcher.m_harmony;
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
@@ -210,9 +274,12 @@ namespace TreeAnarchy.Patches {
                 if (!isTranspilerPatched) {
                     InjectResize();
                     harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
+                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.DeserializeTranspiler))));
+                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.SerializeTranspiler))));
                     isTranspilerPatched = true;
                 }
-                //m_Harmony.Patch(AccessTools.Method(typeof(TreeManager), "TrySpreadFire"), prefix: new HarmonyMethod(AccessTools.Method(typeof(Patcher), nameof(Patcher.TrySpreadFirePrefix))));
             } catch (Exception e) {
                 Debug.LogException(e);
             }
