@@ -49,6 +49,8 @@ namespace TreeAnarchy {
         }
         private static void OnTreeRotationCheckChanged(UIComponent component, bool isChecked) {
             RandomTreeRotation = isChecked;
+            if (RandomTreeRotation) RandomTreeRotationFactor = 1000;
+            else RandomTreeRotationFactor = 0;
             SaveSettings();
         }
         private static void OnTreeSwayFactorChanged(UIComponent component, float val) {

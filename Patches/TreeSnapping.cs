@@ -346,33 +346,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-            /*
-                       var snippetOld = new CodeInstruction[] {
-                           new CodeInstruction(OpCodes.Ldloc_0),
-                           new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                           new CodeInstruction(OpCodes.Ldarg_1),
-                           new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(InstanceState), nameof(InstanceState.terrainHeight))),
-                           new CodeInstruction(OpCodes.Sub),
-                           new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance))),
-                           new CodeInstruction(OpCodes.Ldloc_0),
-                           new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleOriginalRawHeightSmooth), new Type[] { typeof(Vector3) })),
-                           new CodeInstruction(OpCodes.Add),
-                           new CodeInstruction(OpCodes.Stloc_1),
-                           new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))),
-                           new CodeInstruction(OpCodes.Brtrue_S, JumpToRayCast),
-                           new CodeInstruction(OpCodes.Ldloca_S, 0),
-                           new CodeInstruction(OpCodes.Ldloc_1),
-                           new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                           new CodeInstruction(OpCodes.Br_S, Exit),
-                           new CodeInstruction(OpCodes.Ldloc_0).WithLabels(JumpToRayCast),
-                           new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                           new CodeInstruction(OpCodes.Ldloc_1),
-                           new CodeInstruction(OpCodes.Bge_Un_S, Exit),
-                           new CodeInstruction(OpCodes.Ldloca_S, 0),
-                           new CodeInstruction(OpCodes.Ldloc_1),
-                           new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y)))
-                       };
-            */
 
             var snippet = new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance))),
@@ -439,10 +412,6 @@ namespace TreeAnarchy.Patches {
 
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, snippet);
-
-            foreach(var code in codes) {
-                Debug.Log($"TreeAnarchy: ==> {code}");
-            }
 
             return codes;
         }

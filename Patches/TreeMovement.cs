@@ -78,7 +78,7 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Quaternion GetRandomQuaternion(float magnitude) {
-            int index = (int)((long)magnitude * 1000) % 359;
+            int index = (int)((long)magnitude * RandomTreeRotationFactor) % 359;
             index = (index + (index >> 31)) ^ (index >> 31);
             return treeQuaternion[index];
         }

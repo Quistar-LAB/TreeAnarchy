@@ -44,6 +44,7 @@ namespace TreeAnarchy {
         /* Tree Movement Releated */
         internal static float TreeSwayFactor = 1f;
         internal static bool RandomTreeRotation = true;
+        internal static int RandomTreeRotationFactor = 1000;
 
         internal static bool UseModifiedTreeCap {
             get {
