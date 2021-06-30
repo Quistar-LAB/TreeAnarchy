@@ -184,7 +184,20 @@ namespace TreeAnarchy {
         m_Output->Flush();
     }
 
-    void AccelLayer::Setup() {
+    array<unsigned char>^ AccelLayer::ExtractCore() {
+        array<unsigned char>^ buf;
+        String^ fileName = "NativeCore.dll";
+        Assembly^ assembly = Assembly::GetExecutingAssembly();
+        {
+            Stream^ resFileStream = assembly->GetManifestResourceStream(fileName);
+            if (!resFileStream) return nullptr;
+            buf = gcnew array<unsigned char>(resFileStream->Length);
+            resFileStream->Read(buf, 0, buf->Length);
+        }
+        return buf;
+    }
+
+    void AccelLayer::SetupCore() {
         array<unsigned char>^ buf;
         String^ fileName = "NativeCore.dll";
         Assembly^ assembly = Assembly::GetExecutingAssembly();

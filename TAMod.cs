@@ -1,13 +1,14 @@
-﻿using ColossalFramework;
-using ICities;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Xml;
+using ColossalFramework;
+using ICities;
 
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.8.7";
+        internal const string m_modVersion = "0.8.8";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -40,6 +41,7 @@ namespace TreeAnarchy {
 
         /* Lock Forestry */
         internal static bool LockForestry = false;
+        internal static bool PersistentLockForestry = true;
 
         /* Tree Movement Releated */
         internal static float TreeSwayFactor = 1f;
@@ -66,15 +68,23 @@ namespace TreeAnarchy {
         }
 
         internal static bool IsInGame = false;
+        internal static bool Is64Bits = true;
 
         #region IUserMod
         string IUserMod.Name => $"{m_modName} {m_modVersion}";
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
             LoadSettings();
-            LockForestry = true; // Always load Lockforestry enabled just in case player forgets
-            AccelLayer.Setup();
+            if(PersistentLockForestry) LockForestry = true;
             TAPatcher.EnableCore();
+            if (IntPtr.Size == 8) {
+                /* Make sure system is 64 bits */
+                Is64Bits = true;
+                AccelLayer.SetupCore();
+
+            } else {
+                Is64Bits = false;
+            }
         }
         public void OnDisabled() {
             TAPatcher.DisableCore();
@@ -125,6 +135,7 @@ namespace TreeAnarchy {
                 RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute("RandomTreeRotation"));
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
+                PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
                 UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
                 EnableProfiling = bool.Parse(xmlConfig.DocumentElement.GetAttribute("EnableProfiling"));
             } catch {
@@ -141,6 +152,7 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<bool>(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "PersistentLock", PersistentLockForestry));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "EnableProfiling", EnableProfiling));
             xmlConfig.AppendChild(root);

@@ -17,9 +17,13 @@ namespace TreeAnarchy {
             internal static string RandomTreeRotation = @"Random Tree Rotation";
             internal static string TreeSwayFactor = @"Tree Sway Factor";
             internal static string LockForestry = @"Lock Forestry";
-            internal static string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land";
+            internal static string PersistentLock = @"Persistent lock on forestry resources";
+            internal static string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land." +
+                                               @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting" +
+                                               @"to turn on Lock Forestry when entering a game and destroying fertile land on a map";
             internal static string Important = @"Important! Must be set before starting/loading a game";
             internal static string Experimental = @"Experimental Tree Rendering Acceleration";
+            internal static string Experimental32Bits = @"Experimental features disabled on 32 bit system";
             internal static string ExperimentalLabel = @"Experimental acceleration is achieved by disabling (assumed) redundant checks and " +
                                                        @"unrolling loops within potential bottelnecks when rendering trees. This is considered " +
                                                        @"unsafe, thus use at your own risk";
@@ -34,6 +38,7 @@ namespace TreeAnarchy {
         private static UICheckBox TreeSnap = default;
         private static UICheckBox TreeRotation = default;
         private static UICheckBox LockForestry = default;
+        private static UICheckBox PersistentLock = default;
         private static UICheckBox Experimental = default;
         private static UICheckBox EnableProfiling = default;
         private static UISlider TreeSwayFactor = default;
@@ -60,6 +65,10 @@ namespace TreeAnarchy {
         }
         private static void OnLockForestryCheckChanged(UIComponent component, bool isChecked) {
             TAMod.LockForestry = isChecked;
+            SaveSettings();
+        }
+        private static void OnPersistentLockCheckChanged(UIComponent component, bool isChecked) {
+            TAMod.PersistentLockForestry = isChecked;
             SaveSettings();
         }
         private static void OnTreeScaleFactorChanged(UIComponent component, float val) {
@@ -96,7 +105,8 @@ namespace TreeAnarchy {
             SwayPanel.relativePosition = new Vector3(320, -5);
             AddCheckBox(ref panel, ref LockForestry, Msg.LockForestry, TAMod.LockForestry, OnLockForestryCheckChanged);
             LockForestry.width = 300;
-            AddLabel(ref panel, LockForestry, ref swayLabel, Msg.SwayLabel);
+            AddCheckBox(ref panel, ref PersistentLock, Msg.PersistentLock, TAMod.PersistentLockForestry, OnPersistentLockCheckChanged);
+            AddLabel(ref panel, PersistentLock, ref swayLabel, Msg.SwayLabel);
             option.AddSpace((int)SwayPanel.height);
             SwayPanel.zOrder = TreeRotation.zOrder - 1;
         }
@@ -133,7 +143,13 @@ namespace TreeAnarchy {
                 return;
             }
             EnableProfiling.Enable();
-            Experimental.Enable();
+            if (Is64Bits) {
+                Experimental.text = Msg.Experimental;
+                Experimental.Enable();
+            } else {
+                Experimental.text = Msg.Experimental32Bits;
+                Experimental.Disable();
+            }
             WindEffect.Enable();
             TreeScaleFactor.Enable();
         }

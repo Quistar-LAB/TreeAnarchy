@@ -22,7 +22,6 @@ namespace TreeAnarchy {
         literal String^ fileName = "TAProfile.txt";
         static Stopwatch^ BeginRenderingTimer = gcnew Stopwatch();
         static Stopwatch^ EndRenderingTimer = gcnew Stopwatch();
-        //static FileStream^ m_fileStream = gcnew FileStream(fileName, FileMode::Open);
         static StreamWriter^ m_Output = gcnew StreamWriter(fileName);
         ref struct Profiler {
             array<double>^ m_profile = gcnew array<double>(PROFILE_LENGTH);
@@ -69,7 +68,8 @@ namespace TreeAnarchy {
         __declspec(noinline) static void BeginRenderingImplPostfix();
 
         static void StartProfile() {}
-        static void Setup();
+        array<unsigned char>^ ExtractCore();
+        static void SetupCore();
     };
 }
 
