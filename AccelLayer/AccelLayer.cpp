@@ -24,7 +24,7 @@ namespace TreeAnarchy {
                 refreshLOD(prefab->m_lodMeshData8, prefab->m_lodMesh8);
                 refreshLOD(prefab->m_lodMeshData16, prefab->m_lodMesh16);
                 if (!prefab->m_lodMaterial) {
-                    Shader^ shader = Singleton<RenderManager^>::instance->m_properties->m_groupLayerShaders[instance->m_treeLayer];
+                    Shader^ shader = renderManagerInstance->m_properties->m_groupLayerShaders[instance->m_treeLayer];
                     prefab->m_lodMaterial = gcnew Material(shader);
                     prefab->m_lodMaterial->EnableKeyword("MULTI_INSTANCE");
                 }
@@ -62,7 +62,7 @@ namespace TreeAnarchy {
     bool AccelLayer::EndRenderingImplPrefixProfiled(TreeManager^ __instance, RenderManager::CameraInfo^ cameraInfo) {
         EndRenderingTimer->Reset();
         EndRenderingTimer->Start();
-        FastList<RenderGroup^>^ renderedGroups = Singleton<RenderManager^>::instance->m_renderedGroups;
+        FastList<RenderGroup^>^ renderedGroups = renderManagerInstance->m_renderedGroups;
         int layerMask = 1 << __instance->m_treeLayer;
         array<unsigned int>^ treeGrid = __instance->m_treeGrid;
         array<::TreeInstance>^ buf = __instance->m_trees->m_buffer;
@@ -93,7 +93,7 @@ namespace TreeAnarchy {
                 if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
             }
         }
-        if (Singleton<InfoManager^>::instance->CurrentMode == InfoManager::InfoMode::None) {
+        if (infoManagerInstance->CurrentMode == InfoManager::InfoMode::None) {
             int size = __instance->m_burningTrees->m_size;
             for (int m = 0; m < size; m++) {
                 TreeManager::BurningTree burningTree = __instance->m_burningTrees->m_buffer[m];
@@ -108,7 +108,7 @@ namespace TreeAnarchy {
     }
 
     bool AccelLayer::EndRenderingImplPrefix(TreeManager^ __instance, RenderManager::CameraInfo^ cameraInfo) {
-        FastList<RenderGroup^>^ renderedGroups = Singleton<RenderManager^>::instance->m_renderedGroups;
+        FastList<RenderGroup^>^ renderedGroups = renderManagerInstance->m_renderedGroups;
         int layerMask = 1 << __instance->m_treeLayer;
         array<unsigned int>^ treeGrid = __instance->m_treeGrid;
         array<::TreeInstance>^ buf = __instance->m_trees->m_buffer;
@@ -139,7 +139,7 @@ namespace TreeAnarchy {
                 if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
             }
         }
-        if (Singleton<InfoManager^>::instance->CurrentMode == InfoManager::InfoMode::None) {
+        if (infoManagerInstance->CurrentMode == InfoManager::InfoMode::None) {
             int size = __instance->m_burningTrees->m_size;
             for (int m = 0; m < size; m++) {
                 TreeManager::BurningTree burningTree = __instance->m_burningTrees->m_buffer[m];
@@ -195,6 +195,13 @@ namespace TreeAnarchy {
             resFileStream->Read(buf, 0, buf->Length);
         }
         return buf;
+    }
+
+    void AccelLayer::SetupRenderingFramekwork(TreeManager^ treeManager, InfoManager^ infoManager, TerrainManager^ terrainManager, RenderManager^ renderManager) {
+        treeManagerInstance = treeManager;
+        infoManagerInstance = infoManager;
+        terrainManagerInstance = terrainManager;
+        renderManagerInstance = renderManager;
     }
 
     void AccelLayer::SetupCore() {

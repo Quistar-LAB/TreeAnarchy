@@ -57,6 +57,11 @@ namespace TreeAnarchy {
         static Profiler m_storedBeginRenderProfile;
         static Profiler m_storedEndRenderProfile;
 
+        static TreeManager^ treeManagerInstance;
+        static InfoManager^ infoManagerInstance;
+        static TerrainManager^ terrainManagerInstance;
+        static RenderManager^ renderManagerInstance;
+
         static void BeginRedenderingLoopOpt(TreeManager^);
     public:
         static IEnumerable<CodeInstruction^>^ BeginRenderingImplTranspiler(IEnumerable<CodeInstruction^>^, ILGenerator^);
@@ -68,7 +73,8 @@ namespace TreeAnarchy {
         __declspec(noinline) static void BeginRenderingImplPostfix();
 
         static void StartProfile() {}
-        array<unsigned char>^ ExtractCore();
+        static array<unsigned char>^ ExtractCore();
+        static void AccelLayer::SetupRenderingFramekwork(TreeManager^, InfoManager^, TerrainManager^, RenderManager^);
         static void SetupCore();
     };
 }
