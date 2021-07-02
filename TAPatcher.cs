@@ -1,7 +1,9 @@
 ﻿using ColossalFramework;
 using ColossalFramework.Plugins;
 using HarmonyLib;
+using System.Reflection;
 using TreeAnarchy.Patches;
+using TreeAnarchy.Utils;
 
 namespace TreeAnarchy {
     internal static class TAPatcher {
@@ -13,12 +15,23 @@ namespace TreeAnarchy {
         private static bool isTreeMovementPatched = false;
         private static bool isExperimentalPatched = false;
         private static bool isExperimentalTranspilerPatched = false;
+        internal static FieldInfo MoveItUseTreeSnap = null;
 
         private static bool IsPluginExists(string id, string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
                 if (info.name.Contains(id) || info.ToString().Contains(name)) {
-                    return true;
+                    if (info.isEnabled) return true;
                 }
+            }
+            return false;
+        }
+
+        private static bool CheckMoveItTreeSnapSig() {
+            FieldInfo treeSnapField = typeof(MoveIt.MoveItTool).GetField("treeSnapping", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public);
+            if(treeSnapField != null) {
+                MoveItUseTreeSnap = treeSnapField;
+                MoveItUseTreeSnap.SetValue(null, TAMod.UseTreeSnapping);
+                return true;
             }
             return false;
         }
@@ -32,18 +45,19 @@ namespace TreeAnarchy {
 
         internal static void LateEnable() {
             EnableCore();
-            if (IsPluginExists("1619685021", "MoveIt")) {
+            if (IsPluginExists("1619685021", "MoveIt") || IsPluginExists("2215771668", "MoveIt")) {
                 if (!isTreeSnapPatched) {
-                    /* for tree snapping */
                     TreeSnapping.Enable(m_harmony);
-                    /* for tree rotation */
+                    if (!CheckMoveItTreeSnapSig()) {
+                        TreeSnapping.PatchMoveIt(m_harmony);
+                    }
                     isTreeSnapPatched = true;
                 }
-                if (!IsPluginExists("1388613752", "Tree Movement Control") ||
-                    !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
-                    TreeMovement.Enable(m_harmony);
-                    isTreeMovementPatched = true;
-                }
+            }
+            if (!IsPluginExists("1388613752", "Tree Movement Control") ||
+                !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
+                TreeMovement.Enable(m_harmony);
+                isTreeMovementPatched = true;
             }
 
             if (TAMod.UseExperimental && !isExperimentalPatched) {
@@ -71,6 +85,7 @@ namespace TreeAnarchy {
                         isExperimentalTranspilerPatched = true;
                     }
                 }
+                AccelLayer.SetupRenderingFramekwork(Singleton<TreeManager>.instance, Singleton<InfoManager>.instance, Singleton<TerrainManager>.instance, Singleton<RenderManager>.instance);
                 isExperimentalPatched = true;
             } else if (TAMod.EnableProfiling) {
                 m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),
@@ -83,9 +98,6 @@ namespace TreeAnarchy {
         }
 
         internal static void DisableLatePatch() {
-            if (isTreeSnapPatched) {
-                TreeSnapping.Disable(m_harmony, HARMONYID);
-            }
             if (isExperimentalPatched) {
                 m_harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"), HarmonyPatchType.All);
                 m_harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"), HarmonyPatchType.All);

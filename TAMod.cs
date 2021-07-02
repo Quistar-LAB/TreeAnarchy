@@ -1,14 +1,14 @@
-﻿using System;
+﻿using ColossalFramework;
+using ICities;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Xml;
-using ColossalFramework;
-using ICities;
 
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.8.8";
+        internal const string m_modVersion = "0.8.9";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -75,7 +75,7 @@ namespace TreeAnarchy {
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
             LoadSettings();
-            if(PersistentLockForestry) LockForestry = true;
+            if (PersistentLockForestry) LockForestry = true;
             TAPatcher.EnableCore();
             if (IntPtr.Size == 8) {
                 /* Make sure system is 64 bits */
