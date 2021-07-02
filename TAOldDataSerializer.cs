@@ -28,20 +28,6 @@ namespace TreeAnarchy {
 
         public abstract void AfterDeserialize();
 
-        private static int DeserializePrefab(ushort index) {
-            int count = PrefabCollection<TreeInfo>.PrefabCount();
-            if (index > count) {
-                // Most likely the tree asset doesn't exist
-                return -1;
-            }
-            try {
-                TreeInfo info = PrefabCollection<TreeInfo>.GetPrefab(index);
-            } catch {
-                return -1;
-            }
-            return index;
-        }
-
         // These are serial..So we have to think serially
         // a bit long because of all the different formats we have to consider
         // Keeping compatibility almost broke my brain reading the old codes,
@@ -95,21 +81,10 @@ ReadData:
                         m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
                         trees[i].m_flags = (ushort)m_flags;
                         if (trees[i].m_flags != 0) {
-                            int infoIndex = DeserializePrefab(ReadUShort());
-                            short x = ReadShort();
-                            short z = ReadShort();
-                            if (infoIndex >= 0) {
-                                trees[i].m_infoIndex = (ushort)infoIndex;
-                                trees[i].m_posX = x;
-                                trees[i].m_posZ = z;
-                                trees[i].m_posY = 0;
-                            } else {
-                                trees[i].m_infoIndex = 0;
-                                trees[i].m_posX = 0;
-                                trees[i].m_posZ = 0;
-                                trees[i].m_posY = 0;
-                                trees[i].m_flags = 0;
-                            }
+                            trees[i].m_infoIndex = ReadUShort();
+                            trees[i].m_posX = ReadShort();
+                            trees[i].m_posZ = ReadShort();
+                            trees[i].m_posY = 0;
                         }
                     }
                     break;
