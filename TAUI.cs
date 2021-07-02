@@ -50,6 +50,9 @@ namespace TreeAnarchy {
         }
         private static void OnTreeSnapCheckChanged(UIComponent component, bool isChecked) {
             UseTreeSnapping = isChecked;
+            if (TAPatcher.MoveItUseTreeSnap != null) {
+                TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
+            }
             SaveSettings();
         }
         private static void OnTreeRotationCheckChanged(UIComponent component, bool isChecked) {
@@ -107,7 +110,7 @@ namespace TreeAnarchy {
             LockForestry.width = 300;
             AddCheckBox(ref panel, ref PersistentLock, Msg.PersistentLock, TAMod.PersistentLockForestry, OnPersistentLockCheckChanged);
             AddLabel(ref panel, PersistentLock, ref swayLabel, Msg.SwayLabel);
-            option.AddSpace((int)SwayPanel.height);
+            option.AddSpace((int)swayLabel.height);
             SwayPanel.zOrder = TreeRotation.zOrder - 1;
         }
 
