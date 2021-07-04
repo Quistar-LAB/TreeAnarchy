@@ -13,11 +13,13 @@ namespace TreeAnarchy.Patches {
         private static bool transpilerPatched = false;
         private static readonly Quaternion[] treeQuaternion = new Quaternion[360];
         private static bool updateLODTreeSway = false;
+        private static WeatherManager.WindCell[] windGrids;
 
         internal static void Enable(Harmony harmony) {
             for (int i = 0; i < 360; i++) {
                 treeQuaternion[i] = Quaternion.Euler(0f, i, 0f);
             }
+            windGrids = Singleton<WeatherManager>.instance.m_windGrid;
             if (!transpilerPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
                     new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
@@ -84,11 +86,21 @@ namespace TreeAnarchy.Patches {
         }
 
         public static float GetWindSpeed(Vector3 pos) {
-            int x = Mathf.Clamp(Mathf.FloorToInt(pos.x / 135f + 64f - 0.5f), 0, 127);
-            int y = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
-            int totalHeight = (int)WeatherManager.instance.m_windGrid[y * 128 + x].m_totalHeight;
-            float windHeight = pos.y - (float)totalHeight * 0.015625f;
-            return Mathf.Clamp(windHeight * 0.02f + 1, 0f, 2f) * TreeSwayFactor;
+            int tempX = (int)(pos.x * 0.0074074074f + 63.5f);
+            int tempY = (int)(pos.z * 0.0074074074f + 63.5f);
+            tempX = tempX > 127 ? 127 : tempX;
+            int x = tempX < 0 ? 0 : tempX;
+            //int x = Mathf.Clamp(Mathf.FloorToInt(pos.x / 135f + 64f - 0.5f), 0, 127);
+
+            tempY = tempY > 127 ? 127 : tempY;
+            int y = tempY < 0 ? 0 : tempY;
+            //int y = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
+
+            int totalHeight = (int)windGrids[y * 128 + x].m_totalHeight;
+            float windHeight = ((pos.y - (float)totalHeight * 0.015625f) * 0.02f + 1);
+            windHeight = windHeight > 2f ? 2f : windHeight;
+            return windHeight < 0 ? 0 : windHeight * TreeSwayFactor;
+            //return Mathf.Clamp(windHeight * 0.02f + 1, 0f, 2f) * TreeSwayFactor;
         }
 
 
