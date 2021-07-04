@@ -27,8 +27,8 @@ namespace TreeAnarchy.Patches {
             if (!isTranspilerPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
-//                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-//                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreePrefix))));
+                //                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+                //                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreePrefix))));
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
                 isTranspilerPatched = true;
@@ -44,8 +44,8 @@ namespace TreeAnarchy.Patches {
 
         internal static void PatchMoveIt(Harmony harmony) {
             if (!isMoveItPatched) {
-//                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-//                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformTranspiler))));
+                //                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
+                //                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformTranspiler))));
                 harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformPrefix))));
                 isMoveItPatched = true;
@@ -80,7 +80,7 @@ namespace TreeAnarchy.Patches {
                 break;
             }
 
-            for(int i = 0; i < codes.Count; i++) {
+            for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].opcode == OpCodes.Ret && !firstSig) {
                     firstSig = true;
                     var snippet = new CodeInstruction[] {
@@ -97,11 +97,11 @@ namespace TreeAnarchy.Patches {
             }
 
             for (int i = 0; i < codes.Count; i++) {
-                if(codes[i].opcode == OpCodes.Brtrue && !secondSig) {
+                if (codes[i].opcode == OpCodes.Brtrue && !secondSig) {
                     secondSig = true;
                     codes[i] = new CodeInstruction(OpCodes.Brtrue, hasFixedHeight);
                     FirstIndex = i + 1;
-                } else if(codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
+                } else if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
                     LastIndex = i + 1;
                     exitLabel = codes[i + 1].labels[0];
                     break;
@@ -111,14 +111,14 @@ namespace TreeAnarchy.Patches {
             var snippet1 = new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))),
                 new CodeInstruction(OpCodes.Brfalse_S, useTerrainHeight),
-                
+
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
                 ldlocTerrainHeight,
                 new CodeInstruction(OpCodes.Ldc_R4, 0.075f),
                 new CodeInstruction(OpCodes.Add),
                 new CodeInstruction(OpCodes.Ble_Un_S, useTerrainHeight),
-                
+
                 new CodeInstruction(OpCodes.Ldarg_0), /* Use TreeInstance position.y */
                 new CodeInstruction(OpCodes.Ldarg_0),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
