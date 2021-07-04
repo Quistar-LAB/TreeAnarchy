@@ -15,9 +15,11 @@ using namespace TreeAnarchy;
 #define refreshLOD(data, mesh) if (data) { if (!mesh) mesh = gcnew Mesh(); data->PopulateMesh(mesh); data = nullptr; }
 namespace TreeAnarchy {
     void AccelLayer::BeginRedenderingLoopOpt(TreeManager^ instance) {
+        array<PrefabCollection<TreeInfo^>::PrefabData>^ treePrefabs = m_simulationPrefabs->m_buffer;
         unsigned int maxCount = PrefabCollection<TreeInfo^>::PrefabCount();
+
         for (unsigned int i = 0; i < maxCount; i++) {
-            TreeInfo^ prefab = PrefabCollection<TreeInfo^>::GetPrefab(i);
+            TreeInfo^ prefab = treePrefabs[i].m_prefab;
             if (prefab) {
                 refreshLOD(prefab->m_lodMeshData1, prefab->m_lodMesh1);
                 refreshLOD(prefab->m_lodMeshData4, prefab->m_lodMesh4);
@@ -86,12 +88,11 @@ namespace TreeAnarchy {
                 }
             }
         }
+        array<PrefabCollection<TreeInfo^>::PrefabData>^ treePrefabs = m_simulationPrefabs->m_buffer;
         unsigned int maxLen = PrefabCollection<TreeInfo^>::PrefabCount();
         for (unsigned int i = 0; i < maxLen; i++) {
-            TreeInfo^ prefab = PrefabCollection<TreeInfo^>::GetPrefab(i);
-            if (prefab) {
-                if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
-            }
+            TreeInfo^ prefab = treePrefabs[i].m_prefab;
+            if (prefab) if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
         }
         if (infoManagerInstance->CurrentMode == InfoManager::InfoMode::None) {
             int size = __instance->m_burningTrees->m_size;
@@ -132,13 +133,14 @@ namespace TreeAnarchy {
                 }
             }
         }
+
+        array<PrefabCollection<TreeInfo^>::PrefabData>^ treePrefabs = m_simulationPrefabs->m_buffer;
         unsigned int maxLen = PrefabCollection<TreeInfo^>::PrefabCount();
         for (unsigned int i = 0; i < maxLen; i++) {
-            TreeInfo^ prefab = PrefabCollection<TreeInfo^>::GetPrefab(i);
-            if (prefab) {
-                if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
-            }
+            TreeInfo^ prefab = treePrefabs[i].m_prefab;
+            if (prefab) if (prefab->m_lodCount != 0) ::TreeInstance::RenderLod(cameraInfo, prefab);
         }
+
         if (infoManagerInstance->CurrentMode == InfoManager::InfoMode::None) {
             int size = __instance->m_burningTrees->m_size;
             for (int m = 0; m < size; m++) {
@@ -184,35 +186,20 @@ namespace TreeAnarchy {
         m_Output->Flush();
     }
 
-    array<unsigned char>^ AccelLayer::ExtractCore() {
-        array<unsigned char>^ buf;
-        String^ fileName = "NativeCore.dll";
-        Assembly^ assembly = Assembly::GetExecutingAssembly();
-        {
-            Stream^ resFileStream = assembly->GetManifestResourceStream(fileName);
-            if (!resFileStream) return nullptr;
-            buf = gcnew array<unsigned char>(resFileStream->Length);
-            resFileStream->Read(buf, 0, buf->Length);
-        }
-        return buf;
-    }
-
-    void AccelLayer::SetupRenderingFramekwork(TreeManager^ treeManager, InfoManager^ infoManager, TerrainManager^ terrainManager, RenderManager^ renderManager) {
+    void AccelLayer::SetupRenderingFramework(TreeManager^ treeManager, InfoManager^ infoManager, TerrainManager^ terrainManager, RenderManager^ renderManager) {
         treeManagerInstance = treeManager;
         infoManagerInstance = infoManager;
         terrainManagerInstance = terrainManager;
         renderManagerInstance = renderManager;
+        
+        FieldInfo^ prefabField = GetField(PrefabCollection<TreeInfo^>, "m_simulationPrefabs");
+        m_simulationPrefabs = safe_cast<FastList<PrefabCollection<TreeInfo^>::PrefabData>^>(prefabField->GetValue(nullptr));
     }
 
-    void AccelLayer::SetupCore() {
-        array<unsigned char>^ buf;
-        String^ fileName = "NativeCore.dll";
-        Assembly^ assembly = Assembly::GetExecutingAssembly();
-        {
-            Stream^ resFileStream = assembly->GetManifestResourceStream(fileName);
-            if (!resFileStream) return;
-            buf = gcnew array<unsigned char>(resFileStream->Length);
-            resFileStream->Read(buf, 0, buf->Length);
-        }
+    void AccelLayer::SetupCore(corePointers^ pointers) {
+        coreAddition = static_cast<AdditionDelegate^>(Marshal::GetDelegateForFunctionPointer(pointers->coreAddition, AdditionDelegate::typeid));
+
+        int test = coreAddition(10, 5);
+        DebugPrint(String::Format("TEST!!! coreAddition result is {0}", test));
     }
 }

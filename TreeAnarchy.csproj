@@ -53,9 +53,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>H:\Games\Cities Skylines Train Stations\Cities_Data\Managed\ICities.dll</HintPath>
     </Reference>
-    <Reference Include="MoveIt, Version=2.9.2.1393, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="MoveIt, Version=2.9.2.41847, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Users\Quistar\AppData\Local\Colossal Order\Cities_Skylines\Addons\Mods\MoveIt\MoveIt.dll</HintPath>
+      <HintPath>.\MoveIt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.XML" />
@@ -85,6 +85,9 @@
       <Project>{9b63a861-65bf-4310-b3b2-5105f2ac1f52}</Project>
       <Name>AccelLayer</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="NativeCore.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

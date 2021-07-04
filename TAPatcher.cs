@@ -3,7 +3,6 @@ using ColossalFramework.Plugins;
 using HarmonyLib;
 using System.Reflection;
 using TreeAnarchy.Patches;
-using TreeAnarchy.Utils;
 
 namespace TreeAnarchy {
     internal static class TAPatcher {
@@ -28,7 +27,7 @@ namespace TreeAnarchy {
 
         private static bool CheckMoveItTreeSnapSig() {
             FieldInfo treeSnapField = typeof(MoveIt.MoveItTool).GetField("treeSnapping", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public);
-            if(treeSnapField != null) {
+            if (treeSnapField != null) {
                 MoveItUseTreeSnap = treeSnapField;
                 MoveItUseTreeSnap.SetValue(null, TAMod.UseTreeSnapping);
                 return true;
@@ -85,7 +84,7 @@ namespace TreeAnarchy {
                         isExperimentalTranspilerPatched = true;
                     }
                 }
-                AccelLayer.SetupRenderingFramekwork(Singleton<TreeManager>.instance, Singleton<InfoManager>.instance, Singleton<TerrainManager>.instance, Singleton<RenderManager>.instance);
+                AccelLayer.SetupRenderingFramework(Singleton<TreeManager>.instance, Singleton<InfoManager>.instance, Singleton<TerrainManager>.instance, Singleton<RenderManager>.instance);
                 isExperimentalPatched = true;
             } else if (TAMod.EnableProfiling) {
                 m_harmony.Patch(AccessTools.Method(typeof(TreeManager), "EndRenderingImpl"),

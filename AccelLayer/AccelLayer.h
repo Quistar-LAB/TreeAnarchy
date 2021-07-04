@@ -14,10 +14,23 @@ using namespace HarmonyLib;
 using namespace ColossalFramework;
 using namespace UnityEngine;
 
-#define PROFILE_LENGTH  64
+#define PROFILE_LENGTH  512
 namespace TreeAnarchy {
+    [UnmanagedFunctionPointer(CallingConvention::StdCall, CharSet = CharSet::Ansi)]
+    public delegate int AdditionDelegate(int, int);
+    [UnmanagedFunctionPointer(CallingConvention::StdCall, CharSet = CharSet::Ansi)]
+    public delegate float ClampDelegate(float, float, float);
+    [UnmanagedFunctionPointer(CallingConvention::StdCall, CharSet = CharSet::Ansi)]
+    public delegate void TestDelegate();
+
     public ref class AccelLayer
 	{
+    public:
+        typedef ref struct corePointers {
+            IntPtr coreAddition;
+            IntPtr coreClamp;
+            IntPtr coreTest;
+        } corePointers;
     private:
         literal String^ fileName = "TAProfile.txt";
         static Stopwatch^ BeginRenderingTimer = gcnew Stopwatch();
@@ -62,8 +75,15 @@ namespace TreeAnarchy {
         static TerrainManager^ terrainManagerInstance;
         static RenderManager^ renderManagerInstance;
 
+        static AdditionDelegate^ coreAddition;
+        static ClampDelegate^ coreClamp;
+        static TestDelegate^ coreTest;
+
+        static FastList<PrefabCollection<TreeInfo^>::PrefabData>^ m_simulationPrefabs;
+
         static void BeginRedenderingLoopOpt(TreeManager^);
     public:
+
         static IEnumerable<CodeInstruction^>^ BeginRenderingImplTranspiler(IEnumerable<CodeInstruction^>^, ILGenerator^);
         static bool EndRenderingImplPrefixProfiled(TreeManager^ __instance, RenderManager::CameraInfo^ cameraInfo);
         static bool EndRenderingImplPrefix(TreeManager^ __instance, RenderManager::CameraInfo^ cameraInfo);
@@ -73,9 +93,8 @@ namespace TreeAnarchy {
         __declspec(noinline) static void BeginRenderingImplPostfix();
 
         static void StartProfile() {}
-        static array<unsigned char>^ ExtractCore();
-        static void AccelLayer::SetupRenderingFramekwork(TreeManager^, InfoManager^, TerrainManager^, RenderManager^);
-        static void SetupCore();
+        static void AccelLayer::SetupRenderingFramework(TreeManager^, InfoManager^, TerrainManager^, RenderManager^);
+        static void SetupCore(corePointers^);
     };
 }
 

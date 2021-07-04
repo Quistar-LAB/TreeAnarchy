@@ -3,6 +3,7 @@ using ColossalFramework.IO;
 using ICities;
 using System;
 using System.IO;
+using System.Threading;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
@@ -10,7 +11,8 @@ using static TreeAnarchy.TAOldDataSerializer;
 namespace TreeAnarchy {
     public class TASerializableDataExtension : ISerializableDataExtension {
         private enum Format : uint {
-            Version4 = 4
+            Version4 = 4,
+            Version5 = 5,
         }
 
         static private ISerializableData m_Serializer = null;
@@ -35,8 +37,17 @@ namespace TreeAnarchy {
                     trees[i].m_flags = (ushort)m_flags;
                 }
                 uShort.EndRead();
+                int startIndex = 0;
+                switch ((Format)s.version) {
+                    case Format.Version4:
+                    startIndex = DefaultTreeLimit;
+                    break;
+                    case Format.Version5:
+                    startIndex = 1;
+                    break;
+                }
                 PrefabCollection<TreeInfo>.BeginDeserialize(s);
-                for (int i = DefaultTreeLimit; i < maxLen; i++) {
+                for (int i = startIndex; i < maxLen; i++) {
                     if (trees[i].m_flags != 0) {
                         trees[i].m_infoIndex = (ushort)PrefabCollection<TreeInfo>.Deserialize(true);
                     }
@@ -51,22 +62,22 @@ namespace TreeAnarchy {
                     }
                 }
                 @short.EndRead();
-                @short = EncodedArray.Short.BeginRead(s);
+                EncodedArray.Short @short1 = EncodedArray.Short.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
                     if (trees[i].m_flags != 0) {
-                        trees[i].m_posZ = @short.Read();
+                        trees[i].m_posZ = @short1.Read();
                     } else {
                         trees[i].m_posZ = 0;
                     }
                 }
-                @short.EndRead();
-                uShort = EncodedArray.UShort.BeginRead(s);
+                @short1.EndRead();
+                EncodedArray.UShort uShort1 = EncodedArray.UShort.BeginRead(s);
                 for (int i = 1; i < maxLen; i++) {
                     if ((trees[i].m_flags & (ushort)TreeInstance.Flags.FixedHeight) != 0) {
-                        trees[i].m_posY = uShort.Read();
+                        trees[i].m_posY = uShort1.Read();
                     }
                 }
-                uShort.EndRead();
+                uShort1.EndRead();
             }
 
             public void AfterDeserialize(DataSerializer s) {
@@ -91,7 +102,7 @@ namespace TreeAnarchy {
                 uShort.EndWrite();
                 try {
                     PrefabCollection<TreeInfo>.BeginSerialize(s);
-                    for (int i = DefaultTreeLimit; i < treeLimit; i++) {
+                    for (int i = 1; i < treeLimit; i++) {
                         if (buffer[i].m_flags != 0) {
                             PrefabCollection<TreeInfo>.Serialize(buffer[i].m_infoIndex);
                         }
@@ -106,20 +117,20 @@ namespace TreeAnarchy {
                     }
                 }
                 @short.EndWrite();
-                @short = EncodedArray.Short.BeginWrite(s);
+                EncodedArray.Short @short1 = EncodedArray.Short.BeginWrite(s);
                 for (int i = DefaultTreeLimit; i < treeLimit; i++) {
                     if (buffer[i].m_flags != 0) {
-                        @short.Write(buffer[i].m_posZ);
+                        @short1.Write(buffer[i].m_posZ);
                     }
                 }
-                @short.EndWrite();
-                uShort = EncodedArray.UShort.BeginWrite(s);
+                @short1.EndWrite();
+                EncodedArray.UShort uShort1 = EncodedArray.UShort.BeginWrite(s);
                 for (int i = 1; i < treeLimit; i++) {
                     if ((buffer[i].m_flags & (ushort)TreeInstance.Flags.FixedHeight) != 0) {
-                        uShort.Write(buffer[i].m_posY);
+                        uShort1.Write(buffer[i].m_posY);
                     }
                 }
-                uShort.EndWrite();
+                uShort1.EndWrite();
             }
         }
 
@@ -133,6 +144,7 @@ namespace TreeAnarchy {
         }
 
         public static void IntegratedDeserialize() {
+            while (!Monitor.TryEnter(Singleton<SimulationManager>.instance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
@@ -171,7 +183,7 @@ namespace TreeAnarchy {
                 byte[] data;
                 if (OldFormatLoaded) m_Serializer?.EraseData(OldTreeUnlimiterKey);
                 using (var stream = new MemoryStream()) {
-                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version4, new Data());
+                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version5, new Data());
                     data = stream.ToArray();
                 }
                 m_Serializer.SaveData(TREE_ANARCHY_KEY, data);

@@ -3,12 +3,14 @@ using ICities;
 using System;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Xml;
-
+using TreeAnarchy.Utils;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.8.9";
+        internal const string m_modVersion = "0.9.1";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -48,6 +50,17 @@ namespace TreeAnarchy {
         internal static bool RandomTreeRotation = true;
         internal static int RandomTreeRotationFactor = 1000;
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public delegate int Delegate_Core_Addition(int x, int y);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public delegate float Delegate_Core_Clamp(float f, float min, float max);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public delegate int Delegate_Core_Test();
+
+        private Delegate_Core_Addition Addition;
+        private Delegate_Core_Clamp Clamp;
+        private Delegate_Core_Test Test;
+
         internal static bool UseModifiedTreeCap {
             get {
                 switch (Singleton<SimulationManager>.instance.m_metaData.m_updateMode) {
@@ -80,8 +93,16 @@ namespace TreeAnarchy {
             if (IntPtr.Size == 8) {
                 /* Make sure system is 64 bits */
                 Is64Bits = true;
-                AccelLayer.SetupCore();
-
+                using (MemoryModule memModule = new MemoryModule(ExtractResource("TreeAnarchy.NativeCore.dll"))) {
+                    AccelLayer.corePointers funcPointers = new AccelLayer.corePointers();
+                    Addition = memModule.GetDelegateFromFuncName<Delegate_Core_Addition>("Addition");
+                    Clamp = memModule.GetDelegateFromFuncName<Delegate_Core_Clamp>("Clamp");
+                    Test = memModule.GetDelegateFromFuncName<Delegate_Core_Test>("Test");
+                    funcPointers.coreAddition = Marshal.GetFunctionPointerForDelegate(Addition);
+                    funcPointers.coreClamp = Marshal.GetFunctionPointerForDelegate(Clamp);
+                    funcPointers.coreTest = Marshal.GetFunctionPointerForDelegate(Test);
+                    AccelLayer.SetupCore(funcPointers);
+                }
             } else {
                 Is64Bits = false;
             }
@@ -116,11 +137,7 @@ namespace TreeAnarchy {
             TAUI.UpdateState(IsInGame);
         }
         #endregion
-        /*
-                internal static Utils.MemoryModule setupMemModule(byte[] buf) {
 
-                }
-        */
         private const string SettingsFileName = "TreeAnarchyConfig.xml";
         internal static void LoadSettings() {
             try {
@@ -165,5 +182,15 @@ namespace TreeAnarchy {
             return attr;
         }
 
+        private static byte[] ExtractResource(string filename) {
+            byte[] buf = default;
+            Assembly a = Assembly.GetExecutingAssembly();
+            using (Stream resFilestream = a.GetManifestResourceStream(filename)) {
+                if (resFilestream == null) return null;
+                buf = new byte[resFilestream.Length];
+                resFilestream.Read(buf, 0, buf.Length);
+            }
+            return buf;
+        }
     }
 }
