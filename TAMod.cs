@@ -1,16 +1,13 @@
-﻿using ColossalFramework;
+﻿using CitiesHarmony.API;
+using ColossalFramework;
 using ICities;
-using System;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Xml;
-using TreeAnarchy.Utils;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.1";
+        internal const string m_modVersion = "0.9.2";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -20,10 +17,18 @@ namespace TreeAnarchy {
         internal const int DefaultTreeLimit = 262144;
         internal const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
+        internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
         internal static bool TreeEffectOnWind = true;
         internal static bool UseTreeSnapping = true;
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
+        internal static int CheckLowLimit {
+            get => MaxTreeLimit - 12144;
+        }
+        internal static int CheckHighLimit {
+            get => MaxTreeLimit - 5;
+        }
+
         internal static int MaxTreeLimit {
             get => (int)(DefaultTreeLimit * TreeScaleFactor);
         }
@@ -49,17 +54,6 @@ namespace TreeAnarchy {
         internal static float TreeSwayFactor = 1f;
         internal static bool RandomTreeRotation = true;
         internal static int RandomTreeRotationFactor = 1000;
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-        public delegate int Delegate_Core_Addition(int x, int y);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-        public delegate float Delegate_Core_Clamp(float f, float min, float max);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-        public delegate int Delegate_Core_Test();
-
-        private Delegate_Core_Addition Addition;
-        private Delegate_Core_Clamp Clamp;
-        private Delegate_Core_Test Test;
 
         internal static bool UseModifiedTreeCap {
             get {
@@ -89,26 +83,12 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             LoadSettings();
             if (PersistentLockForestry) LockForestry = true;
-            TAPatcher.EnableCore();
-            if (IntPtr.Size == 8) {
-                /* Make sure system is 64 bits */
-                Is64Bits = true;
-                using (MemoryModule memModule = new MemoryModule(ExtractResource("TreeAnarchy.NativeCore.dll"))) {
-                    AccelLayer.corePointers funcPointers = new AccelLayer.corePointers();
-                    Addition = memModule.GetDelegateFromFuncName<Delegate_Core_Addition>("Addition");
-                    Clamp = memModule.GetDelegateFromFuncName<Delegate_Core_Clamp>("Clamp");
-                    Test = memModule.GetDelegateFromFuncName<Delegate_Core_Test>("Test");
-                    funcPointers.coreAddition = Marshal.GetFunctionPointerForDelegate(Addition);
-                    funcPointers.coreClamp = Marshal.GetFunctionPointerForDelegate(Clamp);
-                    funcPointers.coreTest = Marshal.GetFunctionPointerForDelegate(Test);
-                    AccelLayer.SetupCore(funcPointers);
-                }
-            } else {
-                Is64Bits = false;
-            }
+            HarmonyHelper.DoOnHarmonyReady(() => TAPatcher.EnableCore());
         }
         public void OnDisabled() {
-            TAPatcher.DisableCore();
+            if (HarmonyHelper.IsHarmonyInstalled) {
+                TAPatcher.DisableCore();
+            }
             SaveSettings();
         }
 
@@ -120,11 +100,11 @@ namespace TreeAnarchy {
         #endregion
         #region ILoadingExtension
         void ILoadingExtension.OnCreated(ILoading loading) {
-            TAPatcher.LateEnable();
+            if (HarmonyHelper.IsHarmonyInstalled) TAPatcher.LateEnable();
         }
 
         void ILoadingExtension.OnReleased() {
-            TAPatcher.DisableLatePatch();
+            if (HarmonyHelper.IsHarmonyInstalled) TAPatcher.DisableLatePatch();
         }
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
@@ -153,8 +133,8 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
-                UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
-                EnableProfiling = bool.Parse(xmlConfig.DocumentElement.GetAttribute("EnableProfiling"));
+                //UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
+                //EnableProfiling = bool.Parse(xmlConfig.DocumentElement.GetAttribute("EnableProfiling"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
             }
@@ -170,8 +150,8 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "PersistentLock", PersistentLockForestry));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "EnableProfiling", EnableProfiling));
+            //root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
+            //root.Attributes.Append(AddElement<bool>(xmlConfig, "EnableProfiling", EnableProfiling));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
@@ -180,17 +160,6 @@ namespace TreeAnarchy {
             XmlAttribute attr = doc.CreateAttribute(name);
             attr.Value = t.ToString();
             return attr;
-        }
-
-        private static byte[] ExtractResource(string filename) {
-            byte[] buf = default;
-            Assembly a = Assembly.GetExecutingAssembly();
-            using (Stream resFilestream = a.GetManifestResourceStream(filename)) {
-                if (resFilestream == null) return null;
-                buf = new byte[resFilestream.Length];
-                resFilestream.Read(buf, 0, buf.Length);
-            }
-            return buf;
         }
     }
 }

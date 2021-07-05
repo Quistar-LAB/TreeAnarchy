@@ -3,7 +3,6 @@ using ColossalFramework.IO;
 using ICities;
 using System;
 using System.IO;
-using System.Threading;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
@@ -24,11 +23,60 @@ namespace TreeAnarchy {
         }
 
         private class Data : IDataContainer {
+            private static readonly uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864 };
+            private static readonly float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f };
+            private static void UpdateTreeLimit(int newSize) {
+                for (int i = 0; i < 10; i++) {
+                    if (newSize == limit[i]) {
+                        TreeScaleFactor = scale[i];
+                        TAUI.SetTreeLimitSlider(TreeScaleFactor);
+                        return;
+                    }
+                }
+            }
+
+            private static Array32<TreeInstance> ResizeTreeBuffer(uint treeCount) {
+                for (int i = 0; i < 10; i++) {
+                    if (treeCount < limit[i]) {
+                        uint size = limit[i];
+                        Array32<TreeInstance> newBuffer = new Array32<TreeInstance>(size);
+                        TreeInstance[] oldBuf = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                        newBuffer.CreateItem(out uint _);
+                        newBuffer.ClearUnused();
+                        for (int j = 1; j < MaxTreeLimit; j++) {
+
+                        }
+                        /* Update mod parameters and UI */
+                        TreeScaleFactor = scale[i];
+                        TAUI.SetTreeLimitSlider(scale[i]);
+                        return newBuffer;
+                    }
+                }
+                return null;
+            }
+
             public void Deserialize(DataSerializer s) {
-                ref TreeInstance[] trees = ref Singleton<TreeManager>.instance.m_trees.m_buffer;
                 int maxLen = s.ReadInt32(); // Read in Max limit
+                int startIndex = 1;
+                int treeCount = 0;
+                Array32<TreeInstance> newBuffer = default;
+                TreeInstance[] trees;
                 if (maxLen > MaxTreeLimit) {
-                    maxLen = MaxTreeLimit;
+                    newBuffer = new Array32<TreeInstance>((uint)maxLen);
+                    newBuffer.CreateItem(out uint _);
+                    newBuffer.ClearUnused();
+                    trees = newBuffer.m_buffer;
+                    TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                    for (int i = 1; i < DefaultTreeLimit; i++) {
+                        if (buffer[i].m_flags != 0) {
+                            trees[i].m_flags = buffer[i].m_flags;
+                            trees[i].m_infoIndex = buffer[i].m_infoIndex;
+                            trees[i].m_posX = buffer[i].m_posX;
+                            trees[i].m_posZ = buffer[i].m_posZ;
+                        }
+                    }
+                } else {
+                    trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
                 }
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
@@ -37,19 +85,16 @@ namespace TreeAnarchy {
                     trees[i].m_flags = (ushort)m_flags;
                 }
                 uShort.EndRead();
-                int startIndex = 0;
                 switch ((Format)s.version) {
                     case Format.Version4:
                     startIndex = DefaultTreeLimit;
-                    break;
-                    case Format.Version5:
-                    startIndex = 1;
                     break;
                 }
                 PrefabCollection<TreeInfo>.BeginDeserialize(s);
                 for (int i = startIndex; i < maxLen; i++) {
                     if (trees[i].m_flags != 0) {
                         trees[i].m_infoIndex = (ushort)PrefabCollection<TreeInfo>.Deserialize(true);
+                        treeCount++;
                     }
                 }
                 PrefabCollection<TreeInfo>.EndDeserialize(s);
@@ -78,6 +123,43 @@ namespace TreeAnarchy {
                     }
                 }
                 uShort1.EndRead();
+                /* Now Resize / Repack buffer if necessary */
+                if (maxLen > MaxTreeLimit) {
+                    if (treeCount > MaxTreeLimit) {
+                        TreeManager treeManager = Singleton<TreeManager>.instance;
+                        treeManager.m_trees = newBuffer;
+                        UpdateTreeLimit(maxLen);
+                        Array.Resize<ulong>(ref treeManager.m_updatedTrees, MaxTreeUpdateLimit);
+                        return; /* Just return with this buffer */
+                    }
+                    /* Pack the result into existing buffer */
+                    Array32<TreeInstance> buffer = Singleton<TreeManager>.instance.m_trees;
+                    startIndex = 1;
+                    /* update the Y position for trees between 1~262144 */
+                    /* This needs to be done first */
+                    for (int i = 1; i < DefaultTreeLimit; i++) {
+                        if (trees[i].m_flags != 0) {
+                            buffer.m_buffer[i].m_posY = trees[i].m_posY;
+                        }
+                    }
+                    /* Add trees into empty nodes in buffer */
+                    for (int i = DefaultTreeLimit; i < maxLen; i++) {
+                        if (trees[i].m_flags != 0) {
+                            /* Find available slot in buffer */
+                            for (int j = startIndex; j < MaxTreeLimit; j++) {
+                                if (buffer.m_buffer[j].m_flags == 0) {
+                                    buffer.m_buffer[j].m_flags = trees[i].m_flags;
+                                    buffer.m_buffer[j].m_infoIndex = trees[i].m_infoIndex;
+                                    buffer.m_buffer[j].m_posX = trees[i].m_posX;
+                                    buffer.m_buffer[j].m_posY = trees[i].m_posY;
+                                    buffer.m_buffer[j].m_posZ = trees[i].m_posZ;
+                                    startIndex = j;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             public void AfterDeserialize(DataSerializer s) {
@@ -144,7 +226,7 @@ namespace TreeAnarchy {
         }
 
         public static void IntegratedDeserialize() {
-            while (!Monitor.TryEnter(Singleton<SimulationManager>.instance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
+            //while (!Monitor.TryEnter(Singleton<SimulationManager>.instance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
