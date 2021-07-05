@@ -21,14 +21,12 @@ namespace TreeAnarchy {
             internal static string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land." +
                                                @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting" +
                                                @"to turn on Lock Forestry when entering a game and destroying fertile land on a map";
-            internal static string Important = @"Important! Must be set before starting/loading a game";
-            internal static string Experimental = @"Experimental Tree Rendering Acceleration";
-            internal static string Experimental32Bits = @"Experimental features disabled on 32 bit system";
-            internal static string ExperimentalLabel = @"Experimental acceleration is achieved by disabling (assumed) redundant checks and " +
-                                                       @"unrolling loops within potential bottelnecks when rendering trees. This is considered " +
-                                                       @"unsafe, thus use at your own risk";
-            internal static string EnableProfiling = @"Enable Profiling";
-            internal static string EnableProfilingLabel = @"Will profile TreeManager::BeginRenderingImpl and TreeManager::EndRenderingImpl, saving the result in TAProfile.txt";
+            internal static string Important = "Important! Must be set before starting/loading a game\n\n" +
+                                               "The following settings are only used when loading from Old Unlimited Trees Format";
+            internal static string ReplaceRemoveDesc = @"The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed" +
+                                                        "from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees";
+            internal static string ReplaceRemoveName = @"Loading behavior for old unlimited trees game format";
+            internal static string[] ReplaceRemoveLabels = new string[] { "Keep missing trees", "Remove missing trees", "Replace missing trees" };
         }
 
         private static UILabel MaxTreeLabel = default;
@@ -39,10 +37,9 @@ namespace TreeAnarchy {
         private static UICheckBox TreeRotation = default;
         private static UICheckBox LockForestry = default;
         private static UICheckBox PersistentLock = default;
-        private static UICheckBox Experimental = default;
-        private static UICheckBox EnableProfiling = default;
         private static UISlider TreeSwayFactor = default;
         private static UISlider TreeScaleFactor = default;
+        private static UIDropDown RemoveReplaceDropDown = default;
 
         private static void OnTreeWindCheckChanged(UIComponent component, bool isChecked) {
             TreeEffectOnWind = isChecked;
@@ -77,16 +74,11 @@ namespace TreeAnarchy {
         private static void OnTreeScaleFactorChanged(UIComponent component, float val) {
             TAMod.TreeScaleFactor = val;
             MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, MaxTreeLimit);
-            Patches.TreeLimit.InjectResize();
-            SaveSettings();
-        }
-        private static void OnExperimentalCheckChanged(UIComponent component, bool isChecked) {
-            UseExperimental = isChecked;
             SaveSettings();
         }
 
-        private static void OnEnableProfilingCheckChanged(UIComponent component, bool isChecked) {
-            TAMod.EnableProfiling = isChecked;
+        private static void OnReplaceRemoveKeepEventChanged(UIComponent component, int val) {
+            TAMod.RemoveReplaceOrKeep = val;
             SaveSettings();
         }
 
@@ -116,8 +108,7 @@ namespace TreeAnarchy {
 
         internal static void ShowTreeLimitOption(UIHelper option) {
             UILabel ImportantMsg = default;
-            UILabel ExperimentalLabel = default;
-            UILabel EnableProfilingLabel = default;
+            UILabel ReplaceRemoveLabel = default;
             UIPanel panel = (UIPanel)option.self;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
@@ -129,29 +120,17 @@ namespace TreeAnarchy {
             TreeScaleFactor.width = panel.width - 150;
             AddLabel(ref panel, ScalePanel, ref ImportantMsg, Msg.Important);
             option.AddSpace((int)ImportantMsg.height);
-            AddCheckBox(ref panel, ref Experimental, Msg.Experimental, TAMod.UseExperimental, OnExperimentalCheckChanged);
-            AddLabel(ref panel, Experimental, ref ExperimentalLabel, Msg.ExperimentalLabel);
-            option.AddSpace((int)ExperimentalLabel.height);
-            AddCheckBox(ref panel, ref EnableProfiling, Msg.EnableProfiling, TAMod.EnableProfiling, OnEnableProfilingCheckChanged);
-            AddLabel(ref panel, EnableProfiling, ref EnableProfilingLabel, Msg.EnableProfilingLabel);
-            option.AddSpace((int)EnableProfilingLabel.height);
+            AddDropdown(ref panel, ref RemoveReplaceDropDown, Msg.ReplaceRemoveName, Msg.ReplaceRemoveLabels, 0, OnReplaceRemoveKeepEventChanged);
+            AddLabel(ref panel, RemoveReplaceDropDown, ref ReplaceRemoveLabel, Msg.ReplaceRemoveDesc);
+            ReplaceRemoveLabel.relativePosition = new Vector3(0, RemoveReplaceDropDown.height + 5);
+            option.AddSpace((int)ReplaceRemoveLabel.height);
         }
 
         internal static void UpdateState(bool isInGame) {
             if (isInGame) {
                 WindEffect.Disable();
                 TreeScaleFactor.Disable();
-                Experimental.Disable();
-                EnableProfiling.Disable();
                 return;
-            }
-            EnableProfiling.Enable();
-            if (Is64Bits) {
-                Experimental.text = Msg.Experimental;
-                Experimental.Enable();
-            } else {
-                Experimental.text = Msg.Experimental32Bits;
-                Experimental.Disable();
             }
             WindEffect.Enable();
             TreeScaleFactor.Enable();
@@ -183,6 +162,19 @@ namespace TreeAnarchy {
             slider.eventValueChanged += new PropertyChangedEventHandler<float>(callback);
         }
 
+        private static void AddDropdown(ref UIPanel panel, ref UIDropDown dropDown, string text, string[] options, int defaultSelection, PropertyChangedEventHandler<int> callback) {
+            UIPanel uiPanel = panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsDropdownTemplate")) as UIPanel;
+            uiPanel.Find<UILabel>("Label").text = text;
+            dropDown = uiPanel.Find<UIDropDown>("Dropdown");
+            dropDown.width = 300;
+            dropDown.items = options;
+            dropDown.selectedIndex = defaultSelection;
+            dropDown.eventSelectedIndexChanged += new PropertyChangedEventHandler<int>(callback);
+        }
 
+        internal static void SetTreeLimitSlider(float value) {
+            TreeScaleFactor.value = value;
+            SaveSettings();
+        }
     }
 }

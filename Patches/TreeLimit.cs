@@ -1,7 +1,8 @@
 ﻿#define FULLVERBOSE
 #define QUIETVERBOSE
 #define SILENT
-#define FULLVERBOSE
+//#define FULLVERBOSE
+//#define DEBUG
 #if SILENT
 #undef DEBUG
 #undef FULLVERBOSE
@@ -9,6 +10,7 @@
 #endif
 
 using ColossalFramework;
+using ColossalFramework.IO;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -48,7 +50,7 @@ namespace TreeAnarchy.Patches {
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
                 if (instruction.LoadsConstant(LastMaxTreeLimit))
-                    yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeLimit))); //new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
                 else
                     yield return instruction;
             }
@@ -141,22 +143,16 @@ namespace TreeAnarchy.Patches {
             PrintDebugIL(codes.ToList(), method);
             return codes.AsEnumerable();
 #else
-            int CheckLowLimit = MaxTreeLimit - 12144;
-            int CheckHighLimit = MaxTreeLimit - 5;
             foreach (var instruction in instructions) {
-                if (instruction.Is(OpCodes.Ldc_I4, LastCheckLimitLowVal))
-                    yield return new CodeInstruction(OpCodes.Ldc_I4, CheckLowLimit);
-                else if (instruction.Is(OpCodes.Ldc_I4, LastCheckLimitHighVal))
-                    yield return new CodeInstruction(OpCodes.Ldc_I4, CheckHighLimit);
+                if (instruction.Is(OpCodes.Ldc_I4, 250000))
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckLowLimit))); //new CodeInstruction(OpCodes.Ldc_I4, CheckLowLimit);
+                else if (instruction.Is(OpCodes.Ldc_I4, 262139))
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckHighLimit))); // new CodeInstruction(OpCodes.Ldc_I4, CheckHighLimit);
                 else
                     yield return instruction;
             }
-            LastCheckLimitLowVal = CheckLowLimit;
-            LastCheckLimitHighVal = CheckHighLimit;
 #endif
         }
-        private static int LastCheckLimitLowVal = 250000;
-        private static int LastCheckLimitHighVal = 262139;
 
         /* For Forestry Lock */
         private static IEnumerable<CodeInstruction> NRMTreesModifiedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
@@ -212,7 +208,18 @@ namespace TreeAnarchy.Patches {
                         new CodeInstruction(OpCodes.Brtrue_S, IsFixedHeight),
                     };
                     codes.InsertRange(i + 1, snippet);
-                    codes.Insert(i - 7, new CodeInstruction(OpCodes.Call, integratedDeserialize));
+                    var snippet2 = new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Call, integratedDeserialize),
+                        new CodeInstruction(OpCodes.Ldloc_0),
+                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
+                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer))),
+                        new CodeInstruction(OpCodes.Stloc_1),
+                        new CodeInstruction(OpCodes.Ldloc_1),
+                        new CodeInstruction(OpCodes.Ldlen),
+                        new CodeInstruction(OpCodes.Conv_I4),
+                        new CodeInstruction(OpCodes.Stloc_3)
+                    };
+                    codes.InsertRange(i - 7, snippet2);
                 }
                 if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))) && secondSig) {
                     codes[i + 1] = codes[i + 1].WithLabels(IsFixedHeight);
@@ -221,6 +228,84 @@ namespace TreeAnarchy.Patches {
 
             return codes.AsEnumerable();
         }
+
+        private const int KeepTree = 0;
+        private const int RemoveTree = 1;
+        private const int ReplaceTree = 2;
+        private static void RemoveOrReplaceTree(uint treeID) {
+            switch (TAMod.RemoveReplaceOrKeep) {
+                case RemoveTree:
+                try {
+                    Singleton<TreeManager>.instance.ReleaseTree(treeID);
+                } catch {
+
+                }
+                break;
+                case ReplaceTree:
+                TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                TreeInfo treeInfo = PrefabCollection<TreeInfo>.GetLoaded(0);
+                buffer[treeID].Info = treeInfo;
+                buffer[treeID].m_infoIndex = (ushort)treeInfo.m_prefabDataIndex;
+                break;
+                default:
+                /* Do nothing */
+                break;
+            }
+        }
+
+        private static bool TreeManagerAfterDeserializePrefix(DataSerializer s) {
+            Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.BeginAfterDeserialize(s, "TreeManager");
+            Singleton<LoadingManager>.instance.WaitUntilEssentialScenesLoaded();
+            PrefabCollection<TreeInfo>.BindPrefabs();
+            TreeManager instance = Singleton<TreeManager>.instance;
+            TreeInstance[] buffer = instance.m_trees.m_buffer;
+            int num = buffer.Length;
+            /* Special handling for oldformat */
+            if (OldFormatLoaded) {
+                int maxLen = MaxTreeLimit;
+                for (uint i = 1; i < maxLen; i++) {
+                    if (buffer[i].m_flags != 0) {
+                        TreeInfo treeInfo = buffer[i].Info;
+                        if (treeInfo == null || treeInfo.m_prefabDataIndex < 0) {
+                            RemoveOrReplaceTree(i);
+                        } else {
+                            try {
+                                TreeInfo prefabInfo = PrefabCollection<TreeInfo>.GetLoaded((uint)treeInfo.m_prefabDataIndex);
+                                if (prefabInfo != null && prefabInfo.m_prefabDataIndex != -1) {
+                                    buffer[i].m_infoIndex = (ushort)buffer[i].Info.m_prefabDataIndex;
+                                } else {
+                                    RemoveOrReplaceTree(i);
+                                }
+                            } catch {
+                                RemoveOrReplaceTree(i);
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            /* Original method */
+            for (int i = 1; i < num; i++) {
+                if (buffer[i].m_flags != 0) {
+                    TreeInfo info = buffer[i].Info;
+                    if (info != null) {
+                        buffer[i].m_infoIndex = (ushort)info.m_prefabDataIndex;
+                    }
+                    if (buffer[i].GrowState != 0) {
+                        DistrictManager instance2 = Singleton<DistrictManager>.instance;
+                        byte park = instance2.GetPark(buffer[i].Position);
+                        DistrictPark[] expr_BB_cp_0 = instance2.m_parks.m_buffer;
+                        byte expr_BB_cp_1 = park;
+                        expr_BB_cp_0[(int)expr_BB_cp_1].m_treeCount = expr_BB_cp_0[(int)expr_BB_cp_1].m_treeCount + 1u;
+                    }
+                }
+            }
+            instance.m_treeCount = (int)(instance.m_trees.ItemCount() - 1u);
+            Singleton<LoadingManager>.instance.m_loadingProfilerSimulation.EndAfterDeserialize(s, "TreeManager");
+            return false;
+        }
+
 
         private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool sigFound = false;
@@ -278,6 +363,8 @@ namespace TreeAnarchy.Patches {
                         transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.DeserializeTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
                         transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.SerializeTranspiler))));
+                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
+                        prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.TreeManagerAfterDeserializePrefix))));
                     isTranspilerPatched = true;
                 }
             } catch (Exception e) {
@@ -286,27 +373,10 @@ namespace TreeAnarchy.Patches {
         }
 
         internal static void EnsureCapacity() {
-            global::TreeManager manager = Singleton<global::TreeManager>.instance;
-            TreeInstance[] oldbuf = manager.m_trees.m_buffer;
-
+            TreeManager manager = Singleton<TreeManager>.instance;
             if (manager.m_trees.m_buffer.Length != MaxTreeLimit) {
-
                 Array32<TreeInstance> newBuffer = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 newBuffer.CreateItem(out uint _);
-                uint itemCount = manager.m_trees.ItemCount();
-                if (itemCount > 1) {
-                    for (uint i = 1; i < itemCount; i++) {
-                        if (newBuffer.CreateItem(out uint index)) {
-                            newBuffer.m_buffer[index].m_flags = oldbuf[i].m_flags;
-                            newBuffer.m_buffer[index].m_infoIndex = oldbuf[i].m_infoIndex;
-                            newBuffer.m_buffer[index].m_nextGridTree = oldbuf[i].m_nextGridTree;
-                            newBuffer.m_buffer[index].m_posX = oldbuf[i].m_posX;
-                            newBuffer.m_buffer[index].m_posY = oldbuf[i].m_posY;
-                            newBuffer.m_buffer[index].m_posZ = oldbuf[i].m_posZ;
-                        }
-                        manager.m_trees.ReleaseItem(i);
-                    }
-                }
                 manager.m_trees = newBuffer;
                 Array.Resize<ulong>(ref manager.m_updatedTrees, MaxTreeUpdateLimit);
             }
