@@ -23,36 +23,17 @@ namespace TreeAnarchy {
         }
 
         private class Data : IDataContainer {
-            private static readonly uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864 };
-            private static readonly float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f };
+            private static readonly uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864, 1703936, 1835008, 1966080, 2097152 };
+            private static readonly float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f };
+            private const ushort fireDamageBurningMask = unchecked((ushort)~(TreeInstance.Flags.Burning | TreeInstance.Flags.FireDamage));
             private static void UpdateTreeLimit(int newSize) {
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 14; i++) {
                     if (newSize == limit[i]) {
                         TreeScaleFactor = scale[i];
                         TAUI.SetTreeLimitSlider(TreeScaleFactor);
                         return;
                     }
                 }
-            }
-
-            private static Array32<TreeInstance> ResizeTreeBuffer(uint treeCount) {
-                for (int i = 0; i < 10; i++) {
-                    if (treeCount < limit[i]) {
-                        uint size = limit[i];
-                        Array32<TreeInstance> newBuffer = new Array32<TreeInstance>(size);
-                        TreeInstance[] oldBuf = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                        newBuffer.CreateItem(out uint _);
-                        newBuffer.ClearUnused();
-                        for (int j = 1; j < MaxTreeLimit; j++) {
-
-                        }
-                        /* Update mod parameters and UI */
-                        TreeScaleFactor = scale[i];
-                        TAUI.SetTreeLimitSlider(scale[i]);
-                        return newBuffer;
-                    }
-                }
-                return null;
             }
 
             public void Deserialize(DataSerializer s) {
@@ -80,15 +61,13 @@ namespace TreeAnarchy {
                 }
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
-                    TreeInstance.Flags m_flags = (TreeInstance.Flags)uShort.Read();
-                    m_flags &= ~(TreeInstance.Flags.FireDamage | TreeInstance.Flags.Burning);
-                    trees[i].m_flags = (ushort)m_flags;
+                    trees[i].m_flags = (ushort)(uShort.Read() & fireDamageBurningMask);
                 }
                 uShort.EndRead();
                 switch ((Format)s.version) {
                     case Format.Version4:
-                    startIndex = DefaultTreeLimit;
-                    break;
+                        startIndex = DefaultTreeLimit;
+                        break;
                 }
                 PrefabCollection<TreeInfo>.BeginDeserialize(s);
                 for (int i = startIndex; i < maxLen; i++) {
@@ -129,7 +108,8 @@ namespace TreeAnarchy {
                         TreeManager treeManager = Singleton<TreeManager>.instance;
                         treeManager.m_trees = newBuffer;
                         UpdateTreeLimit(maxLen);
-                        Array.Resize<ulong>(ref treeManager.m_updatedTrees, MaxTreeUpdateLimit);
+                        /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
+                        treeManager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                         return; /* Just return with this buffer */
                     }
                     /* Pack the result into existing buffer */
@@ -162,8 +142,7 @@ namespace TreeAnarchy {
                 }
             }
 
-            public void AfterDeserialize(DataSerializer s) {
-            }
+            public void AfterDeserialize(DataSerializer s) { }
 
             public void Serialize(DataSerializer s) {
                 int treeLimit = MaxTreeLimit;
@@ -222,11 +201,9 @@ namespace TreeAnarchy {
 
         public static void PurgeOldData() => m_Serializer?.EraseData(OldTreeUnlimiterKey);
 
-        public void OnLoadData() {
-        }
+        public void OnLoadData() { }
 
         public static void IntegratedDeserialize() {
-            //while (!Monitor.TryEnter(Singleton<SimulationManager>.instance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
@@ -235,8 +212,8 @@ namespace TreeAnarchy {
                             Debug.Log("TreeAnarchy: Invalid Old Data, Not Loading Tree Data");
                             return;
                         }
-                        using OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
-                        if (oldSerializer.Deserialize(Singleton<TreeManager>.instance.m_trees.m_buffer)) {
+                        OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
+                        if (oldSerializer.Deserialize()) {
                             Debug.Log("TreeAnarchy: Old Format Loaded");
                             OldFormatLoaded = true;
                         } else {
@@ -251,9 +228,7 @@ namespace TreeAnarchy {
                         Debug.Log("TreeAnarchy: No extra trees to load");
                         return;
                     }
-                    using (var stream = new MemoryStream(data)) {
-                        DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
-                    }
+                    using var stream = new MemoryStream(data); DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
                 }
             } catch (Exception e) {
                 Debug.LogException(e);

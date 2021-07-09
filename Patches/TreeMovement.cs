@@ -69,14 +69,13 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static void OnOptionPanelClosed() {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void OnOptionPanelClosed() {
             if (updateLODTreeSway) {
                 UpdateLODProc();
                 updateLODTreeSway = false;
             }
         }
-
-
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Quaternion GetRandomQuaternion(float magnitude) {

@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.2";
+        internal const string m_modVersion = "0.9.3";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -20,7 +20,7 @@ namespace TreeAnarchy {
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
         internal static bool TreeEffectOnWind = true;
-        internal static bool UseTreeSnapping = true;
+        internal static bool UseTreeSnapping = false;
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
         internal static int CheckLowLimit {
             get => MaxTreeLimit - 12144;
@@ -68,20 +68,21 @@ namespace TreeAnarchy {
                     case SimulationManager.UpdateMode.NewScenarioFromMap:
                     case SimulationManager.UpdateMode.UpdateScenarioFromGame:
                     case SimulationManager.UpdateMode.UpdateScenarioFromMap:
-                    return true;
+                        return true;
                 }
                 return false;
             }
         }
 
         internal static bool IsInGame = false;
-        internal static bool Is64Bits = true;
 
         #region IUserMod
         string IUserMod.Name => $"{m_modName} {m_modVersion}";
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
-            LoadSettings();
+            for (int loadTries = 0; loadTries < 2; loadTries++) {
+                if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
+            }
             if (PersistentLockForestry) LockForestry = true;
             HarmonyHelper.DoOnHarmonyReady(() => TAPatcher.EnableCore());
         }
@@ -119,7 +120,7 @@ namespace TreeAnarchy {
         #endregion
 
         private const string SettingsFileName = "TreeAnarchyConfig.xml";
-        internal static void LoadSettings() {
+        internal static bool LoadSettings() {
             try {
                 if (!File.Exists(SettingsFileName)) {
                     SaveSettings();
@@ -133,11 +134,11 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
-                //UseExperimental = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimental"));
-                //EnableProfiling = bool.Parse(xmlConfig.DocumentElement.GetAttribute("EnableProfiling"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
+                return false;
             }
+            return true;
         }
 
         internal static void SaveSettings() {
@@ -150,8 +151,6 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "PersistentLock", PersistentLockForestry));
-            //root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimental", UseExperimental));
-            //root.Attributes.Append(AddElement<bool>(xmlConfig, "EnableProfiling", EnableProfiling));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }

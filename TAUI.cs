@@ -5,7 +5,7 @@ using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
     internal static class TAUI {
-        private const float MaxScaleFactor = 6.0f;
+        private const float MaxScaleFactor = 8.0f;
         private const float MinScaleFactor = 1.5f;
 
         private struct Msg {
@@ -18,12 +18,12 @@ namespace TreeAnarchy {
             internal static string TreeSwayFactor = @"Tree Sway Factor";
             internal static string LockForestry = @"Lock Forestry";
             internal static string PersistentLock = @"Persistent lock on forestry resources";
-            internal static string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land." +
-                                               @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting" +
+            internal static string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land. " +
+                                               @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting " +
                                                @"to turn on Lock Forestry when entering a game and destroying fertile land on a map";
             internal static string Important = "Important! Must be set before starting/loading a game\n\n" +
                                                "The following settings are only used when loading from Old Unlimited Trees Format";
-            internal static string ReplaceRemoveDesc = @"The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed" +
+            internal static string ReplaceRemoveDesc = @"The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed " +
                                                         "from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees";
             internal static string ReplaceRemoveName = @"Loading behavior for old unlimited trees game format";
             internal static string[] ReplaceRemoveLabels = new string[] { "Keep missing trees", "Remove missing trees", "Replace missing trees" };
@@ -128,11 +128,9 @@ namespace TreeAnarchy {
 
         internal static void UpdateState(bool isInGame) {
             if (isInGame) {
-                WindEffect.Disable();
                 TreeScaleFactor.Disable();
                 return;
             }
-            WindEffect.Enable();
             TreeScaleFactor.Enable();
         }
 
