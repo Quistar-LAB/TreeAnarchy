@@ -21,158 +21,69 @@ using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
     internal static class TreeSnapping {
+        private const float errorMargin = 0.075f;
+        private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
+        private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
         private static bool isTranspilerPatched = false;
         private static bool isMoveItPatched = false;
+        private static bool isMoveItRaycastPatched = false;
         internal static void Enable(Harmony harmony) {
             if (!isTranspilerPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
-                //                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                //                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreePrefix))));
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
                 isTranspilerPatched = true;
             }
-            //            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
-            //                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneGeometryPrefix))));
-            //            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
-            //                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneOverlayPrefix))));
-            //            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
-            //                new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(), typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
-            //                prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ClonePrefix))));
         }
 
         internal static void PatchMoveIt(Harmony harmony) {
             if (!isMoveItPatched) {
-                //                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-                //                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformTranspiler))));
                 harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformPrefix))));
                 isMoveItPatched = true;
             }
         }
 
-        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int FirstIndex = 0, LastIndex = 0;
-            bool firstSig = false;
-            bool secondSig = false;
-            Label useTerrainHeight = il.DefineLabel();
-            Label hasFixedHeight = il.DefineLabel();
-            Label exitLabel = default;
-            LocalBuilder terrainHeight = il.DeclareLocal(typeof(float));
-            CodeInstruction stlocTerrainHeight = default;
-            CodeInstruction ldlocTerrainHeight = default;
-
-            var codes = new List<CodeInstruction>(instructions);
-
-            switch (terrainHeight.LocalIndex) {
-                case 1:
-                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_1);
-                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_1);
-                break;
-                case 2:
-                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_2);
-                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_2);
-                break;
-                case 3:
-                stlocTerrainHeight = new CodeInstruction(OpCodes.Stloc_3);
-                ldlocTerrainHeight = new CodeInstruction(OpCodes.Ldloc_3);
-                break;
+        internal static void PatchMoveItRayCast(Harmony harmony) {
+            if (TAPatcher.isMoveItBeta && !isMoveItRaycastPatched) {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneGeometryPrefix))));
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneOverlayPrefix))));
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
+                    new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(), typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ClonePrefix))));
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.GetBounds)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.GetBoundsTranspiler))));
+                isMoveItRaycastPatched = true;
             }
+        }
 
+        public static float SampleSnapDetailHeight(ref TreeInstance tree, Vector3 position) {
+            float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+            if (UseTreeSnapping) {
+                if(position.y < (terrainHeight - errorMargin) || position.y > terrainHeight + errorMargin) {
+                    return position.y;
+                }
+            }
+            tree.m_flags &= FixedHeightMask;
+            return terrainHeight;
+        }
+
+        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = instructions.ToList();
             for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].opcode == OpCodes.Ret && !firstSig) {
-                    firstSig = true;
+                if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance)))) {
+                    codes.RemoveRange(i, 3);
                     var snippet = new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.Position))),
-                        new CodeInstruction(OpCodes.Stloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ColossalFramework.Singleton<TerrainManager>), "get_instance")),
+                        new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) })),
-                        stlocTerrainHeight,
-                        new CodeInstruction(OpCodes.Ldarg_0)
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SampleSnapDetailHeight)))
                     };
-                    codes.InsertRange(i + 2, snippet);
+                    codes.InsertRange(i, snippet);
                 }
             }
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].opcode == OpCodes.Brtrue && !secondSig) {
-                    secondSig = true;
-                    codes[i] = new CodeInstruction(OpCodes.Brtrue, hasFixedHeight);
-                    FirstIndex = i + 1;
-                } else if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY)))) {
-                    LastIndex = i + 1;
-                    exitLabel = codes[i + 1].labels[0];
-                    break;
-                }
-            }
-
-            var snippet1 = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))),
-                new CodeInstruction(OpCodes.Brfalse_S, useTerrainHeight),
-
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                ldlocTerrainHeight,
-                new CodeInstruction(OpCodes.Ldc_R4, 0.075f),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Ble_Un_S, useTerrainHeight),
-
-                new CodeInstruction(OpCodes.Ldarg_0), /* Use TreeInstance position.y */
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
-                new CodeInstruction(OpCodes.Ldc_I4_S, 32),
-                new CodeInstruction(OpCodes.Or),
-                new CodeInstruction(OpCodes.Conv_U2),
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                new CodeInstruction(OpCodes.Ldc_R4, 64f),
-                new CodeInstruction(OpCodes.Mul),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) })),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Ldc_I4, 65535),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) })),
-                new CodeInstruction(OpCodes.Conv_U2),
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))),
-                new CodeInstruction(OpCodes.Br_S, exitLabel),
-
-                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(useTerrainHeight),
-                ldlocTerrainHeight,
-                new CodeInstruction(OpCodes.Ldc_R4, 64f),
-                new CodeInstruction(OpCodes.Mul),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) })),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Ldc_I4, 65535),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) })),
-                new CodeInstruction(OpCodes.Conv_U2),
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))),
-                new CodeInstruction(OpCodes.Br_S, exitLabel),
-
-                new CodeInstruction(OpCodes.Ldloc_0).WithLabels(hasFixedHeight),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                ldlocTerrainHeight,
-                new CodeInstruction(OpCodes.Bge_Un_S, exitLabel),
-
-                new CodeInstruction(OpCodes.Ldarg_0),
-                ldlocTerrainHeight,
-                new CodeInstruction(OpCodes.Ldc_R4, 64f),
-                new CodeInstruction(OpCodes.Mul),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) })),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Ldc_I4, 65535),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) })),
-                new CodeInstruction(OpCodes.Conv_U2),
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight)))
-            };
-
-            codes.RemoveRange(FirstIndex, LastIndex - FirstIndex);
-            codes.InsertRange(FirstIndex, snippet1);
 
             return codes.AsEnumerable();
         }
@@ -334,199 +245,67 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
+        /* If tree snapping is false => 
+         * check if tree has fixedheight flag, if not then follow the terrain
+         * 
+         * If tree snapping is on =>
+         * If following terrain is turned on, then just follow terrain no matter what.
+         * If tree snapping is true, then check for deltaheight to see if user raised the tree or not
+         * if deltaheight is 0, then raycast to see if it hit any object to snap to
+         * If after raycast, no object is hit, then use default follow terrainheight
+         */
+        private static Vector3 SampleTreeSnapVector(MoveableTree instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, Vector3 center, bool followTerrain) {
+            Vector3 newPosition = matrix4x.MultiplyPoint(state.position - center);
+            newPosition.y = state.position.y + deltaHeight;
 
-        private static bool MoveableTreeTransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain) {
-            if (deltaHeight != 0) Singleton<TreeManager>.instance.m_trees.m_buffer[__instance.id.Tree].FixedHeight = true;
-            return true;
+            //float oldTerrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(instance.position);
+            float newTerrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(newPosition);
+            TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
+            uint treeID = instance.id.Tree;
+
+            if (!UseTreeSnapping) {
+                if ((trees[treeID].m_flags & FixedHeightFlag) == 0) {
+                    newPosition.y = newTerrainHeight;
+                }
+            } else {
+                if (followTerrain) {
+                    trees[treeID].m_flags &= FixedHeightMask;
+                    newPosition.y = newTerrainHeight;
+                } else {
+                    if (deltaHeight != 0) {
+                        trees[treeID].m_flags |= FixedHeightFlag;
+                    } else {
+                        if (!TreeSnapRayCast(newPosition, out newPosition)) {
+                            newPosition.y = newTerrainHeight;
+                        } else {
+                            if (newPosition.y > newTerrainHeight + errorMargin) {
+                                trees[treeID].m_flags |= FixedHeightFlag;
+                            }
+                            if(newPosition.y < newTerrainHeight - errorMargin) {
+                                trees[treeID].m_flags |= FixedHeightFlag;
+                            }
+                            /* seems after snapping to a building with y position > 0, then tree position gets all messed up
+                             * so we have to reset the position in the cases where position is back to terrain height +- 0.075f */
+                            if (newPosition.y >= (newTerrainHeight - errorMargin) && newPosition.y <= (newTerrainHeight + errorMargin)) {
+                                newPosition.y = newTerrainHeight;
+                                trees[treeID].m_flags &= FixedHeightMask;
+                                state.position.y = newTerrainHeight;
+                            }
+                        }
+                    }
+                }
+            }
+            return newPosition;
         }
 
-        private static IEnumerable<CodeInstruction> MoveableTreeTransformTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            const int followTerrainParIndex = 6;
-            int firstIndex = 0, lastIndex = 0;
-            Label hasTreeSnapEnabled = il.DefineLabel();
-            Label Exit1 = il.DefineLabel();
-            Label deltaHeightIsGreater = il.DefineLabel();
-            Label isFollowTerrain = il.DefineLabel();
-            Label isFollowTerrain2 = il.DefineLabel();
-            Label isFixedHeight = il.DefineLabel();
-            Label Exit = default;
-            LocalBuilder oldTerrainHeight = il.DeclareLocal(typeof(float));
-            LocalBuilder newTerrainHeight = il.DeclareLocal(typeof(float));
-            LocalBuilder trees = il.DeclareLocal(typeof(TreeInstance[]));
-            LocalBuilder treeID = il.DeclareLocal(typeof(uint));
-            LocalBuilder instanceID = il.DeclareLocal(typeof(InstanceID));
-            LocalBuilder vector = default;
-
-            CodeInstruction stloc_oldTerrainHeight = default;
-            CodeInstruction ldloc_oldTerrainHeight = default;
-            CodeInstruction stloc_newTerrainHeight = default;
-            CodeInstruction ldloc_newTerrainHeight = default;
-            CodeInstruction stloc_trees = default;
-            CodeInstruction ldloc_trees = default;
-            CodeInstruction stloc_treeID = default;
-            CodeInstruction ldloc_treeID = default;
-
-            CodeInstruction[] stlocs = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Stloc_0),
-                new CodeInstruction(OpCodes.Stloc_1),
-                new CodeInstruction(OpCodes.Stloc_2),
-                new CodeInstruction(OpCodes.Stloc_3),
-            };
-            CodeInstruction[] ldlocs = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Ldloc_1),
-                new CodeInstruction(OpCodes.Ldloc_2),
-                new CodeInstruction(OpCodes.Ldloc_3),
-            };
-
-
-            for (int i = 0; i < 4; i++) {
-                if (oldTerrainHeight.LocalIndex == i) {
-                    stloc_oldTerrainHeight = stlocs[i];
-                    ldloc_oldTerrainHeight = ldlocs[i];
-                }
-                if (newTerrainHeight.LocalIndex == i) {
-                    stloc_newTerrainHeight = stlocs[i];
-                    ldloc_newTerrainHeight = ldlocs[i];
-                }
-                if (trees.LocalIndex == i) {
-                    stloc_trees = stlocs[i];
-                    ldloc_trees = ldlocs[i];
-                }
-            }
-            if (newTerrainHeight.LocalIndex > 3) {
-                stloc_newTerrainHeight = new CodeInstruction(OpCodes.Stloc_S, newTerrainHeight);
-                ldloc_newTerrainHeight = new CodeInstruction(OpCodes.Ldloc_S, newTerrainHeight);
-            }
-            if (trees.LocalIndex > 3) {
-                stloc_trees = new CodeInstruction(OpCodes.Stloc_S, trees);
-                ldloc_trees = new CodeInstruction(OpCodes.Ldloc_S, trees);
-            }
-            stloc_treeID = new CodeInstruction(OpCodes.Stloc_S, trees);
-            ldloc_treeID = new CodeInstruction(OpCodes.Ldloc_S, trees);
-
-            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].StoresField(AccessTools.Field(typeof(Vector3), nameof(Vector3.y))) && firstIndex == 0) {
-                    firstIndex = i + 1;
-                }
-                if (codes[i].opcode == OpCodes.Ldloca_S) {
-                    vector = codes[i].operand as LocalBuilder;
-                }
-                if (codes[i].opcode == OpCodes.Ldarg_0) {
-                    lastIndex = i;
-                    Exit = codes[i].labels[0];
-                    break;
-                }
-            }
-
-            var snippet = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance))),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(Instance), nameof(Instance.position))),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) })),
-                stloc_oldTerrainHeight,
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance))),
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) })),
-                stloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer))),
-                stloc_trees,
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(Instance), nameof(Instance.id))),
-                new CodeInstruction(OpCodes.Stloc_S, instanceID),
-                new CodeInstruction(OpCodes.Ldloca_S, instanceID),
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(InstanceID), nameof(InstanceID.Tree))),
-                new CodeInstruction(OpCodes.Stloc_S, treeID),
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
-                new CodeInstruction(OpCodes.Brtrue_S, hasTreeSnapEnabled),
-
-                ldloc_trees,
-                ldloc_treeID,
-                new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
-                new CodeInstruction(OpCodes.Ldloca_S, 0),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                new CodeInstruction(OpCodes.Br, Exit),
-
-                ldloc_trees.WithLabels(hasTreeSnapEnabled),
-                ldloc_treeID,
-                new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
-                new CodeInstruction(OpCodes.Brfalse_S, isFixedHeight),
-
-                new CodeInstruction(OpCodes.Ldarg_S, followTerrainParIndex),
-                new CodeInstruction(OpCodes.Brfalse_S, isFollowTerrain),
-
-                new CodeInstruction(OpCodes.Ldloca_S, 0),
-                new CodeInstruction(OpCodes.Ldflda, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                new CodeInstruction(OpCodes.Dup),
-                new CodeInstruction(OpCodes.Ldind_R4),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Ldarg_1),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(InstanceState), nameof(InstanceState.terrainHeight))),
-                new CodeInstruction(OpCodes.Sub),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Stind_R4),
-
-                new CodeInstruction(OpCodes.Ldloc_0).WithLabels(isFollowTerrain),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Ldc_R4, 0.075f),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Bge_Un_S, Exit),
-
-                new CodeInstruction(OpCodes.Ldloca_S, 0),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                new CodeInstruction(OpCodes.Br_S, Exit),
-
-                new CodeInstruction(OpCodes.Ldarg_3).WithLabels(isFixedHeight),
-                new CodeInstruction(OpCodes.Ldc_R4, 0.0f),
-                new CodeInstruction(OpCodes.Ble_Un_S, deltaHeightIsGreater),
-
-                ldloc_trees,
-                ldloc_treeID,
-                new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
-                new CodeInstruction(OpCodes.Ldc_I4_1),
-                new CodeInstruction(OpCodes.Call, AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
-                new CodeInstruction(OpCodes.Ldarg_S, followTerrainParIndex).WithLabels(deltaHeightIsGreater),
-                new CodeInstruction(OpCodes.Brfalse_S, isFollowTerrain2),
-
-                new CodeInstruction(OpCodes.Ldloca_S, 0),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                new CodeInstruction(OpCodes.Dup),
-                new CodeInstruction(OpCodes.Ldind_R4),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Ldarg_1),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(InstanceState), nameof(InstanceState.terrainHeight))),
-                new CodeInstruction(OpCodes.Sub),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Stind_R4),
-                new CodeInstruction(OpCodes.Ldloc_0).WithLabels(isFollowTerrain2),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Ldc_R4, 0.075f),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Bge_Un_S, Exit),
-
-                new CodeInstruction(OpCodes.Ldloca_S, 0),
-                ldloc_newTerrainHeight,
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.y))),
-            };
-
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
-
-            return codes;
+        private static bool MoveableTreeTransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, Vector3 center, bool followTerrain) {
+            /* Must call method instead of adding in this routine. Harmony issue workaround */
+            Vector3 vector = SampleTreeSnapVector(__instance, state, ref matrix4x, deltaHeight, center, followTerrain);
+            __instance.Move(vector, 0f);
+            return false;
         }
 
-        private static bool RenderCloneGeometryPrefix(MoveableTree __instance, InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, float deltaAngle, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
+        private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, RenderManager.CameraInfo cameraInfo) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
@@ -538,33 +317,37 @@ namespace TreeAnarchy.Patches {
             if (!UseTreeSnapping) {
                 vector.y = terrainHeight;
             } else {
-                vector = TreeSnapRayCast(vector, terrainHeight, treeState);
+                if (!TreeSnapRayCast(vector, out vector)) {
+                    vector.y = vector.y - instanceState.terrainHeight + terrainHeight;
+                }
             }
             TreeInstance.RenderInstance(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
             return false;
         }
 
-        private static bool RenderCloneOverlayPrefix(MoveableTree __instance, InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, float deltaAngle, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
+        private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, RenderManager.CameraInfo cameraInfo, Color toolColor) {
             //            if (MoveItTool.m_isLowSensitivity) {
             //                return false;
             //            }
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
+            float scale = treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             float terrainHeight = vector.y - treeState.terrainHeight + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector);
             if (!UseTreeSnapping) {
                 vector.y = terrainHeight;
             } else {
-                vector = TreeSnapRayCast(vector, terrainHeight, treeState);
+                if (!TreeSnapRayCast(vector, out vector)) {
+                    vector.y = vector.y - instanceState.terrainHeight + terrainHeight;
+                }
             }
             TreeTool.RenderOverlay(cameraInfo, treeInfo, vector, scale, toolColor);
             return false;
         }
 
-        private static bool ClonePrefix(MoveableTree __instance, ref Instance __result, InstanceState instanceState, ref Matrix4x4 matrix4x, float deltaHeight, float deltaAngle, Vector3 center, bool followTerrain, Dictionary<ushort, ushort> clonedNodes, MoveIt.Action action) {
+        private static bool ClonePrefix(ref Instance __result, InstanceState instanceState, ref Matrix4x4 matrix4x, float deltaHeight, Vector3 center) {
             TreeState treeState = instanceState as TreeState;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaHeight;
@@ -572,17 +355,43 @@ namespace TreeAnarchy.Patches {
             if (!UseTreeSnapping) {
                 vector.y = terrainHeight;
             } else {
-                vector = TreeSnapRayCast(vector, terrainHeight, treeState);
+                if (!TreeSnapRayCast(vector, out vector)) {
+                    vector.y = vector.y - instanceState.terrainHeight + terrainHeight;
+                }
             }
             __result = null;
             if (Singleton<TreeManager>.instance.CreateTree(out uint tree, ref Singleton<SimulationManager>.instance.m_randomizer, treeState.Info.Prefab as TreeInfo, vector, treeState.single)) {
                 __result = new MoveableTree(new InstanceID {
                     Tree = tree
-                });
+                }) {
+                    //  position = new Vector3(vector.x, terrainHeight, vector.z)
+                };
+                if(vector.y > terrainHeight) {
+                    Singleton<TreeManager>.instance.m_trees.m_buffer[tree].m_flags |= FixedHeightFlag;
+                }
             }
             return false;
         }
 
+        private static Bounds GetCustomBounds(Vector3 position, Vector3 radius) {
+            float terrainHeight = Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(position);
+            if (position.y != terrainHeight) {
+                position.y = terrainHeight;
+            }
+            Debug.Log($"TreeAnarchy: Get new custom bounds called");
+            return new Bounds(position, radius);
+        }
+
+        private static IEnumerable<CodeInstruction> GetBoundsTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            ConstructorInfo boundsInfo = AccessTools.Constructor(typeof(Bounds), new Type[] { typeof(Vector3), typeof(Vector3) });
+            foreach (var code in instructions) {
+                if (code.opcode == OpCodes.Newobj && code.operand == boundsInfo) {
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.GetCustomBounds)));
+                } else {
+                    yield return code;
+                }
+            }
+        }
 
         private static bool RayCast(ToolBase.RaycastInput input, out ToolBase.RaycastOutput output) {
             float tempRayLength;
@@ -675,7 +484,7 @@ namespace TreeAnarchy.Patches {
          * but apparently MoveIt calculates position differently than CO Framework. If this was ever to 
          * be realized, I think it has to be done from within MoveIt mod.
          */
-        private static Vector3 TreeSnapRayCast(Vector3 position, float terrainHeight, TreeState state) {
+        private static bool TreeSnapRayCast(Vector3 position, out Vector3 vector) {
             Ray objRay;
             float objRayLength;
 
@@ -694,24 +503,11 @@ namespace TreeAnarchy.Patches {
                 m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default)
             };
             if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
-                return raycastOutput.m_hitPos;
+                vector = raycastOutput.m_hitPos;
+                return true;
             }
-            position.y = position.y + terrainHeight - state.terrainHeight;
-            return position;
-        }
-
-        private static Vector3 SnaptToTerrainHeight(Vector3 position, float terrainHeight, TreeState state) {
-            position.y = position.y - state.terrainHeight + terrainHeight;
-            return position;
-        }
-
-        internal static Vector3 RaycastMouseLocation() {
-            Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-            ToolBase.RaycastInput input = new ToolBase.RaycastInput(mouseRay, Camera.main.farClipPlane) {
-                m_ignoreTerrain = false
-            };
-            RayCast(input, out ToolBase.RaycastOutput output);
-            return output.m_hitPos;
+            vector = position;
+            return false;
         }
     }
 }
