@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.3";
+        internal const string m_modVersion = "0.9.4";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -20,7 +20,6 @@ namespace TreeAnarchy {
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
         internal static bool TreeEffectOnWind = true;
-        internal static bool UseTreeSnapping = false;
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
         internal static int CheckLowLimit {
             get => MaxTreeLimit - 12144;
@@ -45,6 +44,13 @@ namespace TreeAnarchy {
         /* Experimental mode */
         internal static bool UseExperimental = false;
         internal static bool EnableProfiling = false;
+
+        /* Tree Snapping */
+        internal static bool UseTreeSnapping = false;
+        internal static bool UseExperimentalTreeSnapping = false;
+        internal static bool UseTreeSnapToBuilding = true;
+        internal static bool UseTreeSnapToNetwork = true;
+        internal static bool UseTreeSnapToProp = true;
 
         /* Lock Forestry */
         internal static bool LockForestry = false;
@@ -77,7 +83,7 @@ namespace TreeAnarchy {
         internal static bool IsInGame = false;
 
         #region IUserMod
-        string IUserMod.Name => $"{m_modName} {m_modVersion}";
+        string IUserMod.Name => m_modName;
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
             for (int loadTries = 0; loadTries < 2; loadTries++) {
@@ -94,9 +100,7 @@ namespace TreeAnarchy {
         }
 
         public void OnSettingsUI(UIHelperBase helper) {
-            TAUI.ShowStandardOptions(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
-            TAUI.ShowTreeLimitOption(helper.AddGroup("Configure Custom Tree Limit") as UIHelper);
-            TAUI.UpdateState(IsInGame);
+            TAUI.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
         }
         #endregion
         #region ILoadingExtension
@@ -130,6 +134,10 @@ namespace TreeAnarchy {
                 m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute("TreeEffectOnWind"));
                 UseTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapping"));
+                UseExperimentalTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimentalTreeSnapping"));
+                UseTreeSnapToBuilding = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToBuilding"));
+                UseTreeSnapToNetwork = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToNetwork"));
+                UseTreeSnapToProp = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToProp"));
                 RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute("RandomTreeRotation"));
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
@@ -147,6 +155,10 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<float>(xmlConfig, "ScaleFactor", m_ScaleFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapping", UseTreeSnapping));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToBuilding", UseTreeSnapToBuilding));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToNetwork", UseTreeSnapToNetwork));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToProp", UseTreeSnapToProp));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
