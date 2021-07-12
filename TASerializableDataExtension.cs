@@ -23,11 +23,13 @@ namespace TreeAnarchy {
         }
 
         private class Data : IDataContainer {
-            private static readonly uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864, 1703936, 1835008, 1966080, 2097152 };
-            private static readonly float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f };
+#pragma warning disable IDE0044 // Add readonly modifier
+            private static uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864, 1703936, 1835008, 1966080, 2097152 };
+            private static float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f };
+#pragma warning restore IDE0044 // Add readonly modifier
             private const ushort fireDamageBurningMask = unchecked((ushort)~(TreeInstance.Flags.Burning | TreeInstance.Flags.FireDamage));
             private static void UpdateTreeLimit(int newSize) {
-                for (int i = 0; i < 14; i++) {
+                for (int i = 0; i < limit.Length; i++) {
                     if (newSize == limit[i]) {
                         TreeScaleFactor = scale[i];
                         TAUI.SetTreeLimitSlider(TreeScaleFactor);
@@ -40,7 +42,7 @@ namespace TreeAnarchy {
                 int maxLen = s.ReadInt32(); // Read in Max limit
                 int startIndex = 1;
                 int treeCount = 0;
-                Array32<TreeInstance> newBuffer = default;
+                Array32<TreeInstance> newBuffer = null;
                 TreeInstance[] trees;
                 if (maxLen > MaxTreeLimit) {
                     newBuffer = new Array32<TreeInstance>((uint)maxLen);
@@ -113,26 +115,26 @@ namespace TreeAnarchy {
                         return; /* Just return with this buffer */
                     }
                     /* Pack the result into existing buffer */
-                    Array32<TreeInstance> buffer = Singleton<TreeManager>.instance.m_trees;
+                    TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
                     startIndex = 1;
                     /* update the Y position for trees between 1~262144 */
                     /* This needs to be done first */
                     for (int i = 1; i < DefaultTreeLimit; i++) {
                         if (trees[i].m_flags != 0) {
-                            buffer.m_buffer[i].m_posY = trees[i].m_posY;
+                            buffer[i].m_posY = trees[i].m_posY;
                         }
                     }
                     /* Add trees into empty nodes in buffer */
                     for (int i = DefaultTreeLimit; i < maxLen; i++) {
                         if (trees[i].m_flags != 0) {
                             /* Find available slot in buffer */
-                            for (int j = startIndex; j < MaxTreeLimit; j++) {
-                                if (buffer.m_buffer[j].m_flags == 0) {
-                                    buffer.m_buffer[j].m_flags = trees[i].m_flags;
-                                    buffer.m_buffer[j].m_infoIndex = trees[i].m_infoIndex;
-                                    buffer.m_buffer[j].m_posX = trees[i].m_posX;
-                                    buffer.m_buffer[j].m_posY = trees[i].m_posY;
-                                    buffer.m_buffer[j].m_posZ = trees[i].m_posZ;
+                            for (int j = startIndex; j < buffer.Length; j++) {
+                                if (buffer[j].m_flags == 0) {
+                                    buffer[j].m_flags = trees[i].m_flags;
+                                    buffer[j].m_infoIndex = trees[i].m_infoIndex;
+                                    buffer[j].m_posX = trees[i].m_posX;
+                                    buffer[j].m_posY = trees[i].m_posY;
+                                    buffer[j].m_posZ = trees[i].m_posZ;
                                     startIndex = j;
                                     break;
                                 }

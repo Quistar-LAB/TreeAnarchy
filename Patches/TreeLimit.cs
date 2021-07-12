@@ -337,7 +337,7 @@ namespace TreeAnarchy.Patches {
         }
 
         internal static void InjectResize() {
-            Harmony harmony = TAPatcher.m_harmony;
+            Harmony harmony = TAPatcher.harmony;
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
 
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
