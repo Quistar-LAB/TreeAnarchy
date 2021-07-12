@@ -7,7 +7,7 @@ using TreeAnarchy.Patches;
 namespace TreeAnarchy {
     internal static class TAPatcher {
         private const string HARMONYID = @"quistar.treeanarchy.mod";
-        internal static readonly Harmony m_harmony = new Harmony(HARMONYID);
+        internal static Harmony harmony = new Harmony(HARMONYID);
 
         private static bool isCorePatched = false;
         private static bool isTreeMovementPatched = false;
@@ -36,8 +36,8 @@ namespace TreeAnarchy {
 
         internal static void EnableCore() {
             if (!isCorePatched) {
-                TreeLimit.Enable(m_harmony);
-                TreeSnapping.Enable(m_harmony);
+                TreeLimit.Enable(harmony);
+                TreeSnapping.Enable(harmony);
                 isCorePatched = true;
             }
         }
@@ -45,13 +45,13 @@ namespace TreeAnarchy {
         internal static void LateEnable() {
             if (IsPluginExists("1619685021", "MoveIt") || IsPluginExists("2215771668", "MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
-                    TreeSnapping.PatchMoveIt(m_harmony);
+                    TreeSnapping.PatchMoveIt(harmony);
                 }
-                TreeSnapping.PatchMoveItRayCast(m_harmony);
+                //TreeSnapping.PatchMoveItRayCast(m_harmony);
             }
             if (!IsPluginExists("1388613752", "Tree Movement Control") ||
                 !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
-                TreeMovement.Enable(m_harmony);
+                TreeMovement.Enable(harmony);
                 isTreeMovementPatched = true;
             }
         }
