@@ -94,8 +94,7 @@ namespace TreeAnarchy.Patches {
             //int x = Mathf.Clamp(Mathf.FloorToInt(pos.x / 135f + 64f - 0.5f), 0, 127);
             y = (y > 127 ? 127 : y) < 0 ? 0 : y;
             //int y = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
-            int totalHeight = windGrids[y * 128 + x].m_totalHeight;
-            float windHeight = ((pos.y - totalHeight * 0.015625f) * 0.02f + 1);
+            float windHeight = ((pos.y - windGrids[y * 128 + x].m_totalHeight * 0.015625f) * 0.02f + 1);
             return (windHeight > 2f ? 2f : windHeight) < 0 ? 0 : windHeight * TreeSwayFactor;
             //return Mathf.Clamp(windHeight * 0.02f + 1, 0f, 2f) * TreeSwayFactor;
         }
