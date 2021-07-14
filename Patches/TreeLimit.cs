@@ -295,10 +295,9 @@ namespace TreeAnarchy.Patches {
             Label isOldFormatExit = il.DefineLabel();
             var codes = instructions.ToList();
 
-
             var snippet = new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.OldAfterDeserializeHandler))),
-                new CodeInstruction(OpCodes.Br, isOldFormatExit)
+                new CodeInstruction(OpCodes.Brtrue, isOldFormatExit)
             };
 
             for (int i = 0; i < codes.Count; i++) {
@@ -312,7 +311,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
             if (insertIndex > 0) {
                 codes.InsertRange(insertIndex, snippet);
             }
