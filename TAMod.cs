@@ -1,5 +1,6 @@
 ﻿using CitiesHarmony.API;
 using ColossalFramework;
+using ColossalFramework.Globalization;
 using ICities;
 using System.Globalization;
 using System.IO;
@@ -86,6 +87,7 @@ namespace TreeAnarchy {
         string IUserMod.Name => m_modName;
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
+            LocaleManager.eventLocaleChanged += new LocaleManager.LocaleChangedHandler(OnLocaleChanged);
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
@@ -93,10 +95,15 @@ namespace TreeAnarchy {
             HarmonyHelper.DoOnHarmonyReady(() => TAPatcher.EnableCore());
         }
         public void OnDisabled() {
+            LocaleManager.eventLocaleChanged -= new LocaleManager.LocaleChangedHandler(OnLocaleChanged);
             if (HarmonyHelper.IsHarmonyInstalled) {
                 TAPatcher.DisableCore();
             }
             SaveSettings();
+        }
+
+        private void OnLocaleChanged() {
+
         }
 
         public void OnSettingsUI(UIHelperBase helper) {
