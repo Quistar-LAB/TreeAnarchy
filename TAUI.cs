@@ -9,10 +9,12 @@ namespace TreeAnarchy {
         private const float MinScaleFactor = 1.5f;
 
         internal struct Msg {
+            /* Key Binding */
+            internal const string PressAnyKey = "Press any key";
             /* Tab Strips */
-            internal const string MainOptionTab = "Main";
+            internal const string MainOptionTab = "Main Options";
             internal const string TreeSnappingTab = "Tree Snapping";
-            internal const string KeyboardShortcutTab = "Keyboard Shortcuts";
+            internal const string KeyboardShortcutTab = "Key Binding";
             /* Main options */
             internal const string MaxTreeLimitTitle = "Configure Custom Tree Limit";
             internal const string MaxTreeLimit = "Maximum Tree Limit:  {0} trees";
@@ -136,8 +138,7 @@ namespace TreeAnarchy {
             tabButton.pressedBgSprite = "SubBarButtonBasePressed";
             tabButton.tooltip = tabName;
             tabButton.width = 175;
-            tabButton.textScale = 0.8f;
-            tabButton.verticalAlignment = UIVerticalAlignment.Middle;
+            tabButton.textScale = 0.9f;
 
             tabStrip.selectedIndex = tabIndex;
 
@@ -172,8 +173,8 @@ namespace TreeAnarchy {
             UIHelper treesnapHelper = new UIHelper(treesnapPanel);
             ShowTreeSnappingOptions(treesnapHelper);
 
-            //UIPanel keymappingPanel = AddTab(tabBar, Msg.KeyboardShortcutTab, 2, true);
-            //UIHelper keymappingHelper = new UIHelper(keymappingPanel);
+            UIPanel keymappingPanel = AddTab(tabBar, Msg.KeyboardShortcutTab, 2, true);
+            keymappingPanel.gameObject.AddComponent<TAKeyBinding>();
         }
 
         internal static void ShowStandardOptions(UIHelper option) {
@@ -250,10 +251,6 @@ namespace TreeAnarchy {
             AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToProp, Msg.TreeSnapToProp, TAMod.UseTreeSnapToProp, OnTreeSnapToPropCheckChanged);
             AddLabel(ref TreeSnapOptionsPanel, TreeSnapToProp, ref treeSnapToPropLabel, Msg.TreeSnapToPropLabel);
             treeSnapOptionsHelper.AddSpace((int)treeSnapToPropLabel.height);
-        }
-
-        internal static void ShowKeymappingOptions(UIHelper option) {
-            UIPanel panel = (UIPanel)option.self;
         }
 
         internal static void UpdateState(bool isInGame) {
