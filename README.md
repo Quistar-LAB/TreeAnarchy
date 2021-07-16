@@ -10,9 +10,10 @@ This mod is a complete rewrite, taking out bloats, fixing bugs and streamlining 
 [BloodyPenguin](https://github.com/bloodypenguin), 
 [DRen72](https://steamcommunity.com/id/DRen72/myworkshopfiles/?appid=255710).
 
-This mod is currently __ALPHA__, with the following functions:
+This mod is currently __BETA__, with the following functions:
 - [x] Support for more than 262144 trees
 - [x] Support Tree Snapping with functionality just like Prop Snapping
+- [x] Support for tree resizing by pressing hotkeys
 - [x] Support for random tree rotation
 - [x] Lock Forestry (especially useful if you want to control where forestry resources are created)
 - [ ] Performance tuning to attempt to increase fps to support more trees
@@ -36,6 +37,7 @@ The following mods can be used along with this mod, but is not recommended:
 
 This mod requires:
 - MoveIt mod
+- Harmony
 
 I need supporters/volunteers to help debug/code to make this mod even better. If you want to contribute, please contact me anytime.
 
