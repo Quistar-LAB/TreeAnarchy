@@ -12,6 +12,7 @@ namespace TreeAnarchy {
         private enum Format : uint {
             Version4 = 4,
             Version5 = 5,
+            Version6 = 6,
         }
 
         static private ISerializableData m_Serializer = null;
@@ -44,6 +45,7 @@ namespace TreeAnarchy {
                 int treeCount = 0;
                 Array32<TreeInstance> newBuffer = null;
                 TreeInstance[] trees;
+                float[] treeScaleBuffer;
                 if (maxLen > MaxTreeLimit) {
                     newBuffer = new Array32<TreeInstance>((uint)maxLen);
                     newBuffer.CreateItem(out uint _);
@@ -58,8 +60,13 @@ namespace TreeAnarchy {
                             trees[i].m_posZ = buffer[i].m_posZ;
                         }
                     }
+                    treeScaleBuffer = new float[maxLen];
+                    for (int i = 0; i < treeScaleBuffer.Length; i++) {
+                        treeScaleBuffer[i] = 0;
+                    }
                 } else {
                     trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                    treeScaleBuffer = Patches.TreeVariation.m_treeScale;
                 }
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
@@ -104,6 +111,15 @@ namespace TreeAnarchy {
                     }
                 }
                 uShort1.EndRead();
+                if ((Format)s.version >= Format.Version6) {
+                    EncodedArray.Float @float = EncodedArray.Float.BeginRead(s);
+                    for (int i = 1; i < maxLen; i++) {
+                        if (trees[i].m_flags != 0) {
+                            treeScaleBuffer[i] = @float.Read();
+                        }
+                    }
+                    @float.EndRead();
+                }
                 /* Now Resize / Repack buffer if necessary */
                 if (maxLen > MaxTreeLimit) {
                     if (treeCount > MaxTreeLimit) {
@@ -112,10 +128,14 @@ namespace TreeAnarchy {
                         UpdateTreeLimit(maxLen);
                         /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
                         treeManager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
+                        if ((Format)s.version >= Format.Version6) {
+                            Patches.TreeVariation.m_treeScale = treeScaleBuffer;
+                        }
                         return; /* Just return with this buffer */
                     }
                     /* Pack the result into existing buffer */
                     TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                    float[] scaleBuffer = Patches.TreeVariation.m_treeScale;
                     startIndex = 1;
                     /* update the Y position for trees between 1~262144 */
                     /* This needs to be done first */
@@ -135,6 +155,9 @@ namespace TreeAnarchy {
                                     buffer[j].m_posX = trees[i].m_posX;
                                     buffer[j].m_posY = trees[i].m_posY;
                                     buffer[j].m_posZ = trees[i].m_posZ;
+                                    if ((Format)s.version >= Format.Version6) {
+                                        scaleBuffer[j] = treeScaleBuffer[i];
+                                    }
                                     startIndex = j;
                                     break;
                                 }
@@ -149,6 +172,7 @@ namespace TreeAnarchy {
             public void Serialize(DataSerializer s) {
                 int treeLimit = MaxTreeLimit;
                 TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                float[] treeScaleBuffer = Patches.TreeVariation.m_treeScale;
 
                 // Important to save treelimit as it is an adjustable variable on every load
                 s.WriteInt32(treeLimit);
@@ -194,6 +218,13 @@ namespace TreeAnarchy {
                     }
                 }
                 uShort1.EndWrite();
+                EncodedArray.Float @float = EncodedArray.Float.BeginWrite(s);
+                for (int i = 1; i < treeLimit; i++) {
+                    if (buffer[i].m_flags != 0) {
+                        @float.Write(treeScaleBuffer[i]);
+                    }
+                }
+                @float.EndWrite();
             }
         }
 
@@ -242,7 +273,7 @@ namespace TreeAnarchy {
                 byte[] data;
                 if (OldFormatLoaded) m_Serializer?.EraseData(OldTreeUnlimiterKey);
                 using (var stream = new MemoryStream()) {
-                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version5, new Data());
+                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version6, new Data());
                     data = stream.ToArray();
                 }
                 m_Serializer.SaveData(TREE_ANARCHY_KEY, data);

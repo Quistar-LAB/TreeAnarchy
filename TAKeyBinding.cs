@@ -2,6 +2,7 @@
 using ColossalFramework.Globalization;
 using ColossalFramework.UI;
 using System;
+using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -9,28 +10,41 @@ namespace TreeAnarchy {
     public class TAKeyBinding : UICustomControl {
         private SavedInputKey m_EditingBinding;
         private const string KeybindingConfig = "TreeAnarchyKeyBindSetting";
+        private bool IsKeyBindingConfigured = false;
 
-        private static readonly SavedInputKey treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, false, true), true);
-        private static readonly SavedInputKey lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, false, true), true);
-        private static readonly SavedInputKey incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.KeypadPlus, false, false, false), true);
-        private static readonly SavedInputKey decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.KeypadMinus, false, false, false), true);
+        private SavedInputKey m_treeSnapping;
+        private SavedInputKey m_lockForestry;
+        private SavedInputKey m_incrTreeVariation;
+        private SavedInputKey m_decrTreeVariation;
 
         protected void Update() {
-            Event e = Event.current;
-            if (treeSnapping.IsPressed(e)) {
-                if (UseTreeSnapping) UseTreeSnapping = false;
-                else UseTreeSnapping = true;
+            if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
+                Event e = Event.current;
+                if (m_treeSnapping.IsPressed(e)) {
+                    if (UseTreeSnapping) UseTreeSnapping = false;
+                    else UseTreeSnapping = true;
+                    TAUI.UpdateTreeSnapCheckBox();
+                }
+                if (m_lockForestry.IsPressed(e)) {
+                    if (UseLockForestry) UseLockForestry = false;
+                    else UseLockForestry = true;
+                    TAUI.UpdateLockForestryCheckBox();
+                }
+                if (IsCustomPressed(m_incrTreeVariation, e)) {
+                    TreeVariation.IncrementScaler();
+                }
+                if (IsCustomPressed(m_decrTreeVariation, e)) {
+                    TreeVariation.DecrementScaler();
+                }
             }
-            if (lockForestry.IsPressed(e)) {
-                if (LockForestry) LockForestry = false;
-                else LockForestry = true;
-            }
-            if (incrTreeVariation.IsPressed(e)) {
-                Debug.Log($"Tree Anarchy: Increment tree variation HotKey pressed");
-            }
-            if (decrTreeVariation.IsPressed(e)) {
-                Debug.Log($"Tree Anarchy: Decrement tree variation HotKey pressed");
-            }
+        }
+
+        private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
+            if (e.type != EventType.KeyDown) return false;
+            return Input.GetKeyDown(inputKey.Key) &&
+                (e.modifiers & EventModifiers.Control) == EventModifiers.Control == inputKey.Control &&
+                (e.modifiers & EventModifiers.Shift) == EventModifiers.Shift == inputKey.Shift &&
+                (e.modifiers & EventModifiers.Alt) == EventModifiers.Alt == inputKey.Alt;
         }
 
         protected void OnEnable() {
@@ -42,18 +56,27 @@ namespace TreeAnarchy {
         }
 
         protected void Awake() {
-            try {
-                if (GameSettings.FindSettingsFileByName(KeybindingConfig) == null) {
-                    GameSettings.AddSettingsFile(new SettingsFile[] { new SettingsFile() { fileName = KeybindingConfig } });
+            if (!IsKeyBindingConfigured) {
+                try {
+                    if (GameSettings.FindSettingsFileByName(KeybindingConfig) == null) {
+                        GameSettings.AddSettingsFile(new SettingsFile[] {
+                            new SettingsFile() { fileName = KeybindingConfig }
+                        });
+                    }
+                } catch (Exception e) {
+                    Debug.LogException(e);
                 }
-            } catch (Exception e) {
-                Debug.LogException(e);
-            }
+                m_treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, true, true), true);
+                m_lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, true, true), true);
+                m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.RightBracket, false, false, false), true);
+                m_decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.LeftBracket, false, false, false), true);
 
-            AddKeymapping("Tree Snapping", treeSnapping);
-            AddKeymapping("Lock Forestry", lockForestry);
-            AddKeymapping("Increase Tree Size", incrTreeVariation);
-            AddKeymapping("Decrease Tree Size", decrTreeVariation);
+                AddKeymapping("Tree Snapping", m_treeSnapping);
+                AddKeymapping("Lock Forestry", m_lockForestry);
+                AddKeymapping("Increase Tree Size", m_incrTreeVariation);
+                AddKeymapping("Decrease Tree Size", m_decrTreeVariation);
+                IsKeyBindingConfigured = true;
+            }
         }
 
         private int listCount = 0;

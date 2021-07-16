@@ -54,7 +54,7 @@ namespace TreeAnarchy {
         internal static bool UseTreeSnapToProp = true;
 
         /* Lock Forestry */
-        internal static bool LockForestry = false;
+        internal static bool UseLockForestry = false;
         internal static bool PersistentLockForestry = true;
 
         /* Tree Movement Releated */
@@ -91,7 +91,7 @@ namespace TreeAnarchy {
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
-            if (PersistentLockForestry) LockForestry = true;
+            if (PersistentLockForestry) UseLockForestry = true;
             HarmonyHelper.DoOnHarmonyReady(() => TAPatcher.EnableCore());
         }
         public void OnDisabled() {
@@ -147,7 +147,7 @@ namespace TreeAnarchy {
                 UseTreeSnapToProp = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToProp"));
                 RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute("RandomTreeRotation"));
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
-                LockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
+                UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
@@ -168,7 +168,7 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToProp", UseTreeSnapToProp));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
             root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", LockForestry));
+            root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", UseLockForestry));
             root.Attributes.Append(AddElement<bool>(xmlConfig, "PersistentLock", PersistentLockForestry));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);

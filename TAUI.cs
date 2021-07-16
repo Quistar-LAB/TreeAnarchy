@@ -53,14 +53,14 @@ namespace TreeAnarchy {
         private static UILabel WindEffectLabel = default;
         private static UILabel TreeSnapLabel = default;
         private static UICheckBox WindEffect = default;
-        private static UICheckBox TreeSnap = default;
+        private static UICheckBox TreeSnapCB = default;
         private static UICheckBox ExperimentalTreeSnap = default;
         private static UIPanel TreeSnapOptionsPanel = default;
         private static UICheckBox TreeSnapToBuilding = default;
         private static UICheckBox TreeSnapToNetwork = default;
         private static UICheckBox TreeSnapToProp = default;
         private static UICheckBox TreeRotation = default;
-        private static UICheckBox LockForestry = default;
+        private static UICheckBox LockForestryCB = default;
         private static UICheckBox PersistentLock = default;
         private static UISlider TreeSwayFactor = default;
         private static UISlider TreeScaleFactor = default;
@@ -110,7 +110,7 @@ namespace TreeAnarchy {
             SaveSettings();
         }
         private static void OnLockForestryCheckChanged(UIComponent component, bool isChecked) {
-            TAMod.LockForestry = isChecked;
+            UseLockForestry = isChecked;
             SaveSettings();
         }
         private static void OnPersistentLockCheckChanged(UIComponent component, bool isChecked) {
@@ -126,6 +126,14 @@ namespace TreeAnarchy {
         private static void OnReplaceRemoveKeepEventChanged(UIComponent component, int val) {
             TAMod.RemoveReplaceOrKeep = val;
             SaveSettings();
+        }
+
+        internal static void UpdateTreeSnapCheckBox() {
+            TreeSnapCB.isChecked = UseTreeSnapping;
+        }
+
+        internal static void UpdateLockForestryCheckBox() {
+            LockForestryCB.isChecked = UseLockForestry;
         }
 
         internal static UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
@@ -180,19 +188,19 @@ namespace TreeAnarchy {
         internal static void ShowStandardOptions(UIHelper option) {
             UILabel swayLabel = default;
             UIPanel panel = (UIPanel)option.self;
-            AddCheckBox(ref panel, ref WindEffect, Msg.WindEffect, TAMod.TreeEffectOnWind, OnTreeWindCheckChanged);
+            AddCheckBox(ref panel, ref WindEffect, Msg.WindEffect, TreeEffectOnWind, OnTreeWindCheckChanged);
             AddLabel(ref panel, WindEffect, ref WindEffectLabel, Msg.WindEffectLabel);
             option.AddSpace((int)WindEffectLabel.height);
-            AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, TAMod.RandomTreeRotation, OnTreeRotationCheckChanged);
+            AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, RandomTreeRotation, OnTreeRotationCheckChanged);
             TreeRotation.width = 300;
             UIPanel SwayPanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             SwayPanel.Find<UILabel>("Label").text = Msg.TreeSwayFactor;
             AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAMod.TreeSwayFactor, OnTreeSwayFactorChanged);
             SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(320, -5);
-            AddCheckBox(ref panel, ref LockForestry, Msg.LockForestry, TAMod.LockForestry, OnLockForestryCheckChanged);
-            LockForestry.width = 300;
-            AddCheckBox(ref panel, ref PersistentLock, Msg.PersistentLock, TAMod.PersistentLockForestry, OnPersistentLockCheckChanged);
+            AddCheckBox(ref panel, ref LockForestryCB, Msg.LockForestry, UseLockForestry, OnLockForestryCheckChanged);
+            LockForestryCB.width = 300;
+            AddCheckBox(ref panel, ref PersistentLock, Msg.PersistentLock, PersistentLockForestry, OnPersistentLockCheckChanged);
             AddLabel(ref panel, PersistentLock, ref swayLabel, Msg.SwayLabel);
             option.AddSpace((int)swayLabel.height + 20);
             SwayPanel.zOrder = TreeRotation.zOrder - 1;
@@ -204,7 +212,7 @@ namespace TreeAnarchy {
             UIPanel panel = (UIPanel)option.self;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
-            MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, TAMod.MaxTreeLimit);
+            MaxTreeLabel.text = String.Format(Msg.MaxTreeLimit, MaxTreeLimit);
             MaxTreeLabel.width = panel.width - 100;
             MaxTreeLabel.autoSize = false;
             MaxTreeLabel.autoHeight = true;
@@ -223,8 +231,8 @@ namespace TreeAnarchy {
             UILabel treeSnapToBuildingLabel = default;
             UILabel ExperimentalTreeSnapLabel = default;
             UIPanel panel = (UIPanel)option.self;
-            AddCheckBox(ref panel, ref TreeSnap, Msg.TreeSnap, TAMod.UseTreeSnapping, OnTreeSnapCheckChanged);
-            AddLabel(ref panel, TreeSnap, ref TreeSnapLabel, Msg.TreeSnapLabel);
+            AddCheckBox(ref panel, ref TreeSnapCB, Msg.TreeSnap, TAMod.UseTreeSnapping, OnTreeSnapCheckChanged);
+            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, Msg.TreeSnapLabel);
             option.AddSpace((int)TreeSnapLabel.height);
             AddCheckBox(ref panel, ref ExperimentalTreeSnap, Msg.ExperimentalTreeSnap, TAMod.UseExperimentalTreeSnapping, OnExperimentalTreeSnapCheckChanged);
             AddLabel(ref panel, ExperimentalTreeSnap, ref ExperimentalTreeSnapLabel, Msg.ExperimentalTreeSnapLabel);

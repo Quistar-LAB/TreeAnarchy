@@ -38,6 +38,7 @@ namespace TreeAnarchy {
             if (!isCorePatched) {
                 TreeLimit.Enable(harmony);
                 TreeSnapping.Enable(harmony);
+                TreeVariation.EnablePatch(harmony);
                 isCorePatched = true;
             }
         }
@@ -54,9 +55,11 @@ namespace TreeAnarchy {
                 TreeMovement.Enable(harmony);
                 isTreeMovementPatched = true;
             }
+            TreeVariation.EnablePatch(harmony);
         }
 
         internal static void DisableLatePatch() {
+            TreeVariation.DisablePatch(harmony);
         }
 
         internal static void DisableCore() { }
