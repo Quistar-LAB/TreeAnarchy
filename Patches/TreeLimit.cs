@@ -161,7 +161,7 @@ namespace TreeAnarchy.Patches {
             codes[0].labels.Add(jump);
 
             var snippet = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(LockForestry))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseLockForestry))),
                 new CodeInstruction(OpCodes.Brfalse_S, jump),
                 new CodeInstruction(OpCodes.Ret),
             };
