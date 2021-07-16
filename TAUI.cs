@@ -7,16 +7,21 @@ namespace TreeAnarchy {
     internal static class TAUI {
         private const float MaxScaleFactor = 8.0f;
         private const float MinScaleFactor = 1.5f;
+        internal const float DefaultFontScale = 1.0f;
+        internal const float SmallFontScale = 0.85f;
 
         internal struct Msg {
             /* Key Binding */
-            internal const string PressAnyKey = "Press any key";
+            internal const string PressAnyKey = @"Press any key";
             /* Tab Strips */
-            internal const string MainOptionTab = "Main Options";
-            internal const string TreeSnappingTab = "Tree Snapping";
-            internal const string KeyboardShortcutTab = "Key Binding";
+            internal const string MainOptionTab = @"Main Options";
+            internal const string TreeSnappingTab = @"Tree Snapping";
+            internal const string KeyboardShortcutTab = @"Key Binding";
+            internal const string KeyBindDescription = @"When binding hotkeys, please make sure to use modifiers (SHIFT | CONTROL | ALT) for Tree Snapping and Lock Forestry. " +
+                                                       @"For tree size increment and decrement hotkeys, it is specially treated so you don't have to use modifiers, but please " +
+                                                       @"make sure to pick a unique hotkey.";
             /* Main options */
-            internal const string MaxTreeLimitTitle = "Configure Custom Tree Limit";
+            internal const string MaxTreeLimitTitle = @"Configure Custom Tree Limit";
             internal const string MaxTreeLimit = "Maximum Tree Limit:  {0} trees";
             internal const string WindEffect = @"Enable Tree Effect on Wind [Original game default is enabled]";
             internal const string WindEffectLabel = @"This option affects the normal game behavior of tree's height diluting and weakening the wind on the map.";
@@ -25,12 +30,12 @@ namespace TreeAnarchy {
             internal const string LockForestry = @"Lock Forestry";
             internal const string PersistentLock = @"Persistent lock on forestry resources";
             internal const string SwayLabel = @"Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land. " +
-                                               @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting " +
-                                               @"to turn on Lock Forestry when entering a game and destroying fertile land on a map";
+                                              @"Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting " +
+                                              @"to turn on Lock Forestry when entering a game and destroying fertile land on a map";
             internal const string Important = "Important! Must be set before starting/loading a game\n\n" +
-                                               "The following settings are only used when loading from Old Unlimited Trees Format";
+                                              "The following settings are only used when loading from Old Unlimited Trees Format";
             internal const string ReplaceRemoveDesc = @"The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed " +
-                                                        "from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees";
+                                                      @"from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees";
             internal const string ReplaceRemoveName = @"Loading behavior for old unlimited trees game format";
             internal static readonly string[] ReplaceRemoveLabels = new string[] { "Keep missing trees", "Remove missing trees", "Replace missing trees" };
             /* Tree Snapping specific */
@@ -181,15 +186,14 @@ namespace TreeAnarchy {
             UIHelper treesnapHelper = new UIHelper(treesnapPanel);
             ShowTreeSnappingOptions(treesnapHelper);
 
-            UIPanel keymappingPanel = AddTab(tabBar, Msg.KeyboardShortcutTab, 2, true);
-            keymappingPanel.gameObject.AddComponent<TAKeyBinding>();
+            AddTab(tabBar, Msg.KeyboardShortcutTab, 2, true).gameObject.AddComponent<TAKeyBinding>();
         }
 
         internal static void ShowStandardOptions(UIHelper option) {
             UILabel swayLabel = default;
             UIPanel panel = (UIPanel)option.self;
             AddCheckBox(ref panel, ref WindEffect, Msg.WindEffect, TreeEffectOnWind, OnTreeWindCheckChanged);
-            AddLabel(ref panel, WindEffect, ref WindEffectLabel, Msg.WindEffectLabel);
+            AddLabel(ref panel, WindEffect, ref WindEffectLabel, SmallFontScale, Msg.WindEffectLabel);
             option.AddSpace((int)WindEffectLabel.height);
             AddCheckBox(ref panel, ref TreeRotation, Msg.RandomTreeRotation, RandomTreeRotation, OnTreeRotationCheckChanged);
             TreeRotation.width = 300;
@@ -201,7 +205,7 @@ namespace TreeAnarchy {
             AddCheckBox(ref panel, ref LockForestryCB, Msg.LockForestry, UseLockForestry, OnLockForestryCheckChanged);
             LockForestryCB.width = 300;
             AddCheckBox(ref panel, ref PersistentLock, Msg.PersistentLock, PersistentLockForestry, OnPersistentLockCheckChanged);
-            AddLabel(ref panel, PersistentLock, ref swayLabel, Msg.SwayLabel);
+            AddLabel(ref panel, PersistentLock, ref swayLabel, SmallFontScale, Msg.SwayLabel);
             option.AddSpace((int)swayLabel.height + 20);
             SwayPanel.zOrder = TreeRotation.zOrder - 1;
         }
@@ -218,10 +222,10 @@ namespace TreeAnarchy {
             MaxTreeLabel.autoHeight = true;
             AddSlider(ref ScalePanel, ref TreeScaleFactor, MinScaleFactor, MaxScaleFactor, 0.5f, TAMod.TreeScaleFactor, OnTreeScaleFactorChanged);
             TreeScaleFactor.width = panel.width - 150;
-            AddLabel(ref panel, ScalePanel, ref ImportantMsg, Msg.Important);
+            AddLabel(ref panel, ScalePanel, ref ImportantMsg, DefaultFontScale, Msg.Important);
             option.AddSpace((int)ImportantMsg.height);
             AddDropdown(ref panel, ref RemoveReplaceDropDown, Msg.ReplaceRemoveName, Msg.ReplaceRemoveLabels, 0, OnReplaceRemoveKeepEventChanged);
-            AddLabel(ref panel, RemoveReplaceDropDown, ref ReplaceRemoveLabel, Msg.ReplaceRemoveDesc);
+            AddLabel(ref panel, RemoveReplaceDropDown, ref ReplaceRemoveLabel, SmallFontScale, Msg.ReplaceRemoveDesc);
             ReplaceRemoveLabel.relativePosition = new Vector3(0, RemoveReplaceDropDown.height + 5);
             option.AddSpace((int)ReplaceRemoveLabel.height);
         }
@@ -232,10 +236,10 @@ namespace TreeAnarchy {
             UILabel ExperimentalTreeSnapLabel = default;
             UIPanel panel = (UIPanel)option.self;
             AddCheckBox(ref panel, ref TreeSnapCB, Msg.TreeSnap, TAMod.UseTreeSnapping, OnTreeSnapCheckChanged);
-            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, Msg.TreeSnapLabel);
+            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, DefaultFontScale, Msg.TreeSnapLabel);
             option.AddSpace((int)TreeSnapLabel.height);
-            AddCheckBox(ref panel, ref ExperimentalTreeSnap, Msg.ExperimentalTreeSnap, TAMod.UseExperimentalTreeSnapping, OnExperimentalTreeSnapCheckChanged);
-            AddLabel(ref panel, ExperimentalTreeSnap, ref ExperimentalTreeSnapLabel, Msg.ExperimentalTreeSnapLabel);
+            AddCheckBox(ref panel, ref ExperimentalTreeSnap, Msg.ExperimentalTreeSnap, UseExperimentalTreeSnapping, OnExperimentalTreeSnapCheckChanged);
+            AddLabel(ref panel, ExperimentalTreeSnap, ref ExperimentalTreeSnapLabel, SmallFontScale, Msg.ExperimentalTreeSnapLabel);
             option.AddSpace((int)ExperimentalTreeSnapLabel.height + 20);
 
             TreeSnapOptionsPanel = panel.AddUIComponent<UIPanel>();
@@ -253,11 +257,11 @@ namespace TreeAnarchy {
             TreeSnapOptionsPanel.autoLayoutDirection = LayoutDirection.Vertical;
             UIHelper treeSnapOptionsHelper = new UIHelper(TreeSnapOptionsPanel);
             AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToBuilding, Msg.TreeSnapToBuilding, TAMod.UseTreeSnapToBuilding, OnTreeSnapToBuildingCheckChanged);
-            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToBuilding, ref treeSnapToBuildingLabel, Msg.TreeSnapToBuildingLabel);
+            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToBuilding, ref treeSnapToBuildingLabel, SmallFontScale, Msg.TreeSnapToBuildingLabel);
             treeSnapOptionsHelper.AddSpace((int)treeSnapToBuildingLabel.height);
             AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToNetwork, Msg.TreeSnapToNetwork, TAMod.UseTreeSnapToNetwork, OnTreeSnapToNetworkCheckChanged);
             AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToProp, Msg.TreeSnapToProp, TAMod.UseTreeSnapToProp, OnTreeSnapToPropCheckChanged);
-            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToProp, ref treeSnapToPropLabel, Msg.TreeSnapToPropLabel);
+            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToProp, ref treeSnapToPropLabel, SmallFontScale, Msg.TreeSnapToPropLabel);
             treeSnapOptionsHelper.AddSpace((int)treeSnapToPropLabel.height);
         }
 
@@ -276,12 +280,13 @@ namespace TreeAnarchy {
             cb.autoSize = false;
             cb.eventCheckChanged += new PropertyChangedEventHandler<bool>(callback);
         }
-        private static void AddLabel(ref UIPanel panel, UIComponent alignTo, ref UILabel label, string text) {
+        private static void AddLabel(ref UIPanel panel, UIComponent alignTo, ref UILabel label, float fontScale, string text) {
             label = panel.AddUIComponent<UILabel>();
             label.AlignTo(alignTo, UIAlignAnchor.BottomLeft);
             label.width = panel.width - 80;
             label.wordWrap = true;
             label.autoHeight = true;
+            label.textScale = fontScale;
             label.text = text;
             label.relativePosition = new Vector3(25, 25);
             panel.height += label.height;

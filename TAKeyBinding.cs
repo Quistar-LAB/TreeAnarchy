@@ -71,6 +71,12 @@ namespace TreeAnarchy {
                 m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Period, false, false, false), true);
                 m_decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Comma, false, false, false), true);
 
+                UILabel desc = component.AddUIComponent<UILabel>();
+                desc.width = component.width - 50;
+                desc.autoHeight = true;
+                desc.wordWrap = true;
+                desc.textScale = TAUI.SmallFontScale;
+                desc.text = TAUI.Msg.KeyBindDescription;
                 AddKeymapping("Tree Snapping", m_treeSnapping);
                 AddKeymapping("Lock Forestry", m_lockForestry);
                 AddKeymapping("Increase Tree Size", m_incrTreeVariation);
