@@ -41,7 +41,7 @@ namespace TreeAnarchy {
 
         private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
             if (e.type != EventType.KeyDown) return false;
-            return Input.GetKeyDown(inputKey.Key) &&
+            return Input.GetKey(inputKey.Key) &&
                 (e.modifiers & EventModifiers.Control) == EventModifiers.Control == inputKey.Control &&
                 (e.modifiers & EventModifiers.Shift) == EventModifiers.Shift == inputKey.Shift &&
                 (e.modifiers & EventModifiers.Alt) == EventModifiers.Alt == inputKey.Alt;
@@ -66,10 +66,10 @@ namespace TreeAnarchy {
                 } catch (Exception e) {
                     Debug.LogException(e);
                 }
-                m_treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, true, true), true);
-                m_lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, true, true), true);
-                m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.RightBracket, false, false, false), true);
-                m_decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.LeftBracket, false, false, false), true);
+                m_treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, false, true), true);
+                m_lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, false, true), true);
+                m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Period, false, false, false), true);
+                m_decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Comma, false, false, false), true);
 
                 AddKeymapping("Tree Snapping", m_treeSnapping);
                 AddKeymapping("Lock Forestry", m_lockForestry);

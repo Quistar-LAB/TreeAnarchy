@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace TreeAnarchy.Patches {
     public class TreeVariation {
-        private const float minScale = 0.6f;
+        private const float minScale = 0.5f;
         private const float maxScale = 5.0f;
         private const float scaleStep = 0.2f;
         public static float[] m_treeScale = null;
@@ -77,9 +77,9 @@ namespace TreeAnarchy.Patches {
         private static float CalculateCustomScale(float val, uint treeID) {
             float scale = val + m_treeScale[treeID];
             if (scale > maxScale) {
-                scale = (m_treeScale[treeID] -= scaleStep);
+                scale = val + (m_treeScale[treeID] -= scaleStep);
             } else if (scale < minScale) {
-                scale = (m_treeScale[treeID] += scaleStep);
+                scale = val + (m_treeScale[treeID] += scaleStep);
             }
             return scale;
         }
