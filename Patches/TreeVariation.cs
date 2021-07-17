@@ -16,6 +16,7 @@ namespace TreeAnarchy.Patches {
         public static float[] m_treeScale = null;
         private static uint currentTreeID = 0;
         private static bool isTreeVariationPatched = false;
+        private static bool isLatePatched = false;
 
         internal static void EnablePatch(Harmony harmony) {
             InitTreeScaleCapacity();
@@ -31,6 +32,14 @@ namespace TreeAnarchy.Patches {
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.TreeToolRenderOverlayTranspiler))));
                 isTreeVariationPatched = true;
+            }
+        }
+
+        internal static void LateEnablePatch(Harmony harmony) {
+            if (!isLatePatched) {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderOverlay)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.MoveableTreeRenderOverlayTranspiler))));
+                isLatePatched = true;
             }
         }
 
@@ -72,6 +81,11 @@ namespace TreeAnarchy.Patches {
                     m_treeScale[i] = 0;
                 }
             }
+        }
+
+        internal static void ResizeCapacity() {
+            m_treeScale = null;
+            InitTreeScaleCapacity();
         }
 
         private static float CalculateCustomScale(float val, uint treeID) {
@@ -192,6 +206,32 @@ namespace TreeAnarchy.Patches {
                 new CodeInstruction(OpCodes.Ldloc_3),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetSeedTreeScale)))
+            };
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, snippet);
+
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> MoveableTreeRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
+            int firstIndex = 0, lastIndex = 0;
+            var codes = instructions.ToList();
+
+            for (int i = 0; i < codes.Count; i++) {
+                if (codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) })) && firstIndex == 0) {
+                    firstIndex = i + 1;
+                }
+                if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 5 && lastIndex == 0) {
+                    lastIndex = i;
+                    break;
+                }
+            }
+
+            var snippet = new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Ldloca_S, 4),
+                new CodeInstruction(OpCodes.Ldloc_0),
+                new CodeInstruction(OpCodes.Ldloc_2),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetTreeScale)))
             };
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, snippet);
