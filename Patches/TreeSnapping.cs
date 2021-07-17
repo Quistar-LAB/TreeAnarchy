@@ -31,7 +31,9 @@ namespace TreeAnarchy.Patches {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SimulationStepTranspiler))));
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TreeToolSimulationStepTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TreeToolCreateTreeTranspiler))));
                 isTranspilerPatched = true;
             }
         }
@@ -80,107 +82,83 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        private static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
-            input.m_currentEditObject = true;
-            input.m_ignoreTerrain = false;
-            input.m_ignoreBuildingFlags = Building.Flags.None;
-            input.m_ignoreNodeFlags = NetNode.Flags.None;
-            input.m_ignoreSegmentFlags = NetSegment.Flags.None;
-            input.m_ignorePropFlags = PropInstance.Flags.None;
-            input.m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-            input.m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-            input.m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-            input.m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+        private static ToolBase.RaycastService customServices = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+        public static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
+            if (UseTreeSnapping) {
+                input.m_currentEditObject = false;
+                input.m_ignoreTerrain = false;
+                input.m_ignoreBuildingFlags = Building.Flags.None;
+                input.m_ignoreNodeFlags = NetNode.Flags.None;
+                input.m_ignoreSegmentFlags = NetSegment.Flags.None;
+                input.m_ignorePropFlags = PropInstance.Flags.None;
+                input.m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+            }
         }
 
-        private static IEnumerable<CodeInstruction> SimulationStepTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int occuranceCount = 0;
-            int insertIndex = 0;
-            LocalBuilder RaycastInput = null;
-            Label jumpLabel = il.DefineLabel();
-            ConstructorInfo RaycastService = AccessTools.DeclaredConstructor(typeof(ToolBase.RaycastService),
-                                             new Type[] { typeof(ItemClass.Service), typeof(ItemClass.SubService), typeof(ItemClass.Layer) });
+        public static void CalcFixedHeight(uint treeID) {
+            TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
+            Vector3 position = trees[treeID].Position;
+            float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+            if (position.y > terrainHeight + errorMargin) {
+                trees[treeID].m_flags |= FixedHeightFlag;
+            } else {
+                trees[treeID].m_flags &= FixedHeightMask;
+            }
+        }
 
+        private static IEnumerable<CodeInstruction> TreeToolCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
             var codes = instructions.ToList();
-            /* First make sure to catch the RaycastInput variable */
+
             for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].operand is LocalBuilder input && input.LocalType == typeof(ToolBase.RaycastInput)) {
-                    RaycastInput = input;
+                if (codes[i].Calls(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect)))) {
+                    codes.InsertRange(i + 1, new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldloc_S, 4),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalcFixedHeight)))
+                    });
                     break;
                 }
             }
 
+            return codes.AsEnumerable();
+        }
+
+        private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = instructions.ToList();
             for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].LoadsField(AccessTools.Field(typeof(ToolController), nameof(ToolController.m_mode)))) {
-                    occuranceCount++;
-                }
-                if (codes[i].opcode == OpCodes.Brfalse && occuranceCount == 2) {
-                    insertIndex = i;
-                    break;
-                }
-            }
-
-            CodeInstruction[] insertCodes = new CodeInstruction[]
-            {
-                new CodeInstruction(OpCodes.Ldloca_S, RaycastInput).WithLabels( new Label[] { jumpLabel }),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ConfigureRaycastInput))),
-            };
-
-            codes.RemoveRange(insertIndex + 1, 3);
-            codes.InsertRange(insertIndex + 1, insertCodes);
-            codes.Insert(insertIndex, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
-            codes.Insert(insertIndex, new CodeInstruction(OpCodes.Brtrue_S, jumpLabel));
-
-            for (int i = 0; i < codes.Count; i++) {
-                // First Insert
-                if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
+                if (codes[i].StoresField(AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))) &&
+                   codes[i - 1].opcode == OpCodes.Ldc_I4_1 &&
+                   codes[i - 2].opcode == OpCodes.Ldloca_S) {
+                    LocalBuilder raycastInput = codes[i - 2].operand as LocalBuilder;
+                    List<Label> labels = codes[i + 1].labels;
+                    var snippet = new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldloca_S, raycastInput).WithLabels(labels),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ConfigureRaycastInput)))
+                    };
+                    codes[i + 1].labels.Clear();
+                    codes.InsertRange(i + 1, snippet);
+                } else if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
+                    // Add !UseTreeSnapping in if
                     if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Brtrue, label.Value));
+                        codes.InsertRange(i + 2, new CodeInstruction[] {
+                            new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
+                            new CodeInstruction(OpCodes.Brtrue, label.Value)
+                        });
                     }
-                }
-                // Second Insert
-                if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
-                    if (codes[i - 2].opcode == OpCodes.Ldfld) {
+                    // Replace RaycastOutput.m_currentEditObject with !UseTreeSnapping
+                    if (codes[i - 2].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_hitPos)))) {
                         codes.RemoveRange(i - 1, 2);
-                        codes.Insert(i - 1, new CodeInstruction(OpCodes.Ceq));
-                        codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldc_I4_0));
-                        codes.Insert(i - 1, new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping))));
-                        break; // can break out now
+                        codes.InsertRange(i - 1, new CodeInstruction[] {
+                            new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
+                            new CodeInstruction(OpCodes.Ldc_I4_0),
+                            new CodeInstruction(OpCodes.Ceq)
+                        });
                     }
-                }
-            }
-
-            Label exitLabel = il.DefineLabel();
-            List<Label> tempLabels = null;
-            CodeInstruction leaveOp = null;
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
-                    if (codes[i - 1].opcode == OpCodes.Ldfld) {
-                        if (codes[i + 1].Branches(out Label? label)) {
-                            exitLabel = label.Value;
-                            tempLabels = codes[i + 1].labels;
-                        }
-                    }
-                }
-                if (codes[i].opcode == OpCodes.Leave) {
-                    leaveOp = new CodeInstruction(codes[i].opcode, codes[i].operand); // catch and store opcode
-                }
-            }
-            CodeInstruction[] InsertCode = new CodeInstruction[]
-            {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
-                new CodeInstruction(OpCodes.Brfalse_S, exitLabel),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
-                new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(TreeTool), "m_fixedHeight")),
-                leaveOp.WithLabels(tempLabels)
-            };
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].StoresField(AccessTools.Field(typeof(TreeTool), "m_placementErrors"))) {
-                    if (codes[i + 1].opcode == OpCodes.Ldarg_0 && codes[i - 1].opcode == OpCodes.Ldloc_S) {
-                        codes.RemoveRange(i + 1, 5);
-                        codes.InsertRange(i + 1, InsertCode);
+                    // Replace LDFLD RaycastOutput.m_currentEditObject
+                    if (codes[i + 1].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
+                        codes[i] = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
                     }
                 }
             }
@@ -210,36 +188,35 @@ namespace TreeAnarchy.Patches {
                 if ((trees[treeID].m_flags & FixedHeightFlag) == 0) {
                     newPosition.y = newTerrainHeight;
                 }
+            } else if (followTerrain) {
+                trees[treeID].m_flags &= FixedHeightMask;
+                newPosition.y = newTerrainHeight;
             } else {
-                if (followTerrain) {
-                    trees[treeID].m_flags &= FixedHeightMask;
-                    newPosition.y = newTerrainHeight;
+                if (deltaHeight != 0) {
+                    trees[treeID].m_flags |= FixedHeightFlag;
                 } else {
-                    if (deltaHeight != 0) {
-                        trees[treeID].m_flags |= FixedHeightFlag;
+                    if (!TreeSnapRayCast(newPosition, out newPosition)) {
+                        newPosition.y = newTerrainHeight;
                     } else {
-                        if (!TreeSnapRayCast(newPosition, out newPosition)) {
+                        if (newPosition.y > newTerrainHeight + errorMargin || newPosition.y < newTerrainHeight - errorMargin) {
+                            trees[treeID].m_flags |= FixedHeightFlag;
+                        }
+                        /* seems after snapping to a building with y position > 0, then tree position gets all messed up
+                            * so we have to reset the position in the cases where position is back to terrain height +- 0.075f */
+                        if (newPosition.y >= (newTerrainHeight - errorMargin) && newPosition.y <= (newTerrainHeight + errorMargin)) {
                             newPosition.y = newTerrainHeight;
-                        } else {
-                            if (newPosition.y > newTerrainHeight + errorMargin || newPosition.y < newTerrainHeight - errorMargin) {
-                                trees[treeID].m_flags |= FixedHeightFlag;
-                            }
-                            /* seems after snapping to a building with y position > 0, then tree position gets all messed up
-                             * so we have to reset the position in the cases where position is back to terrain height +- 0.075f */
-                            if (newPosition.y >= (newTerrainHeight - errorMargin) && newPosition.y <= (newTerrainHeight + errorMargin)) {
-                                newPosition.y = newTerrainHeight;
-                                trees[treeID].m_flags &= FixedHeightMask;
-                                state.position.y = newTerrainHeight;
-                            }
+                            trees[treeID].m_flags &= FixedHeightMask;
+                            state.position.y = newTerrainHeight;
                         }
                     }
                 }
             }
+
             return newPosition;
         }
 
+        /* Must call method instead of adding in this routine. Harmony issue workaround */
         private static bool MoveableTreeTransformPrefix(MoveableTree __instance, InstanceState state, ref Matrix4x4 matrix4x, float deltaHeight, Vector3 center, bool followTerrain) {
-            /* Must call method instead of adding in this routine. Harmony issue workaround */
             Vector3 vector = SampleTreeSnapVector(__instance, state, ref matrix4x, deltaHeight, center, followTerrain);
             __instance.Move(vector, 0f);
             return false;
@@ -249,7 +226,8 @@ namespace TreeAnarchy.Patches {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
+            float scale = TreeVariation.GetTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
+            //float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
@@ -260,13 +238,11 @@ namespace TreeAnarchy.Patches {
         }
 
         private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
-            //            if (MoveItTool.m_isLowSensitivity) {
-            //                return false;
-            //            }
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
+            float scale = TreeVariation.GetTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
+            //float scale = treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
@@ -282,7 +258,6 @@ namespace TreeAnarchy.Patches {
          */
         private static Vector3 CalculateTreeVector(Vector3 position, float deltaHeight, bool followTerrain) {
             float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
-            Debug.Log($"TreeAnarchy: BEFORE position={position}, deltaHeight={deltaHeight}, terrainHeight={terrainHeight}");
             if (!UseTreeSnapping || followTerrain) {
                 position.y = terrainHeight;
             } else if (TreeSnapRayCast(position, out Vector3 raycastPosition)) {
@@ -290,7 +265,6 @@ namespace TreeAnarchy.Patches {
             } else if (deltaHeight == 0) {
                 position.y = terrainHeight;
             }
-            Debug.Log($"TreeAnarchy: AFTER position={position}, deltaHeight={deltaHeight}, terrainHeight={terrainHeight}");
             return position;
         }
 
@@ -309,8 +283,7 @@ namespace TreeAnarchy.Patches {
                     position = vector
                 };
                 if (!followTerrain) {
-                    if (deltaHeight != 0 || treeState.position.y > treeState.terrainHeight + errorMargin ||
-                                            treeState.position.y < treeState.terrainHeight - errorMargin) {
+                    if (deltaHeight != 0 || treeState.position.y > treeState.terrainHeight + errorMargin || treeState.position.y < treeState.terrainHeight - errorMargin) {
                         buffer[tree].m_flags |= FixedHeightFlag;
                     }
                 }
