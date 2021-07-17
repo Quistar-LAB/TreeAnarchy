@@ -389,6 +389,7 @@ namespace TreeAnarchy.Patches {
                 manager.m_trees = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 manager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                 manager.m_trees.CreateItem(out uint _);
+                TreeVariation.ResizeCapacity();
             }
         }
     }
