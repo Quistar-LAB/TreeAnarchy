@@ -66,6 +66,7 @@ namespace TreeAnarchy {
                 } catch (Exception e) {
                     Debug.LogException(e);
                 }
+
                 m_treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, false, true), true);
                 m_lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, false, true), true);
                 m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Period, false, false, false), true);

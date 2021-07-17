@@ -135,10 +135,12 @@ namespace TreeAnarchy {
 
         internal static void UpdateTreeSnapCheckBox() {
             TreeSnapCB.isChecked = UseTreeSnapping;
+            SaveSettings();
         }
 
         internal static void UpdateLockForestryCheckBox() {
             LockForestryCB.isChecked = UseLockForestry;
+            SaveSettings();
         }
 
         internal static UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
@@ -236,7 +238,7 @@ namespace TreeAnarchy {
             UILabel ExperimentalTreeSnapLabel = default;
             UIPanel panel = (UIPanel)option.self;
             AddCheckBox(ref panel, ref TreeSnapCB, Msg.TreeSnap, TAMod.UseTreeSnapping, OnTreeSnapCheckChanged);
-            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, DefaultFontScale, Msg.TreeSnapLabel);
+            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, SmallFontScale, Msg.TreeSnapLabel);
             option.AddSpace((int)TreeSnapLabel.height);
             AddCheckBox(ref panel, ref ExperimentalTreeSnap, Msg.ExperimentalTreeSnap, UseExperimentalTreeSnapping, OnExperimentalTreeSnapCheckChanged);
             AddLabel(ref panel, ExperimentalTreeSnap, ref ExperimentalTreeSnapLabel, SmallFontScale, Msg.ExperimentalTreeSnapLabel);

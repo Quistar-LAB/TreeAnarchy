@@ -48,6 +48,7 @@ namespace TreeAnarchy {
                 if (!CheckMoveItTreeSnapSig()) {
                     TreeSnapping.PatchMoveIt(harmony);
                 }
+                TreeVariation.LateEnablePatch(harmony);
                 //TreeSnapping.PatchMoveItRayCast(m_harmony);
             }
             if (!IsPluginExists("1388613752", "Tree Movement Control") ||
