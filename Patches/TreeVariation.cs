@@ -3,23 +3,62 @@ using ColossalFramework.Math;
 using HarmonyLib;
 using MoveIt;
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using UnityEngine;
 
 namespace TreeAnarchy.Patches {
-    public class TreeVariation {
-        private const float minScale = 0.5f;
-        private const float maxScale = 5.0f;
-        private const float scaleStep = 0.2f;
-        public static float[] m_treeScale = null;
-        private static uint currentTreeID = 0;
+    public class TreeScaleManager : Singleton<TreeScaleManager> {
+        public const float minScale = 0.5f;
+        public const float maxScale = 5.0f;
+        public const float scaleStep = 0.2f;
+        public uint currentTreeID = 0;
+        public float[] m_treeScales;
+
+        public void Awake() {
+            m_treeScales = new float[TAMod.MaxTreeLimit];
+        }
+
+        public void ResizeBuffer(int maxSize) {
+            m_treeScales = new float[maxSize];
+        }
+
+        public void IncrementTreeSize() {
+            TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
+            uint treeID = currentTreeID;
+            if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+                m_treeScales[treeID] += scaleStep;
+            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0 && ActionQueue.instance.current is SelectAction) {
+                foreach (Instance instance in MoveIt.Action.selection) {
+                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
+                        m_treeScales[instance.id.Tree] += scaleStep;
+                    }
+                }
+            }
+        }
+
+        public void DecrementTreeSize() {
+            TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
+            uint treeID = currentTreeID;
+            if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+                m_treeScales[treeID] -= scaleStep;
+            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0 && ActionQueue.instance.current is SelectAction) {
+                foreach (Instance instance in MoveIt.Action.selection) {
+                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
+                        m_treeScales[instance.id.Tree] -= scaleStep;
+                    }
+                }
+            }
+        }
+    }
+
+    public static class TreeVariation {
         private static bool isTreeVariationPatched = false;
         private static bool isLatePatched = false;
 
         internal static void EnablePatch(Harmony harmony) {
-            InitTreeScaleCapacity();
             if (!isTreeVariationPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance), new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.TreeInstanceRenderInstanceTranspiler))));
@@ -44,56 +83,16 @@ namespace TreeAnarchy.Patches {
         }
 
         internal static void DisablePatch(Harmony harmony) {
-        }
 
-        internal static void IncrementScaler() {
-            TreeTool treeTool = Singleton<TreeTool>.instance;
-            uint treeID = currentTreeID;
-            if (treeTool.m_mode == TreeTool.Mode.Single && treeTool.isActiveAndEnabled && Cursor.visible && treeID > 1) {
-                m_treeScale[treeID] += scaleStep;
-            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && MoveItTool.instance.isActiveAndEnabled && ActionQueue.instance.current is SelectAction) {
-                foreach (Instance instance in MoveIt.Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
-                        m_treeScale[instance.id.Tree] += scaleStep;
-                    }
-                }
-            }
-        }
-
-        internal static void DecrementScaler() {
-            TreeTool treeTool = Singleton<TreeTool>.instance;
-            uint treeID = currentTreeID;
-            if (treeTool.m_mode == TreeTool.Mode.Single && treeTool.isActiveAndEnabled && Cursor.visible && treeID > 1) {
-                m_treeScale[treeID] -= scaleStep;
-            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && MoveItTool.instance.isActiveAndEnabled && ActionQueue.instance.current is SelectAction) {
-                foreach (Instance instance in MoveIt.Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
-                        m_treeScale[instance.id.Tree] -= scaleStep;
-                    }
-                }
-            }
-        }
-
-        private static void InitTreeScaleCapacity() {
-            if (m_treeScale == null) {
-                m_treeScale = new float[TAMod.MaxTreeLimit];
-                for (int i = 0; i < m_treeScale.Length; i++) {
-                    m_treeScale[i] = 0;
-                }
-            }
-        }
-
-        internal static void ResizeCapacity() {
-            m_treeScale = null;
-            InitTreeScaleCapacity();
         }
 
         private static float CalculateCustomScale(float val, uint treeID) {
-            float scale = val + m_treeScale[treeID];
-            if (scale > maxScale) {
-                scale = val + (m_treeScale[treeID] -= scaleStep);
-            } else if (scale < minScale) {
-                scale = val + (m_treeScale[treeID] += scaleStep);
+            float[] treeScales = Singleton<TreeScaleManager>.instance.m_treeScales;
+            float scale = val + treeScales[treeID];
+            if (scale > TreeScaleManager.maxScale) {
+                scale = val + (treeScales[treeID] -= TreeScaleManager.scaleStep);
+            } else if (scale < TreeScaleManager.minScale) {
+                scale = val + (treeScales[treeID] += TreeScaleManager.scaleStep);
             }
             return scale;
         }
@@ -105,7 +104,7 @@ namespace TreeAnarchy.Patches {
         }
 
         public static float GetSeedTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
-            currentTreeID = treeID;
+            Singleton<TreeScaleManager>.instance.currentTreeID = treeID;
             return CalculateCustomScale(treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f, treeID);
         }
 

@@ -9,7 +9,7 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal static class TreeMovement {
+    public static class TreeMovement {
         private static bool transpilerPatched = false;
 #pragma warning disable IDE0044 // Add readonly modifier
         private static Quaternion[] treeQuaternion = new Quaternion[360];

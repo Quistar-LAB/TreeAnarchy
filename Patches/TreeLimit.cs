@@ -20,7 +20,7 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal static class TreeLimit {
+    public static class TreeLimit {
 #if DEBUG
         internal static void PrintDebugIL(List<CodeInstruction> codes, MethodBase method)
         {
@@ -159,13 +159,11 @@ namespace TreeAnarchy.Patches {
             Label jump = il.DefineLabel();
 
             codes[0].labels.Add(jump);
-
-            var snippet = new CodeInstruction[] {
+            codes.InsertRange(0, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseLockForestry))),
                 new CodeInstruction(OpCodes.Brfalse_S, jump),
-                new CodeInstruction(OpCodes.Ret),
-            };
-            codes.InsertRange(0, snippet);
+                new CodeInstruction(OpCodes.Ret)
+            });
 
             return codes.AsEnumerable();
         }
@@ -182,12 +180,10 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].opcode == OpCodes.Stloc_3 && !firstSig) {
                     firstSig = true;
-                    var snippet = new CodeInstruction[] {
-
+                    codes.InsertRange(i + 1, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit),
                         new CodeInstruction(OpCodes.Stloc_S, maxLen),
-                    };
-                    codes.InsertRange(i + 1, snippet);
+                    });
                 }
                 if (codes[i].opcode == OpCodes.Ldloc_3) {
                     if (codes[i - 1].operand != null) {
@@ -200,15 +196,14 @@ namespace TreeAnarchy.Patches {
                 if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree))) && !secondSig) {
                     secondSig = true;
                     num4 = codes[i + 2].operand as LocalBuilder;
-                    var snippet = new CodeInstruction[] {
+                    codes.InsertRange(i + 1, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_1),
                         new CodeInstruction(OpCodes.Ldloc_S, num4),
                         new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
                         new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
                         new CodeInstruction(OpCodes.Brtrue_S, IsFixedHeight),
-                    };
-                    codes.InsertRange(i + 1, snippet);
-                    var snippet2 = new CodeInstruction[] {
+                    });
+                    codes.InsertRange(i - 7, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Call, integratedDeserialize),
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
@@ -218,8 +213,7 @@ namespace TreeAnarchy.Patches {
                         new CodeInstruction(OpCodes.Ldlen),
                         new CodeInstruction(OpCodes.Conv_I4),
                         new CodeInstruction(OpCodes.Stloc_3)
-                    };
-                    codes.InsertRange(i - 7, snippet2);
+                    });
                 }
                 if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))) && secondSig) {
                     codes[i + 1] = codes[i + 1].WithLabels(IsFixedHeight);
@@ -238,7 +232,7 @@ namespace TreeAnarchy.Patches {
                     try {
                         Singleton<TreeManager>.instance.ReleaseTree(treeID);
                     } catch {
-
+                        Debug.Log($"TreeAnarchy: Error occured releasing tree during prefab initialization");
                     }
                     break;
                 case ReplaceTree:
@@ -334,8 +328,7 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        internal static void InjectResize() {
-            Harmony harmony = TAPatcher.harmony;
+        internal static void InjectResize(Harmony harmony) {
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
 
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
@@ -368,7 +361,7 @@ namespace TreeAnarchy.Patches {
         internal static void Enable(Harmony harmony) {
             try {
                 if (!isTranspilerPatched) {
-                    InjectResize();
+                    InjectResize(harmony);
                     harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                         transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.DeserializeTranspiler))));
@@ -389,7 +382,7 @@ namespace TreeAnarchy.Patches {
                 manager.m_trees = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 manager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                 manager.m_trees.CreateItem(out uint _);
-                TreeVariation.ResizeCapacity();
+                Singleton<TreeScaleManager>.instance.ResizeBuffer(MaxTreeLimit);
             }
         }
     }

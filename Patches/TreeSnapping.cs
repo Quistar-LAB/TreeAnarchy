@@ -1,13 +1,4 @@
-﻿#define FULLVERBOSE
-#define QUIETVERBOSE
-//#define SILENT
-#undef FULLVERBOSE
-#if SILENT
-#undef DEBUG
-#undef FULLVERBOSE
-#undef QUIETVERBOSE
-#endif
-using ColossalFramework;
+﻿using ColossalFramework;
 using ColossalFramework.Math;
 using HarmonyLib;
 using MoveIt;
@@ -20,7 +11,7 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    internal static class TreeSnapping {
+    public static class TreeSnapping {
         private const float errorMargin = 0.075f;
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
@@ -70,12 +61,11 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance)))) {
                     codes.RemoveRange(i, 3);
-                    var snippet = new CodeInstruction[] {
+                    codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SampleSnapDetailHeight)))
-                    };
-                    codes.InsertRange(i, snippet);
+                    });
                 }
             }
 
@@ -126,11 +116,12 @@ namespace TreeAnarchy.Patches {
         }
 
         private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var LoadFieldUseTreeSnapping = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
             var codes = instructions.ToList();
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].StoresField(AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))) &&
-                   codes[i - 1].opcode == OpCodes.Ldc_I4_1 &&
-                   codes[i - 2].opcode == OpCodes.Ldloca_S) {
+                    codes[i - 1].opcode == OpCodes.Ldc_I4_1 &&
+                    codes[i - 2].opcode == OpCodes.Ldloca_S) {
                     LocalBuilder raycastInput = codes[i - 2].operand as LocalBuilder;
                     List<Label> labels = codes[i + 1].labels;
                     var snippet = new CodeInstruction[] {
@@ -143,7 +134,7 @@ namespace TreeAnarchy.Patches {
                     // Add !UseTreeSnapping in if
                     if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
                         codes.InsertRange(i + 2, new CodeInstruction[] {
-                            new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
+                            LoadFieldUseTreeSnapping,
                             new CodeInstruction(OpCodes.Brtrue, label.Value)
                         });
                     }
@@ -151,7 +142,7 @@ namespace TreeAnarchy.Patches {
                     if (codes[i - 2].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_hitPos)))) {
                         codes.RemoveRange(i - 1, 2);
                         codes.InsertRange(i - 1, new CodeInstruction[] {
-                            new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping))),
+                            LoadFieldUseTreeSnapping,
                             new CodeInstruction(OpCodes.Ldc_I4_0),
                             new CodeInstruction(OpCodes.Ceq)
                         });
