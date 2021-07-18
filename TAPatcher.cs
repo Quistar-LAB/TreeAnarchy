@@ -5,16 +5,15 @@ using System.Reflection;
 using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
-    internal static class TAPatcher {
+    internal class TAPatcher {
         private const string HARMONYID = @"quistar.treeanarchy.mod";
-        internal static Harmony harmony = new Harmony(HARMONYID);
 
         private static bool isCorePatched = false;
         private static bool isTreeMovementPatched = false;
         internal static FieldInfo MoveItUseTreeSnap = null;
         internal static bool isMoveItBeta = false;
 
-        private static bool IsPluginExists(string id, string name) {
+        private bool IsPluginExists(string id, string name) {
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
                 if (info.name.Contains(id) || info.ToString().Contains(name)) {
                     if (info.isEnabled) return true;
@@ -23,7 +22,7 @@ namespace TreeAnarchy {
             return false;
         }
 
-        private static bool CheckMoveItTreeSnapSig() {
+        private bool CheckMoveItTreeSnapSig() {
             FieldInfo treeSnapField = typeof(MoveIt.MoveItTool).GetField("treeSnapping", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public);
             if (treeSnapField != null) {
                 MoveItUseTreeSnap = treeSnapField;
@@ -35,6 +34,7 @@ namespace TreeAnarchy {
         }
 
         internal static void EnableCore() {
+            Harmony harmony = new Harmony(HARMONYID);
             if (!isCorePatched) {
                 TreeLimit.Enable(harmony);
                 TreeSnapping.Enable(harmony);
@@ -43,13 +43,13 @@ namespace TreeAnarchy {
             }
         }
 
-        internal static void LateEnable() {
+        internal void LateEnable() {
+            Harmony harmony = new Harmony(HARMONYID);
             if (IsPluginExists("1619685021", "MoveIt") || IsPluginExists("2215771668", "MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
                     TreeSnapping.PatchMoveIt(harmony);
                 }
                 TreeVariation.LateEnablePatch(harmony);
-                //TreeSnapping.PatchMoveItRayCast(m_harmony);
             }
             if (!IsPluginExists("1388613752", "Tree Movement Control") ||
                 !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
@@ -60,6 +60,7 @@ namespace TreeAnarchy {
         }
 
         internal static void DisableLatePatch() {
+            Harmony harmony = new Harmony(HARMONYID);
             TreeVariation.DisablePatch(harmony);
         }
 

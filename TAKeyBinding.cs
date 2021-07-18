@@ -2,20 +2,35 @@
 using ColossalFramework.Globalization;
 using ColossalFramework.UI;
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
-    public class TAKeyBinding : UICustomControl {
+    internal class TAKeyBinding : UICustomControl {
+        private const string thisCategory = "TreeAnarchy";
         private SavedInputKey m_EditingBinding;
-        private const string KeybindingConfig = "TreeAnarchyKeyBindSetting";
-        private bool IsKeyBindingConfigured = false;
 
-        private SavedInputKey m_treeSnapping;
-        private SavedInputKey m_lockForestry;
-        private SavedInputKey m_incrTreeVariation;
-        private SavedInputKey m_decrTreeVariation;
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string toggleTreeSnapping = "toggleTreeSnapping";
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string toggleLockForestry = "toggleLockForestry";
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string incrementTreeSize = "incrTreeVariation";
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string decrementTreeSize = "decrTreeVariation";
+
+        private static readonly InputKey defaultToggleTreeSnappingKey = SavedInputKey.Encode(KeyCode.S, false, false, true);
+        private static readonly InputKey defaultToggleLockForestryKey = SavedInputKey.Encode(KeyCode.F, false, false, true);
+        private static readonly InputKey defaultIncrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Period, false, false, false);
+        private static readonly InputKey defaultDecrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Comma, false, false, false);
+
+        private static readonly SavedInputKey m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
+        private static readonly SavedInputKey m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
+        private static readonly SavedInputKey m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
+        private static readonly SavedInputKey m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
 
         protected void Update() {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
@@ -23,28 +38,20 @@ namespace TreeAnarchy {
                 if (m_treeSnapping.IsPressed(e)) {
                     if (UseTreeSnapping) UseTreeSnapping = false;
                     else UseTreeSnapping = true;
-                    TAUI.UpdateTreeSnapCheckBox();
+                    SaveSettings();
                 }
                 if (m_lockForestry.IsPressed(e)) {
                     if (UseLockForestry) UseLockForestry = false;
                     else UseLockForestry = true;
-                    TAUI.UpdateLockForestryCheckBox();
+                    SaveSettings();
                 }
                 if (IsCustomPressed(m_incrTreeVariation, e)) {
-                    TreeVariation.IncrementScaler();
+                    Singleton<TreeScaleManager>.instance.IncrementTreeSize();
                 }
                 if (IsCustomPressed(m_decrTreeVariation, e)) {
-                    TreeVariation.DecrementScaler();
+                    Singleton<TreeScaleManager>.instance.DecrementTreeSize();
                 }
             }
-        }
-
-        private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
-            if (e.type != EventType.KeyDown) return false;
-            return Input.GetKey(inputKey.Key) &&
-                (e.modifiers & EventModifiers.Control) == EventModifiers.Control == inputKey.Control &&
-                (e.modifiers & EventModifiers.Shift) == EventModifiers.Shift == inputKey.Shift &&
-                (e.modifiers & EventModifiers.Alt) == EventModifiers.Alt == inputKey.Alt;
         }
 
         protected void OnEnable() {
@@ -56,49 +63,41 @@ namespace TreeAnarchy {
         }
 
         protected void Awake() {
-            if (!IsKeyBindingConfigured) {
-                try {
-                    if (GameSettings.FindSettingsFileByName(KeybindingConfig) == null) {
-                        GameSettings.AddSettingsFile(new SettingsFile[] {
-                            new SettingsFile() { fileName = KeybindingConfig }
-                        });
-                    }
-                } catch (Exception e) {
-                    Debug.LogException(e);
-                }
+            UILabel desc = component.AddUIComponent<UILabel>();
+            desc.width = component.width - 50;
+            desc.autoHeight = true;
+            desc.wordWrap = true;
+            desc.textScale = TAUI.SmallFontScale;
+            desc.text = TAUI.Msg.KeyBindDescription;
+            AddKeymapping("Tree Snapping", m_treeSnapping);
+            AddKeymapping("Lock Forestry", m_lockForestry);
+            AddKeymapping("Increase Tree Size", m_incrTreeVariation);
+            AddKeymapping("Decrease Tree Size", m_decrTreeVariation);
+        }
 
-                m_treeSnapping = new SavedInputKey("toggleTreeSnapping", KeybindingConfig, SavedInputKey.Encode(KeyCode.S, false, false, true), true);
-                m_lockForestry = new SavedInputKey("toggleForestry", KeybindingConfig, SavedInputKey.Encode(KeyCode.F, false, false, true), true);
-                m_incrTreeVariation = new SavedInputKey("incrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Period, false, false, false), true);
-                m_decrTreeVariation = new SavedInputKey("decrTreeVariation", KeybindingConfig, SavedInputKey.Encode(KeyCode.Comma, false, false, false), true);
-
-                UILabel desc = component.AddUIComponent<UILabel>();
-                desc.width = component.width - 50;
-                desc.autoHeight = true;
-                desc.wordWrap = true;
-                desc.textScale = TAUI.SmallFontScale;
-                desc.text = TAUI.Msg.KeyBindDescription;
-                AddKeymapping("Tree Snapping", m_treeSnapping);
-                AddKeymapping("Lock Forestry", m_lockForestry);
-                AddKeymapping("Increase Tree Size", m_incrTreeVariation);
-                AddKeymapping("Decrease Tree Size", m_decrTreeVariation);
-                IsKeyBindingConfigured = true;
-            }
+        private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
+            if (e.type != EventType.KeyDown) return false;
+            return Input.GetKey(inputKey.Key) &&
+                (e.modifiers & EventModifiers.Control) == EventModifiers.Control == inputKey.Control &&
+                (e.modifiers & EventModifiers.Shift) == EventModifiers.Shift == inputKey.Shift &&
+                (e.modifiers & EventModifiers.Alt) == EventModifiers.Alt == inputKey.Alt;
         }
 
         private int listCount = 0;
-        public void AddKeymapping(string label, SavedInputKey savedInputKey) {
+        private void AddKeymapping(string key, SavedInputKey savedInputKey) {
             UIPanel uIPanel = component.AttachUIComponent(UITemplateManager.GetAsGameObject("KeyBindingTemplate")) as UIPanel;
             if (listCount++ % 2 == 1) uIPanel.backgroundSprite = null;
 
             UILabel uILabel = uIPanel.Find<UILabel>("Name");
             UIButton uIButton = uIPanel.Find<UIButton>("Binding");
+            
             uIButton.eventKeyDown += new KeyPressHandler(OnBindingKeyDown);
             uIButton.eventMouseDown += new MouseEventHandler(OnBindingMouseDown);
-
-            uILabel.text = label;
+            uILabel.stringUserData = key;
+            uILabel.text = key;
             uIButton.text = savedInputKey.ToLocalizedString("KEYNAME");
             uIButton.objectUserData = savedInputKey;
+            uIButton.stringUserData = thisCategory;
         }
 
         private void OnLocaleChanged() {
@@ -127,7 +126,7 @@ namespace TreeAnarchy {
                 m_EditingBinding = (SavedInputKey)p.source.objectUserData;
                 UIButton uIButton = p.source as UIButton;
                 uIButton.buttonsMask = (UIMouseButton.Left | UIMouseButton.Right | UIMouseButton.Middle | UIMouseButton.Special0 | UIMouseButton.Special1 | UIMouseButton.Special2 | UIMouseButton.Special3);
-                uIButton.text = TAUI.Msg.PressAnyKey;
+                uIButton.text = Locale.Get("KEYMAPPING_PRESSANYKEY");
                 p.source.Focus();
                 UIView.PushModal(p.source);
             } else if (!IsUnbindableMouseButton(p.buttons)) {

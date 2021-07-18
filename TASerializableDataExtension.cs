@@ -3,9 +3,11 @@ using ColossalFramework.IO;
 using ICities;
 using System;
 using System.IO;
+using System.Threading;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
+using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
     public class TASerializableDataExtension : ISerializableDataExtension {
@@ -15,9 +17,8 @@ namespace TreeAnarchy {
             Version6 = 6,
         }
 
-        static private ISerializableData m_Serializer = null;
         private const string TREE_ANARCHY_KEY = @"TreeAnarchy";
-        internal class OldDataSerializer : TAOldDataSerializer {
+        private class OldDataSerializer : TAOldDataSerializer {
             public OldDataSerializer(byte[] data) : base(data) { }
             public override void AfterDeserialize() {
             }
@@ -25,16 +26,85 @@ namespace TreeAnarchy {
 
         private class Data : IDataContainer {
 #pragma warning disable IDE0044 // Add readonly modifier
-            private static uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864, 1703936, 1835008, 1966080, 2097152 };
-            private static float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f };
+            private uint[] limit = new uint[] { 393216, 524288, 655360, 786432, 917504, 1048576, 1179648, 1310720, 1441792, 1572864, 1703936, 1835008, 1966080, 2097152 };
+            private float[] scale = new float[] { 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f };
 #pragma warning restore IDE0044 // Add readonly modifier
             private const ushort fireDamageBurningMask = unchecked((ushort)~(TreeInstance.Flags.Burning | TreeInstance.Flags.FireDamage));
-            private static void UpdateTreeLimit(int newSize) {
+            private void UpdateTreeLimit(int newSize) {
                 for (int i = 0; i < limit.Length; i++) {
                     if (newSize == limit[i]) {
                         TreeScaleFactor = scale[i];
-                        TAUI.SetTreeLimitSlider(TreeScaleFactor);
                         return;
+                    }
+                }
+            }
+
+            private void EnsureCapacity(int maxLimit, out Array32<TreeInstance> newArray, out TreeInstance[] treeBuffer, out float[] treeScale) {
+                TreeManager tmInstance = Singleton<TreeManager>.instance;
+                if (maxLimit > MaxTreeLimit) {
+                    TreeInstance[] oldBuffer = tmInstance.m_trees.m_buffer;
+                    Array32<TreeInstance> newTreeArray = new Array32<TreeInstance>((uint)maxLimit);
+                    float[] newTreeScaleBuffer = new float[maxLimit];
+                    newTreeArray.CreateItem(out uint _);
+                    newTreeArray.ClearUnused();
+                    TreeInstance[] newBuffer = newTreeArray.m_buffer;
+
+                    for (int i = 1; i < DefaultTreeLimit; i++) {
+                        if (oldBuffer[i].m_flags != 0) {
+                            newBuffer[i].m_flags = oldBuffer[i].m_flags;
+                            newBuffer[i].m_infoIndex = oldBuffer[i].m_flags;
+                            newBuffer[i].m_posX = oldBuffer[i].m_posX;
+                            newBuffer[i].m_posZ = oldBuffer[i].m_posZ;
+                        }
+                    }
+                    newArray = newTreeArray;
+                    treeBuffer = newBuffer;
+                    treeScale = newTreeScaleBuffer;
+                    return;
+                }
+                newArray = tmInstance.m_trees;
+                treeBuffer = tmInstance.m_trees.m_buffer;
+                treeScale = Singleton<TreeScaleManager>.instance.m_treeScales;
+            }
+
+            private void RepackBuffer(int maxLimit, int treeCount, Format version, Array32<TreeInstance> existingTreeBuffer, float[] existingTreeScaleBuffer) {
+                if (maxLimit > MaxTreeLimit) {
+                    if (treeCount > MaxTreeLimit) {
+                        TreeManager tmInstance = Singleton<TreeManager>.instance;
+                        tmInstance.m_trees = existingTreeBuffer;
+                        UpdateTreeLimit(maxLimit);
+                        /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
+                        tmInstance.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
+                        if (version >= Format.Version6) {
+                            Singleton<TreeScaleManager>.instance.m_treeScales = existingTreeScaleBuffer;
+                        }
+                        return; /* Just return with existing buffers */
+                    }
+                    /* Pack the result into old buffer as we are sure there are enough space to fit in buffer */
+                    TreeInstance[] existingBuffer = existingTreeBuffer.m_buffer;
+                    TreeInstance[] oldBuffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                    float[] existingScales = existingTreeScaleBuffer;
+                    float[] oldScales = Singleton<TreeScaleManager>.instance.m_treeScales;
+                    /* make sure to fill in 1~262144 trees first */
+                    for (int i = 1; i < DefaultTreeLimit; i++) {
+                        if (existingBuffer[i].m_flags != 0) {
+                            oldBuffer[i].m_posY = existingBuffer[i].m_posY;
+                            oldScales[i] = existingScales[i];
+                        }
+                    }
+
+                    for (int i = DefaultTreeLimit, offsetIndex = 1; i < existingBuffer.Length; i++) {
+                        if (existingBuffer[i].m_flags != 0) {
+                            while (oldBuffer[offsetIndex].m_flags != 0) { offsetIndex++; } /* Find available slot in old buffer */
+                            oldBuffer[offsetIndex].m_flags = existingBuffer[i].m_flags;
+                            oldBuffer[offsetIndex].m_infoIndex = existingBuffer[i].m_infoIndex;
+                            oldBuffer[offsetIndex].m_posX = existingBuffer[i].m_posX;
+                            oldBuffer[offsetIndex].m_posZ = existingBuffer[i].m_posZ;
+                            oldBuffer[offsetIndex].m_posY = existingBuffer[i].m_posY;
+                            if (version > Format.Version6) {
+                                oldScales[offsetIndex] = existingScales[i];
+                            }
+                        }
                     }
                 }
             }
@@ -43,34 +113,13 @@ namespace TreeAnarchy {
                 int maxLen = s.ReadInt32(); // Read in Max limit
                 int startIndex = 1;
                 int treeCount = 0;
-                Array32<TreeInstance> newBuffer = null;
-                TreeInstance[] trees;
-                float[] treeScaleBuffer;
-                if (maxLen > MaxTreeLimit) {
-                    newBuffer = new Array32<TreeInstance>((uint)maxLen);
-                    newBuffer.CreateItem(out uint _);
-                    newBuffer.ClearUnused();
-                    trees = newBuffer.m_buffer;
-                    TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                    for (int i = 1; i < DefaultTreeLimit; i++) {
-                        if (buffer[i].m_flags != 0) {
-                            trees[i].m_flags = buffer[i].m_flags;
-                            trees[i].m_infoIndex = buffer[i].m_infoIndex;
-                            trees[i].m_posX = buffer[i].m_posX;
-                            trees[i].m_posZ = buffer[i].m_posZ;
-                        }
-                    }
-                    treeScaleBuffer = new float[maxLen];
-                    for (int i = 0; i < treeScaleBuffer.Length; i++) {
-                        treeScaleBuffer[i] = 0;
-                    }
-                } else {
-                    trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                    treeScaleBuffer = Patches.TreeVariation.m_treeScale;
-                }
+                EnsureCapacity(maxLen, out Array32<TreeInstance> newBuffer, out TreeInstance[] trees, out float[] treeScaleBuffer);
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
                     trees[i].m_flags = (ushort)(uShort.Read() & fireDamageBurningMask);
+                    if (trees[i].m_flags != 0) {
+                        treeCount++;
+                    }
                 }
                 uShort.EndRead();
                 switch ((Format)s.version) {
@@ -82,7 +131,6 @@ namespace TreeAnarchy {
                 for (int i = startIndex; i < maxLen; i++) {
                     if (trees[i].m_flags != 0) {
                         trees[i].m_infoIndex = (ushort)PrefabCollection<TreeInfo>.Deserialize(true);
-                        treeCount++;
                     }
                 }
                 PrefabCollection<TreeInfo>.EndDeserialize(s);
@@ -121,50 +169,7 @@ namespace TreeAnarchy {
                     @float.EndRead();
                 }
                 /* Now Resize / Repack buffer if necessary */
-                if (maxLen > MaxTreeLimit) {
-                    if (treeCount > MaxTreeLimit) {
-                        TreeManager treeManager = Singleton<TreeManager>.instance;
-                        treeManager.m_trees = newBuffer;
-                        UpdateTreeLimit(maxLen);
-                        /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
-                        treeManager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
-                        if ((Format)s.version >= Format.Version6) {
-                            Patches.TreeVariation.m_treeScale = treeScaleBuffer;
-                        }
-                        return; /* Just return with this buffer */
-                    }
-                    /* Pack the result into existing buffer */
-                    TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                    float[] scaleBuffer = Patches.TreeVariation.m_treeScale;
-                    startIndex = 1;
-                    /* update the Y position for trees between 1~262144 */
-                    /* This needs to be done first */
-                    for (int i = 1; i < DefaultTreeLimit; i++) {
-                        if (trees[i].m_flags != 0) {
-                            buffer[i].m_posY = trees[i].m_posY;
-                        }
-                    }
-                    /* Add trees into empty nodes in buffer */
-                    for (int i = DefaultTreeLimit; i < maxLen; i++) {
-                        if (trees[i].m_flags != 0) {
-                            /* Find available slot in buffer */
-                            for (int j = startIndex; j < buffer.Length; j++) {
-                                if (buffer[j].m_flags == 0) {
-                                    buffer[j].m_flags = trees[i].m_flags;
-                                    buffer[j].m_infoIndex = trees[i].m_infoIndex;
-                                    buffer[j].m_posX = trees[i].m_posX;
-                                    buffer[j].m_posY = trees[i].m_posY;
-                                    buffer[j].m_posZ = trees[i].m_posZ;
-                                    if ((Format)s.version >= Format.Version6) {
-                                        scaleBuffer[j] = treeScaleBuffer[i];
-                                    }
-                                    startIndex = j;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
+                RepackBuffer(maxLen, treeCount, (Format)s.version, newBuffer, treeScaleBuffer);
             }
 
             public void AfterDeserialize(DataSerializer s) { }
@@ -172,7 +177,7 @@ namespace TreeAnarchy {
             public void Serialize(DataSerializer s) {
                 int treeLimit = MaxTreeLimit;
                 TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                float[] treeScaleBuffer = Patches.TreeVariation.m_treeScale;
+                float[] treeScaleBuffer = Singleton<TreeScaleManager>.instance.m_treeScales;
 
                 // Important to save treelimit as it is an adjustable variable on every load
                 s.WriteInt32(treeLimit);
@@ -228,11 +233,9 @@ namespace TreeAnarchy {
             }
         }
 
-        public void OnCreated(ISerializableData s) => m_Serializer = s;
+        public void OnCreated(ISerializableData s) { }
 
-        public void OnReleased() => m_Serializer = null;
-
-        public static void PurgeOldData() => m_Serializer?.EraseData(OldTreeUnlimiterKey);
+        public void OnReleased() { }
 
         public void OnLoadData() { }
 
@@ -271,15 +274,39 @@ namespace TreeAnarchy {
         public void OnSaveData() {
             try {
                 byte[] data;
-                if (OldFormatLoaded) m_Serializer?.EraseData(OldTreeUnlimiterKey);
+                if (OldFormatLoaded) EraseData(OldTreeUnlimiterKey);
                 using (var stream = new MemoryStream()) {
                     DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version6, new Data());
                     data = stream.ToArray();
                 }
-                m_Serializer.SaveData(TREE_ANARCHY_KEY, data);
+                SaveData(TREE_ANARCHY_KEY, data);
                 Debug.Log($"TreeAnarchy: Saved {data.Length} bytes of data");
             } catch (Exception e) {
                 Debug.LogException(e);
+            }
+        }
+
+        private void SaveData(string id, byte[] data) {
+            SimulationManager smInstance = Singleton<SimulationManager>.instance;
+            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) {
+            }
+            try {
+                smInstance.m_serializableDataStorage[id] = data;
+            } finally {
+                Monitor.Exit(smInstance.m_serializableDataStorage);
+            }
+        }
+
+        private void EraseData(string id) {
+            SimulationManager smInstance = Singleton<SimulationManager>.instance;
+            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) {
+            }
+            try {
+                if (smInstance.m_serializableDataStorage.ContainsKey(id)) {
+                    smInstance.m_serializableDataStorage.Remove(id);
+                }
+            } finally {
+                Monitor.Exit(smInstance.m_serializableDataStorage);
             }
         }
     }

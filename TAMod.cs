@@ -2,16 +2,19 @@
 using ColossalFramework;
 using ColossalFramework.Globalization;
 using ICities;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Xml;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.5";
+        internal const string m_modVersion = "0.9.6";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
+
+        internal const string KeybindingConfigFile = "TreeAnarchyKeyBindSetting";
 
         /* Some standard constant definition for tree limits */
         private static float m_ScaleFactor = 4f;
@@ -88,6 +91,14 @@ namespace TreeAnarchy {
         string IUserMod.Description => m_modDesc;
         public void OnEnabled() {
             LocaleManager.eventLocaleChanged += new LocaleManager.LocaleChangedHandler(OnLocaleChanged);
+            try {
+                GameSettings.AddSettingsFile(new SettingsFile[] {
+                    new SettingsFile() { fileName = KeybindingConfigFile }
+                });
+            } catch (Exception e) {
+                UnityEngine.Debug.LogException(e);
+            }
+
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
@@ -107,12 +118,16 @@ namespace TreeAnarchy {
         }
 
         public void OnSettingsUI(UIHelperBase helper) {
-            TAUI.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
+            TAUI optionPanel = new TAUI();
+            optionPanel.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
         }
         #endregion
         #region ILoadingExtension
         void ILoadingExtension.OnCreated(ILoading loading) {
-            if (HarmonyHelper.IsHarmonyInstalled) TAPatcher.LateEnable();
+            if (HarmonyHelper.IsHarmonyInstalled) {
+                TAPatcher patcher = new TAPatcher();
+                patcher.LateEnable();
+            }
         }
 
         void ILoadingExtension.OnReleased() {
@@ -121,12 +136,10 @@ namespace TreeAnarchy {
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
             IsInGame = true;
-            TAUI.UpdateState(IsInGame);
         }
 
         void ILoadingExtension.OnLevelUnloading() {
             IsInGame = false;
-            TAUI.UpdateState(IsInGame);
         }
         #endregion
 
