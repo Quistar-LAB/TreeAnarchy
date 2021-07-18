@@ -4,10 +4,10 @@ using ICities;
 using System;
 using System.IO;
 using System.Threading;
+using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
-using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
     public class TASerializableDataExtension : ISerializableDataExtension {

@@ -1,9 +1,6 @@
 ﻿using ColossalFramework;
 using ColossalFramework.Globalization;
 using ColossalFramework.UI;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
@@ -90,7 +87,7 @@ namespace TreeAnarchy {
 
             UILabel uILabel = uIPanel.Find<UILabel>("Name");
             UIButton uIButton = uIPanel.Find<UIButton>("Binding");
-            
+
             uIButton.eventKeyDown += new KeyPressHandler(OnBindingKeyDown);
             uIButton.eventMouseDown += new MouseEventHandler(OnBindingMouseDown);
             uILabel.stringUserData = key;
