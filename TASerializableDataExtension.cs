@@ -76,7 +76,7 @@ namespace TreeAnarchy {
                         /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
                         tmInstance.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                         if (version >= Format.Version6) {
-                            Singleton<TreeScaleManager>.instance.m_treeScales = existingTreeScaleBuffer;
+                            SingletonLite<TreeScaleManager>.instance.m_treeScales = existingTreeScaleBuffer;
                         }
                         return; /* Just return with existing buffers */
                     }

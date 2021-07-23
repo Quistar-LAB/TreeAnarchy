@@ -9,7 +9,7 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    public static class TreeMovement {
+    internal class TreeMovement {
         private static bool transpilerPatched = false;
 #pragma warning disable IDE0044 // Add readonly modifier
         private static Quaternion[] treeQuaternion = new Quaternion[360];
@@ -17,7 +17,7 @@ namespace TreeAnarchy.Patches {
         private static WeatherManager wmInstance;
 #pragma warning restore IDE0044 // Add readonly modifier
 
-        internal static void Enable(Harmony harmony) {
+        internal void Enable(Harmony harmony) {
             for (int i = 0; i < 360; i++) {
                 treeQuaternion[i] = Quaternion.Euler(0f, i, 0f);
             }
@@ -41,17 +41,18 @@ namespace TreeAnarchy.Patches {
 
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity)))) {
-                    var snippet = new CodeInstruction[] {
+                    codes[i].operand = AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetRandomQuaternion));
+                    codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarga_S, 2),
                         new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)))
-                    };
-                    codes[i].operand = AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetRandomQuaternion));
-                    codes.InsertRange(i, snippet);
+                    });
                 }
                 if (codes[i].opcode == OpCodes.Callvirt && codes[i].Calls(AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) }))) {
                     codes.RemoveRange(i - 2, 3);
-                    codes.Insert(i - 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetWindSpeed))));
-                    codes.Insert(i - 2, new CodeInstruction(OpCodes.Ldarg_2));
+                    codes.InsertRange(i - 2, new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldarg_2),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetWindSpeed)))
+                    });
                 }
             }
             return codes.AsEnumerable();

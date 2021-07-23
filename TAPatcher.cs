@@ -9,7 +9,6 @@ namespace TreeAnarchy {
         private const string HARMONYID = @"quistar.treeanarchy.mod";
 
         private static bool isCorePatched = false;
-        private static bool isTreeMovementPatched = false;
         internal static FieldInfo MoveItUseTreeSnap = null;
         internal static bool isMoveItBeta = false;
 
@@ -33,37 +32,41 @@ namespace TreeAnarchy {
             return false;
         }
 
-        internal static void EnableCore() {
+        internal void EnableCore() {
             Harmony harmony = new Harmony(HARMONYID);
             if (!isCorePatched) {
-                TreeLimit.Enable(harmony);
-                TreeSnapping.Enable(harmony);
-                TreeVariation.EnablePatch(harmony);
+                TreeLimit treeLimit = new TreeLimit();
+                treeLimit.Enable(harmony);
+                TreeSnapping treeSnapping = new TreeSnapping();
+                treeSnapping.Enable(harmony);
+                TreeVariation treeVariation = new TreeVariation();
+                treeVariation.EnablePatch(harmony);
                 isCorePatched = true;
             }
         }
 
         internal void LateEnable() {
             Harmony harmony = new Harmony(HARMONYID);
+            TreeVariation treeVariation = new TreeVariation();
+            TreeMovement treeMovement = new TreeMovement();
+            treeMovement.Enable(harmony);
+            treeVariation.EnablePatch(harmony);
+
             if (IsPluginExists("1619685021", "MoveIt") || IsPluginExists("2215771668", "MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
-                    TreeSnapping.PatchMoveIt(harmony);
+                    TreeSnapping treeSnapping = new TreeSnapping();
+                    treeSnapping.PatchMoveIt(harmony);
                 }
-                TreeVariation.LateEnablePatch(harmony);
+                treeVariation.PatchMoveIt(harmony);
             }
-            if (!IsPluginExists("1388613752", "Tree Movement Control") ||
-                !IsPluginExists("556784825", "Random Tree Rotation") && !isTreeMovementPatched) {
-                TreeMovement.Enable(harmony);
-                isTreeMovementPatched = true;
-            }
-            TreeVariation.EnablePatch(harmony);
         }
 
-        internal static void DisableLatePatch() {
+        internal void DisableLatePatch() {
             Harmony harmony = new Harmony(HARMONYID);
-            TreeVariation.DisablePatch(harmony);
+            TreeVariation treeVariation = new TreeVariation();
+            treeVariation.DisablePatch(harmony);
         }
 
-        internal static void DisableCore() { }
+        internal void DisableCore() { }
     }
 }

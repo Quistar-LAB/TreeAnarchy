@@ -1,15 +1,4 @@
-﻿#define FULLVERBOSE
-#define QUIETVERBOSE
-#define SILENT
-//#define FULLVERBOSE
-//#define DEBUG
-#if SILENT
-#undef DEBUG
-#undef FULLVERBOSE
-#undef QUIETVERBOSE
-#endif
-
-using ColossalFramework;
+﻿using ColossalFramework;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -20,36 +9,11 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    public static class TreeLimit {
-#if DEBUG
-        internal static void PrintDebugIL(List<CodeInstruction> codes, MethodBase method)
-        {
-#if QUIETVERBOSE
-            Debug.Log($"TreeAnarchy: Harmony Transpiler Patched for method: [{method.Name}] ==> Set MaxTreeLimit to {MaxTreeLimit}");
-#if FULLVERBOSE
-            foreach (var code in codes)
-            {
-                Debug.Log($"====   IL: {code}");
-            }
-            Debug.Log("------------------------------------------------------------------");
-#endif
-#endif
-        }
-#endif
-#if DEBUG
-        private static IEnumerable<CodeInstruction> ReplaceLDCI4_Debug(IEnumerable<CodeInstruction> instructions)
-        {
-            foreach (var instruction in instructions)
-            {
-                if (instruction.LoadsConstant(LastMaxTreeLimit)) yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
-                else yield return instruction;
-            }
-        }
-#endif
+    public class TreeLimit {
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
                 if (instruction.LoadsConstant(LastMaxTreeLimit))
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeLimit))); //new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeLimit)));
                 else
                     yield return instruction;
             }
@@ -57,12 +21,7 @@ namespace TreeAnarchy.Patches {
 
         // Patch WeatherManager::CalculateSelfHeight()
         // Affects Tree on Wind Effect, stops tree from slowing wind
-#if DEBUG
-        private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method)
-#else
-        private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
-#endif
-        {
+        private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             var codes = new List<CodeInstruction>(instructions);
 
             int insertionIndex = -1;
@@ -88,14 +47,12 @@ namespace TreeAnarchy.Patches {
             }
 
             if (insertionIndex != -1) {
-                var instructionsToInsert = new List<CodeInstruction>
-                {
-                    /*
-                     * The following instructions injects the following snippet into WeatherManager::CalculateSelfHeight()
-                    if (TreeAnarchyConfig.TreeEffectOnWind)   //My Additions to overide tree effects.
-                    {
-                        return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
-                    }
+                codes.InsertRange(insertionIndex, new CodeInstruction[] {
+                    /* The following instructions injects the following snippet into WeatherManager::CalculateSelfHeight()
+                        if (TreeAnarchyConfig.TreeEffectOnWind)   //My Additions to overide tree effects.
+                        {
+                            return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
+                        }
                     */
                     new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind))),
                     new CodeInstruction(OpCodes.Brfalse_S, returnTreeManagerLabel),
@@ -109,48 +66,22 @@ namespace TreeAnarchy.Patches {
                     new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) })),
                     new CodeInstruction(OpCodes.Conv_U2),
                     new CodeInstruction(OpCodes.Ret)
-                };
-
-                codes.InsertRange(insertionIndex, instructionsToInsert);
+                });
             }
-#if DEBUG
-            PrintDebugIL(codes, method);
-#endif
             return codes.AsEnumerable();
         }
 
-#if DEBUG
-        private static IEnumerable<CodeInstruction> CheckLimitsDebug(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method)
-        {
-            CodeInstruction insertion = new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit - 5);
-            foreach (var instruction in instructions)
-            {
-                if (instruction.Is(OpCodes.Ldc_I4, 250000)) yield return insertion;
-                else if (instruction.Is(OpCodes.Ldc_I4, 262139)) yield return insertion;
-                else yield return instruction;
-            }
-        }
-#endif
-#if DEBUG
-        private static IEnumerable<CodeInstruction> CheckLimitsTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase method)
-#else
-        private static IEnumerable<CodeInstruction> CheckLimitsTranspiler(IEnumerable<CodeInstruction> instructions)
-#endif
-        {
-#if DEBUG
-            var codes = CheckLimitsDebug(instructions, il, method);
-            PrintDebugIL(codes.ToList(), method);
-            return codes.AsEnumerable();
-#else
+        private const int MAX_MAP_TREES = 250000;
+        private const int MAX_MAP_TREES_CEILING = DefaultTreeLimit - 5;
+        private static IEnumerable<CodeInstruction> CheckLimitsTranspiler(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
-                if (instruction.Is(OpCodes.Ldc_I4, 250000))
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckLowLimit))); //new CodeInstruction(OpCodes.Ldc_I4, CheckLowLimit);
-                else if (instruction.Is(OpCodes.Ldc_I4, 262139))
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckHighLimit))); // new CodeInstruction(OpCodes.Ldc_I4, CheckHighLimit);
+                if (instruction.Is(OpCodes.Ldc_I4, MAX_MAP_TREES))
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckLowLimit)));
+                else if (instruction.Is(OpCodes.Ldc_I4, MAX_MAP_TREES_CEILING))
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckHighLimit)));
                 else
                     yield return instruction;
             }
-#endif
         }
 
         /* For Forestry Lock */
@@ -328,7 +259,7 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        internal static void InjectResize(Harmony harmony) {
+        internal void InjectResize(Harmony harmony) {
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
 
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
@@ -358,7 +289,7 @@ namespace TreeAnarchy.Patches {
         }
 
         static bool isTranspilerPatched = false;
-        internal static void Enable(Harmony harmony) {
+        internal void Enable(Harmony harmony) {
             try {
                 if (!isTranspilerPatched) {
                     InjectResize(harmony);

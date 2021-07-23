@@ -11,13 +11,13 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy.Patches {
-    public static class TreeSnapping {
+    public class TreeSnapping {
         private const float errorMargin = 0.075f;
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
         private static bool isTranspilerPatched = false;
         private static bool isMoveItPatched = false;
-        internal static void Enable(Harmony harmony) {
+        internal void Enable(Harmony harmony) {
             if (!isTranspilerPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
@@ -29,7 +29,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal static void PatchMoveIt(Harmony harmony) {
+        internal void PatchMoveIt(Harmony harmony) {
             if (!isMoveItPatched) {
                 harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformPrefix))));
