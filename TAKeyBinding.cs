@@ -1,5 +1,4 @@
 ﻿using ColossalFramework;
-using ColossalFramework.Globalization;
 using ColossalFramework.UI;
 using TreeAnarchy.Patches;
 using UnityEngine;
@@ -35,11 +34,16 @@ namespace TreeAnarchy {
                 if (m_treeSnapping.IsPressed(e)) {
                     if (UseTreeSnapping) UseTreeSnapping = false;
                     else UseTreeSnapping = true;
+                    if (TAPatcher.isMoveItBeta && TAPatcher.MoveItUseTreeSnap != null) {
+                        TAPatcher.MoveItUseTreeSnap.SetValue(null, UseTreeSnapping);
+                    }
+                    component.GetComponentInParent<UITabContainer>().Find<UICheckBox>(TAUI.TreeSnapCBName).isChecked = UseTreeSnapping;
                     SaveSettings();
                 }
                 if (m_lockForestry.IsPressed(e)) {
                     if (UseLockForestry) UseLockForestry = false;
                     else UseLockForestry = true;
+                    component.GetComponentInParent<UITabContainer>().Find<UICheckBox>(TAUI.LockForestryCBName).isChecked = UseLockForestry;
                     SaveSettings();
                 }
                 if (IsCustomPressed(m_incrTreeVariation, e)) {
@@ -51,25 +55,34 @@ namespace TreeAnarchy {
             }
         }
 
-        protected void OnEnable() {
-            LocaleManager.eventLocaleChanged += new LocaleManager.LocaleChangedHandler(OnLocaleChanged);
-        }
-
-        protected void OnDisable() {
-            LocaleManager.eventLocaleChanged -= new LocaleManager.LocaleChangedHandler(OnLocaleChanged);
-        }
-
         protected void Awake() {
             UILabel desc = component.AddUIComponent<UILabel>();
             desc.width = component.width - 50;
             desc.autoHeight = true;
             desc.wordWrap = true;
             desc.textScale = TAUI.SmallFontScale;
-            desc.text = TAUI.Msg.KeyBindDescription;
-            AddKeymapping("Tree Snapping", m_treeSnapping);
-            AddKeymapping("Lock Forestry", m_lockForestry);
-            AddKeymapping("Increase Tree Size", m_incrTreeVariation);
-            AddKeymapping("Decrease Tree Size", m_decrTreeVariation);
+            desc.text = SingletonLite<TALocale>.instance.GetLocale("KeyBindDescription");
+            AddKeymapping("TreeSnap", m_treeSnapping);
+            AddKeymapping("LockForestry", m_lockForestry);
+            AddKeymapping("IncreaseTreeSize", m_incrTreeVariation);
+            AddKeymapping("DecreaseTreeSize", m_decrTreeVariation);
+
+            UITabContainer rootContainer = component.GetComponentInParent<UITabContainer>();
+
+            UICheckBox lockForestryCB = rootContainer.Find<UICheckBox>(TAUI.LockForestryCBName);
+            UICheckBox treeSnapCB = rootContainer.Find<UICheckBox>(TAUI.TreeSnapCBName);
+
+            if(lockForestryCB != null) {
+                Debug.Log($"TreeAnarchy: Found LockForestry checkbox");
+            }
+            if(treeSnapCB != null) {
+                Debug.Log($"TreeAnarchy: Found TreeSnap checkbox");
+            }
+
+            UIComponent[] children = rootContainer.GetComponentsInChildren<UIComponent>();
+            foreach(var child in children) {
+                Debug.Log($"TreeAnarchy: {child.GetType()}, {child.name}, {child.cachedName}");
+            }
         }
 
         private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
@@ -82,6 +95,7 @@ namespace TreeAnarchy {
 
         private int listCount = 0;
         private void AddKeymapping(string key, SavedInputKey savedInputKey) {
+            TALocale locale = SingletonLite<TALocale>.instance;
             UIPanel uIPanel = component.AttachUIComponent(UITemplateManager.GetAsGameObject("KeyBindingTemplate")) as UIPanel;
             if (listCount++ % 2 == 1) uIPanel.backgroundSprite = null;
 
@@ -90,15 +104,12 @@ namespace TreeAnarchy {
 
             uIButton.eventKeyDown += new KeyPressHandler(OnBindingKeyDown);
             uIButton.eventMouseDown += new MouseEventHandler(OnBindingMouseDown);
+            uILabel.objectUserData = locale;
             uILabel.stringUserData = key;
-            uILabel.text = key;
+            uILabel.text = locale.GetLocale(key);
             uIButton.text = savedInputKey.ToLocalizedString("KEYNAME");
             uIButton.objectUserData = savedInputKey;
-            uIButton.stringUserData = thisCategory;
-        }
-
-        private void OnLocaleChanged() {
-            RefreshBindableInputs();
+            uIButton.stringUserData = thisCategory; // used for localization TODO:
         }
 
         private void OnBindingKeyDown(UIComponent comp, UIKeyEventParameter p) {
@@ -123,7 +134,7 @@ namespace TreeAnarchy {
                 m_EditingBinding = (SavedInputKey)p.source.objectUserData;
                 UIButton uIButton = p.source as UIButton;
                 uIButton.buttonsMask = (UIMouseButton.Left | UIMouseButton.Right | UIMouseButton.Middle | UIMouseButton.Special0 | UIMouseButton.Special1 | UIMouseButton.Special2 | UIMouseButton.Special3);
-                uIButton.text = Locale.Get("KEYMAPPING_PRESSANYKEY");
+                uIButton.text = SingletonLite<TALocale>.instance.GetLocale("PressAnyKey");
                 p.source.Focus();
                 UIView.PushModal(p.source);
             } else if (!IsUnbindableMouseButton(p.buttons)) {
@@ -135,22 +146,6 @@ namespace TreeAnarchy {
                 uIButton2.text = m_EditingBinding.ToLocalizedString("KEYNAME");
                 uIButton2.buttonsMask = UIMouseButton.Left;
                 m_EditingBinding = null;
-            }
-        }
-
-        private void RefreshBindableInputs() {
-            foreach (UIComponent current in component.GetComponentsInChildren<UIComponent>()) {
-                UITextComponent uITextComponent = current.Find<UITextComponent>("Binding");
-                if (uITextComponent != null) {
-                    SavedInputKey savedInputKey = uITextComponent.objectUserData as SavedInputKey;
-                    if (savedInputKey != null) {
-                        uITextComponent.text = savedInputKey.ToLocalizedString("KEYNAME");
-                    }
-                }
-                UILabel uILabel = current.Find<UILabel>("Name");
-                if (uILabel != null) {
-                    uILabel.text = Locale.Get("KEYMAPPING", uILabel.stringUserData);
-                }
             }
         }
 
