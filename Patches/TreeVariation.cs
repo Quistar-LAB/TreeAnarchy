@@ -10,13 +10,13 @@ using UnityEngine;
 
 namespace TreeAnarchy.Patches {
     public class TreeScaleManager : Singleton<TreeScaleManager> {
-        public const float minScale = 0.5f;
+        public const float minScale = 0.2f;
         public const float maxScale = 5.0f;
         public const float scaleStep = 0.2f;
         public uint currentTreeID = 0;
         public float[] m_treeScales;
 
-        public void Awake() {
+        protected void Awake() {
             m_treeScales = new float[TAMod.MaxTreeLimit];
         }
 
@@ -29,9 +29,10 @@ namespace TreeAnarchy.Patches {
             uint treeID = currentTreeID;
             if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
                 m_treeScales[treeID] += scaleStep;
-            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0 && ActionQueue.instance.current is SelectAction) {
+            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
+                       UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0) {
                 foreach (Instance instance in MoveIt.Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
+                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
                         m_treeScales[instance.id.Tree] += scaleStep;
                     }
                 }
@@ -43,9 +44,10 @@ namespace TreeAnarchy.Patches {
             uint treeID = currentTreeID;
             if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
                 m_treeScales[treeID] -= scaleStep;
-            } else if (MoveItTool.ToolState == MoveItTool.ToolStates.Default && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0 && ActionQueue.instance.current is SelectAction) {
+            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
+                       UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0) {
                 foreach (Instance instance in MoveIt.Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 1) {
+                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
                         m_treeScales[instance.id.Tree] -= scaleStep;
                     }
                 }
@@ -53,11 +55,11 @@ namespace TreeAnarchy.Patches {
         }
     }
 
-    public static class TreeVariation {
+    public class TreeVariation {
         private static bool isTreeVariationPatched = false;
         private static bool isLatePatched = false;
 
-        internal static void EnablePatch(Harmony harmony) {
+        internal void EnablePatch(Harmony harmony) {
             if (!isTreeVariationPatched) {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance), new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.TreeInstanceRenderInstanceTranspiler))));
@@ -73,7 +75,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal static void LateEnablePatch(Harmony harmony) {
+        internal void PatchMoveIt(Harmony harmony) {
             if (!isLatePatched) {
                 harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderOverlay)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.MoveableTreeRenderOverlayTranspiler))));
@@ -81,7 +83,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal static void DisablePatch(Harmony harmony) {
+        internal void DisablePatch(Harmony harmony) {
 
         }
 
@@ -120,15 +122,13 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
-            var snippet = new CodeInstruction[] {
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 3),
                 new CodeInstruction(OpCodes.Ldarg_1),
                 new CodeInstruction(OpCodes.Ldloc_1),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetTreeScale)))
-            };
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
+            });
 
             return codes;
         }
@@ -147,14 +147,13 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            var snippet = new CodeInstruction[] {
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 2),
                 new CodeInstruction(OpCodes.Ldarg_2),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetTreeScale)))
-            };
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
+            });
 
             return codes;
         }
@@ -173,14 +172,13 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            var snippet = new CodeInstruction[] {
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 3),
                 new CodeInstruction(OpCodes.Ldloc_2),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetSeedTreeScale)))
-            };
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
+            });
 
             return codes;
         }
@@ -199,14 +197,13 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            var snippet = new CodeInstruction[] {
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 4),
                 new CodeInstruction(OpCodes.Ldloc_3),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetSeedTreeScale)))
-            };
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
+            });
 
             return codes;
         }
@@ -225,14 +222,13 @@ namespace TreeAnarchy.Patches {
                 }
             }
 
-            var snippet = new CodeInstruction[] {
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 4),
                 new CodeInstruction(OpCodes.Ldloc_0),
                 new CodeInstruction(OpCodes.Ldloc_2),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.GetTreeScale)))
-            };
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, snippet);
+            });
 
             return codes;
         }
