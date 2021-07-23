@@ -1,0 +1,49 @@
+<!DOCTYPE root [
+    <!ELEMENT root ANY>
+    <!ELEMENT string ANY>
+    <!ATTLIST string name ID #REQUIRED>
+]>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+    <!-- Tree Resize -->
+    <string name="IncreaseTreeSize">放大树木</string>
+    <string name="DecreaseTreeSize">缩小树木</string>
+    <string name="PressAnyKey">按任意按键</string>
+    <!-- Tab Strips -->
+    <string name="MainOptionTab">主要选项</string>
+    <string name="TreeSnappingTab">树木沿表面</string>
+    <string name="KeyboardShortcutTab">热键组合</string>
+    <string name="KeyBindDescription">建立热键时，”沿表面功能“及”锁定林业资源“需使用修饰符如：SHIFT，CONTROL，ALT等按键。放大树木及缩小树木功能这两个热键经特别处理，可不需要使用修饰符案件，但是请使用目前没被绑定的热键。</string>
+    <!-- Main options -->
+    <string name="MaxTreeLimitTitle">调整自定树木限制</string>
+    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
+    <string name="MaxTreeLimit">最大支持树木量： {0} 树木</string>
+    <string name="WindEffect">调整树木对风的影响 【初始游戏设置是开启的】</string>
+    <string name="WindEffectLabel">这选项可调整风经树木的大小高低而弱化的现象</string>
+    <string name="RandomTreeRotation">随机树木旋转</string>
+    <string name="TreeSwayFactor">树木摇晃因数</string>
+    <string name="LockForestry">锁定林业资源</string>
+    <string name="PersistentLock">保持林业资源锁定状态</string>
+    <string name="SwayLabel">这里是一些有用的效果及功能。锁定林业资源可使种植树木时避免移除农业资源。如果启用”保持林业资源锁定状态“，每次重启游戏时，”锁定林业资源“会被启用，并可避免进入游戏时，树林把农业资源给毁掉</string>
+    <string name="Important">
+注意！此设定需在进入游戏前设定好
+    
+下方设定是针对载入原初旧版本无限树木模组格式</string>
+    <string name="ReplaceRemoveDesc">当找不到树木游戏资产时，默认处理方法是保留这些树木。如果您选择移除，当您载入游戏时，这些树木就会被移除。如果您选择替换树木时，游戏默认第一个初始树木会替代这些找不到的树木</string>
+    <string name="ReplaceRemoveName">旧无限树木格式载入模式</string>
+    <string name="ReplaceRemoveDropdown0">保留找不到的树木</string>
+    <string name="ReplaceRemoveDropdown1">移除找不到的树木</string>
+    <string name="ReplaceRemoveDropdown2">替换找不到的树木</string>
+    <!-- Tree Snapping specific -->
+    <string name="TreeSnap">树木沿表面</string>
+    <string name="TreeSnapLabel">此选项可解除树木移动限制，进行上下左右调整，同时也可沿着大楼、道路、等表面自动调整高低</string>
+    <string name="ExperimentalTreeSnap">启用正在测试的沿表面功能</string>
+    <string name="ExperimentalTreeSnapLabel">树木沿表面测试码是篡改MoveIt模组程式码，并可让树木沿着大楼，道路，道具等表面自动调整高低。使用MoveIt移动树木时，此功能可正常贴着表面自动调整高低，但使用复制功能时，在复制树木后偏移会产生，此偏移可透过选择其他地面树木恢复坐标。我目前正对MoveIt模组编写改良程式码，但是编写时间不多，需要时间。</string>
+    <string name="TreeSnapToBuilding">启用此选项可让树木沿着大楼表面自动调整高低</string>
+    <string name="TreeSnapToBuildingLabel">树木沿表面对于副楼无效，因为游戏光线投射功能不认副楼</string>
+    <string name="TreeSnapToNetwork">启用此选项可让树木沿着道路表面自动调整高低</string>
+    <string name="TreeSnapToProp">启用此选项可使树木自动沿着道具表面自动调整高低</string>
+    <string name="TreeSnapToPropLabel">树木沿着道具表面不是100%，因有些道具例如：Ploppable Surface没定义正确大小定点。最后还是需要手动调整</string>
+</resources>
