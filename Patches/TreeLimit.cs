@@ -68,6 +68,7 @@ namespace TreeAnarchy.Patches {
                     new CodeInstruction(OpCodes.Ret)
                 });
             }
+
             return codes.AsEnumerable();
         }
 

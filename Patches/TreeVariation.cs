@@ -99,12 +99,14 @@ namespace TreeAnarchy.Patches {
         }
 
         public static float GetTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
+            if (treeInfo == null) return 0;
             float scale = CalculateCustomScale(treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f, treeID);
             Singleton<TreeManager>.instance.UpdateTreeRenderer(treeID, true);
             return scale;
         }
 
         public static float GetSeedTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
+            if (treeInfo == null) return 0;
             Singleton<TreeScaleManager>.instance.currentTreeID = treeID;
             return CalculateCustomScale(treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f, treeID);
         }
