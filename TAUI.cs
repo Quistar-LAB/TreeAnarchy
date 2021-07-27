@@ -10,7 +10,7 @@ namespace TreeAnarchy {
         private const float MinScaleFactor = 1.5f;
         internal const float DefaultFontScale = 1.0f;
         internal const float SmallFontScale = 0.85f;
-        
+
         internal const string MainOptionPanelName = "MainOptionContainer";
         internal const string TreeSnapPanelName = "TreeSnapContainer";
         internal const string TreeSnapCBName = "TreeSnapCB";
@@ -140,7 +140,7 @@ namespace TreeAnarchy {
 
             ShowStandardOptions(mainHelper);
             float height = ShowTreeLimitOption(mainHelper);
-            tabContainer.height = mainPanel.height + height + 70;
+            tabContainer.height = mainPanel.height + height + 120;
             UpdateState(IsInGame);
 
             UIPanel treesnapPanel = AddTab(tabBar, locale.GetLocale("TreeSnappingTab"), 1, true);
@@ -160,10 +160,13 @@ namespace TreeAnarchy {
             AddCheckBox(ref panel, ref TreeRotation, locale.GetLocale("RandomTreeRotation"), RandomTreeRotation, OnTreeRotationCheckChanged);
             TreeRotation.width = 300;
             UIPanel SwayPanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
-            SwayPanel.Find<UILabel>("Label").text = locale.GetLocale("TreeSwayFactor");
+            UILabel SwayFactorLabel = SwayPanel.Find<UILabel>("Label");
+            SwayFactorLabel.text = locale.GetLocale("TreeSwayFactor");
+            SwayFactorLabel.width += 50;
             AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAMod.TreeSwayFactor, OnTreeSwayFactorChanged);
             SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(320, -5);
+            TreeSwayFactor.width += 40;
             AddCheckBox(ref panel, ref LockForestryCB, locale.GetLocale("LockForestry"), UseLockForestry, OnLockForestryCheckChanged);
             LockForestryCB.cachedName = LockForestryCBName;
             LockForestryCB.name = LockForestryCBName;
@@ -180,8 +183,17 @@ namespace TreeAnarchy {
             UILabel MaxTreeTitle = default;
             UIPanel panel = (UIPanel)option.self;
             TALocale locale = SingletonLite<TALocale>.instance;
-            option.AddSpace(20);
-            AddLabel(ref panel, panel, ref MaxTreeTitle, 1.1f, locale.GetLocale("MaxTreeLimitTitle"));
+
+            MaxTreeTitle = panel.AddUIComponent<UILabel>();
+            MaxTreeTitle.AlignTo(panel, UIAlignAnchor.BottomLeft);
+            MaxTreeTitle.width = panel.width - 80;
+            MaxTreeTitle.wordWrap = true;
+            MaxTreeTitle.autoHeight = true;
+            MaxTreeTitle.textScale = 1.15f;
+            MaxTreeTitle.text = locale.GetLocale("MaxTreeLimitTitle");
+            MaxTreeTitle.relativePosition = new Vector3(25, 25);
+
+            //MaxTreeTitle.height -= 20;
             totalHeight += MaxTreeTitle.height;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
@@ -253,6 +265,7 @@ namespace TreeAnarchy {
             cb.autoSize = true;
             cb.text = name;
             cb.eventCheckChanged += new PropertyChangedEventHandler<bool>(callback);
+            cb.height += 10;
             panel.height += cb.height;
         }
         private void AddLabel(ref UIPanel panel, UIComponent alignTo, ref UILabel label, float fontScale, string text) {

@@ -66,23 +66,6 @@ namespace TreeAnarchy {
             AddKeymapping("LockForestry", m_lockForestry);
             AddKeymapping("IncreaseTreeSize", m_incrTreeVariation);
             AddKeymapping("DecreaseTreeSize", m_decrTreeVariation);
-
-            UITabContainer rootContainer = component.GetComponentInParent<UITabContainer>();
-
-            UICheckBox lockForestryCB = rootContainer.Find<UICheckBox>(TAUI.LockForestryCBName);
-            UICheckBox treeSnapCB = rootContainer.Find<UICheckBox>(TAUI.TreeSnapCBName);
-
-            if(lockForestryCB != null) {
-                Debug.Log($"TreeAnarchy: Found LockForestry checkbox");
-            }
-            if(treeSnapCB != null) {
-                Debug.Log($"TreeAnarchy: Found TreeSnap checkbox");
-            }
-
-            UIComponent[] children = rootContainer.GetComponentsInChildren<UIComponent>();
-            foreach(var child in children) {
-                Debug.Log($"TreeAnarchy: {child.GetType()}, {child.name}, {child.cachedName}");
-            }
         }
 
         private bool IsCustomPressed(SavedInputKey inputKey, Event e) {

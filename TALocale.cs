@@ -8,11 +8,8 @@ using System.Xml;
 namespace TreeAnarchy {
     internal class TALocale : SingletonLite<TALocale> {
         private const UInt64 m_thisModID = 2527486462;
-        //private const UInt64 m_thisModID = 2554560036;
         private const string m_defaultLocale = "en";
-        private const string m_currentLocale = m_defaultLocale;
         private const string m_fileNameTemplate = @"TreeAnarchy.{0}.locale";
-        private CultureInfo Culture;
         private XmlDocument m_xmlLocale;
         private string m_directory;
 
@@ -25,8 +22,7 @@ namespace TreeAnarchy {
                     locale = "zh-CN";
                 }
             }
-            Culture = CultureInfo.GetCultureInfo(locale);
-            LoadLocale(Culture);
+            LoadLocale(CultureInfo.GetCultureInfo(locale));
         }
 
         private void LoadLocale(CultureInfo culture) {
@@ -45,7 +41,7 @@ namespace TreeAnarchy {
         internal void Init() {
             foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
                 if (fileID.AsUInt64 == m_thisModID) {
-                    m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"\Locale\";
+                    m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
                     break;
                 }
             }

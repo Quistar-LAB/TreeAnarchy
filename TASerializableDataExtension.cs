@@ -34,6 +34,7 @@ namespace TreeAnarchy {
                 for (int i = 0; i < limit.Length; i++) {
                     if (newSize == limit[i]) {
                         TreeScaleFactor = scale[i];
+                        SaveSettings();
                         return;
                     }
                 }
@@ -111,26 +112,18 @@ namespace TreeAnarchy {
 
             public void Deserialize(DataSerializer s) {
                 int maxLen = s.ReadInt32(); // Read in Max limit
-                int startIndex = 1;
                 int treeCount = 0;
                 EnsureCapacity(maxLen, out Array32<TreeInstance> newBuffer, out TreeInstance[] trees, out float[] treeScaleBuffer);
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
                     trees[i].m_flags = (ushort)(uShort.Read() & fireDamageBurningMask);
-                    if (trees[i].m_flags != 0) {
-                        treeCount++;
-                    }
                 }
                 uShort.EndRead();
-                switch ((Format)s.version) {
-                    case Format.Version4:
-                        startIndex = DefaultTreeLimit;
-                        break;
-                }
                 PrefabCollection<TreeInfo>.BeginDeserialize(s);
-                for (int i = startIndex; i < maxLen; i++) {
+                for (int i = 1; i < maxLen; i++) {
                     if (trees[i].m_flags != 0) {
                         trees[i].m_infoIndex = (ushort)PrefabCollection<TreeInfo>.Deserialize(true);
+                        treeCount++;
                     }
                 }
                 PrefabCollection<TreeInfo>.EndDeserialize(s);
