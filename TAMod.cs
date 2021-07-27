@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.7";
+        internal const string m_modVersion = "0.9.8";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Unlimited Trees: Reboot";
         private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
@@ -92,20 +92,17 @@ namespace TreeAnarchy {
 
         public TAMod() {
             try {
-                GameSettings.AddSettingsFile(new SettingsFile[] {
-                    new SettingsFile() { fileName = KeybindingConfigFile }
-                });
+                if (GameSettings.FindSettingsFileByName(KeybindingConfigFile) == null) {
+                    GameSettings.AddSettingsFile(new SettingsFile[] {
+                        new SettingsFile() { fileName = KeybindingConfigFile }
+                    });
+                }
             } catch (Exception e) {
                 UnityEngine.Debug.LogException(e);
             }
         }
 
         public void OnEnabled() {
-            SingletonLite<LocaleManager>.Ensure();
-            SingletonLite<TALocale>.Ensure();
-            SingletonLite<TALocale>.instance.Init();
-            LocaleManager.eventLocaleChanged += SingletonLite<TALocale>.instance.OnLocaleChanged;
-
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
@@ -115,7 +112,6 @@ namespace TreeAnarchy {
         }
 
         public void OnDisabled() {
-            LocaleManager.eventLocaleChanged -= SingletonLite<TALocale>.instance.OnLocaleChanged;
             if (HarmonyHelper.IsHarmonyInstalled) {
                 TAPatcher patcher = new TAPatcher();
                 patcher.DisableCore();
@@ -123,7 +119,13 @@ namespace TreeAnarchy {
             SaveSettings();
         }
 
+        private static bool localeInitialized = false;
         public void OnSettingsUI(UIHelperBase helper) {
+            if (!localeInitialized) {
+                SingletonLite<TALocale>.instance.Init();
+                LocaleManager.eventLocaleChanged += SingletonLite<TALocale>.instance.OnLocaleChanged;
+                localeInitialized = true;
+            }
             TAUI optionPanel = new TAUI();
             optionPanel.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
         }
