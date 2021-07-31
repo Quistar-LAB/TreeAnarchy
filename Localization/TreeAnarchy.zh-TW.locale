@@ -27,8 +27,7 @@ TreeAnarchy Default Locale Template
     <string name="LockForestry">鎖定林業資源</string>
     <string name="PersistentLock">保持林業資源鎖定狀態</string>
     <string name="SwayLabel">這裏是一些有用的效果及功能。鎖定林業資源可使種植樹木時避免移除農業資源。如果啓用”保持林業資源鎖定狀態“，每次重啓游戲時，”鎖定林業資源“會被啓用，並可避免進入游戲時，樹林把農業資源給毀掉</string>
-    <string name="Important">
-注意！此設定需在進入游戲前設定好
+    <string name="Important">注意！此設定需在進入游戲前設定好
     
 下方設定是針對載入原初舊版本無限樹木模組格式</string>
     <string name="ReplaceRemoveDesc">當找不到樹木游戲資產時，默認處理方法是保留這些樹木。如果您選擇移除，當您載入游戲時，這些樹木就會被移除。如果您選擇替換樹木時，游戲默認第一個初始樹木會替代這些找不到的樹木</string>

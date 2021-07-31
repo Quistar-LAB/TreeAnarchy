@@ -26,8 +26,7 @@ TreeAnarchy Default Locale Template
     <string name="LockForestry">Lock Forestry</string>
     <string name="PersistentLock">Persistent lock on forestry resources</string>
     <string name="SwayLabel">Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land. Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting to turn on Lock Forestry when entering a game and destroying fertile land on a map</string>
-    <string name="Important">
-Important! Must be set before starting/loading a game
+    <string name="Important">Important! Must be set before starting/loading a game
     
 The following settings are only used when loading from Old Unlimited Trees Format</string>
     <string name="ReplaceRemoveDesc">The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees</string>
