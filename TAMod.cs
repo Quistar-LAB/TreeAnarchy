@@ -21,6 +21,7 @@ namespace TreeAnarchy {
         internal const int DefaultTreeLimit = 262144;
         internal const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
+        //internal static bool EnableRRKDebug = false;
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
         internal static bool TreeEffectOnWind = true;
@@ -68,17 +69,17 @@ namespace TreeAnarchy {
         internal static bool UseModifiedTreeCap {
             get {
                 switch (Singleton<SimulationManager>.instance.m_metaData.m_updateMode) {
-                    case SimulationManager.UpdateMode.LoadGame:
-                    case SimulationManager.UpdateMode.LoadMap:
-                    case SimulationManager.UpdateMode.NewGameFromMap:
-                    case SimulationManager.UpdateMode.NewGameFromScenario:
-                    case SimulationManager.UpdateMode.NewMap:
-                    case SimulationManager.UpdateMode.LoadScenario:
-                    case SimulationManager.UpdateMode.NewScenarioFromGame:
-                    case SimulationManager.UpdateMode.NewScenarioFromMap:
-                    case SimulationManager.UpdateMode.UpdateScenarioFromGame:
-                    case SimulationManager.UpdateMode.UpdateScenarioFromMap:
-                        return true;
+                case SimulationManager.UpdateMode.LoadGame:
+                case SimulationManager.UpdateMode.LoadMap:
+                case SimulationManager.UpdateMode.NewGameFromMap:
+                case SimulationManager.UpdateMode.NewGameFromScenario:
+                case SimulationManager.UpdateMode.NewMap:
+                case SimulationManager.UpdateMode.LoadScenario:
+                case SimulationManager.UpdateMode.NewScenarioFromGame:
+                case SimulationManager.UpdateMode.NewScenarioFromMap:
+                case SimulationManager.UpdateMode.UpdateScenarioFromGame:
+                case SimulationManager.UpdateMode.UpdateScenarioFromMap:
+                    return true;
                 }
                 return false;
             }

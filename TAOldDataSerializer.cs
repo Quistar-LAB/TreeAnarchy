@@ -46,43 +46,43 @@ namespace TreeAnarchy {
                 TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
 
                 switch ((Format)ReadUShort()) {
-                    case Format.Version1:
-                        treeLimit = FormatVersion1TreeLimit;
-                        break;
-                    case Format.Version2:
-                        treeLimit = ReadInt();
-                        break;
-                    case Format.Version3:
-                        treeLimit = ReadInt();
-                        treeCount = ReadInt();
-                        ReadInt(); // Reserved for future use
-                        ReadInt(); // Reserved for future use
-                        flags = (SaveFlags)ReadUShort();
-                        break;
-                    default:
-                        return false;
+                case Format.Version1:
+                    treeLimit = FormatVersion1TreeLimit;
+                    break;
+                case Format.Version2:
+                    treeLimit = ReadInt();
+                    break;
+                case Format.Version3:
+                    treeLimit = ReadInt();
+                    treeCount = ReadInt();
+                    ReadInt(); // Reserved for future use
+                    ReadInt(); // Reserved for future use
+                    flags = (SaveFlags)ReadUShort();
+                    break;
+                default:
+                    return false;
                 }
                 if (treeLimit <= 0 | treeLimit > MaxSupportedTreeLimit) { return false; } /* Sanity Check */
                 if (treeLimit > MaxTreeLimit) treeLimit = MaxTreeLimit; // Only load what MaxTreeLimit is limited to
 
                 switch (flags & SaveFlags.PACKED) {
-                    case SaveFlags.NONE:
-                        maxLen = treeLimit;
-                        goto ReadData;
-                    case SaveFlags.PACKED:
-                        if (treeCount > MaxTreeLimit - DefaultTreeLimit) maxLen = MaxTreeLimit;
-                        else maxLen = treeCount + DefaultTreeLimit;
+                case SaveFlags.NONE:
+                    maxLen = treeLimit;
+                    goto ReadData;
+                case SaveFlags.PACKED:
+                    if (treeCount > MaxTreeLimit - DefaultTreeLimit) maxLen = MaxTreeLimit;
+                    else maxLen = treeCount + DefaultTreeLimit;
 ReadData:
-                        for (int i = DefaultTreeLimit; i < maxLen; i++) {
-                            trees[i].m_flags = (ushort)(ReadUShort() & fireDamageBurningMask);
-                            if (trees[i].m_flags != 0) {
-                                trees[i].m_infoIndex = ReadUShort();
-                                trees[i].m_posX = (short)ReadUShort();
-                                trees[i].m_posZ = (short)ReadUShort();
-                            }
-                            if (position == ushortStream.Length) break;
+                    for (int i = DefaultTreeLimit; i < maxLen; i++) {
+                        trees[i].m_flags = (ushort)(ReadUShort() & fireDamageBurningMask);
+                        if (trees[i].m_flags != 0) {
+                            trees[i].m_infoIndex = ReadUShort();
+                            trees[i].m_posX = (short)ReadUShort();
+                            trees[i].m_posZ = (short)ReadUShort();
                         }
-                        return true;
+                        if (position == ushortStream.Length) break;
+                    }
+                    return true;
                 }
                 return false;
             }

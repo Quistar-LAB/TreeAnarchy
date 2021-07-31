@@ -8,7 +8,7 @@ namespace TreeAnarchy {
     internal class TAUI {
         private const float MaxScaleFactor = 8.0f;
         private const float MinScaleFactor = 1.5f;
-        internal const float DefaultFontScale = 1.0f;
+        internal const float DefaultFontScale = 0.95f;
         internal const float SmallFontScale = 0.85f;
 
         internal const string MainOptionPanelName = "MainOptionContainer";
@@ -82,7 +82,7 @@ namespace TreeAnarchy {
             SaveSettings();
         }
         private void OnPersistentLockCheckChanged(UIComponent _, bool isChecked) {
-            TAMod.PersistentLockForestry = isChecked;
+            PersistentLockForestry = isChecked;
             SaveSettings();
         }
         private void OnTreeScaleFactorChanged(UIComponent _, float val) {
@@ -92,7 +92,7 @@ namespace TreeAnarchy {
         }
 
         private void OnReplaceRemoveKeepEventChanged(UIComponent _, int val) {
-            TAMod.RemoveReplaceOrKeep = val;
+            RemoveReplaceOrKeep = val;
             SaveSettings();
         }
 

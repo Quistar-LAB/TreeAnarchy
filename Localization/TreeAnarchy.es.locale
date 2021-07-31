@@ -1,0 +1,48 @@
+<!DOCTYPE root [
+    <!ELEMENT root ANY>
+    <!ELEMENT string ANY>
+    <!ATTLIST string name ID #REQUIRED>
+]>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+    <!-- Tree Resize -->
+    <string name="IncreaseTreeSize">Incrementar tamaño de árboles</string>
+    <string name="DecreaseTreeSize">Disminuir tamaño de árboles</string>
+    <string name="PressAnyKey">Presiona cualquier tecla</string>
+    <!-- Tab Strips -->
+    <string name="MainOptionTab">Opciones Principales</string>
+    <string name="TreeSnappingTab">Ajuste de árbol</string>
+    <string name="KeyboardShortcutTab">Configuración de tecla</string>
+    <string name="KeyBindDescription">Al configurar teclas, asegúrate de usar modificadores (Mayús | Control | Alt) para el Ajuste de Árboles y Bloqueo Forestal. Para la configuración de teclas para incrementar y reducir el tamaño de árboles, no tienes que usar modificadores, sin embargo asegúrate de seleccionar una tecla única.</string>
+    <!-- Main options -->
+    <string name="MaxTreeLimitTitle">Configurar límite de árboles customizado</string>
+    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
+    <string name="MaxTreeLimit">Número máximo de árboles: {0} árboles</string>
+    <string name="WindEffect">Habilitar efecto de árboles con el viento [El comportamiento original del juego está habilitado]</string>
+    <string name="WindEffectLabel">Esta opción afecta el comportamiento normal del juego, cambia la altura del árbol diluyendo y debilitando el viento en el mapa.</string>
+    <string name="RandomTreeRotation">Rotación aleatoria de árboles</string>
+    <string name="TreeSwayFactor">Factor de movimiento de árbol</string>
+    <string name="LockForestry">Bloqueo Forestal</string>
+    <string name="PersistentLock">Bloqueo persistente en recursos forestales</string>
+    <string name="SwayLabel">Herramientas y mejoras visuales útiles. Bloqueo forestal no permite que los árboles creen recursos forestales y eliminen tierra fértil. Habilitar el Bloqueo Persistente activará el bloqueo forestal al empezar el juego. Esto es para prevenir que los usuarios se olviden de activar el bloqueo forestal cuando empiecen un otro juego y destruyan la tierra fértil en el mapa.</string>
+    <string name="Important">Importante! Se debe activar antes de iniciar / cargar un juego
+
+El ajuste siguiente solo debe ser utilizado cuando vayas a cargar un juego con el formato del Unlimited Trees viejo.</string>
+    <string name="ReplaceRemoveDesc">El comportamiento predeterminado es mantener los árboles faltantes. Si seleccionas \"Eliminar\", los árboles serán eliminados del archivo del juego. Si seleccionas \"Reemplazar\", el primer árbol vanila será utilizado para reemplazar árboles faltantes.</string>
+    <string name="ReplaceRemoveName">Comportamiento de carga para el formato viejo de árboles ilimitados</string>
+    <string name="ReplaceRemoveDropdown0">Mantener árboles faltantes</string>
+    <string name="ReplaceRemoveDropdown1">Eliminar árboles faltantes</string>
+    <string name="ReplaceRemoveDropdown2">Reemplazar árboles faltantes</string>
+    <!-- Tree Snapping specific -->
+    <string name="TreeSnap">Ajuste de árbol</string>
+    <string name="TreeSnapLabel">Esta opción permite el movimiento de los árboles, y permite que los árboles se puedan ajustar a edificios y props.</string>
+    <string name="ExperimentalTreeSnap">Usar Ajuste de Árboles Experimental</string>
+    <string name="ExperimentalTreeSnapLabel">Ajuste de Árboles Experimental es un \"hack\" en el mod \"MoveIt\", permite el ajuste de árboles a Edificios, Carreteras, Props. Ajuste de árboles funciona correctamente cuando se mueven arboles, sin embargo cuando se clonan, se produce un desplazamiento en el árbol colocado. Para resolver esto, deselecciona el árbol y selecciona nuevamente cualquier otro árbol para restablecer la posición. En estos momentos estoy trabajando en \"MoveIt\" durante mi tiempo libre para mejorar la experiencia.</string>
+    <string name="TreeSnapToBuilding">Activa esta opción para permitir que los árboles se ajusten a edificios</string>
+    <string name="TreeSnapToBuildingLabel">Ajuste de árboles a sub-edificios no funciona debido a que la proyección de rayos no los reconoce</string>
+    <string name="TreeSnapToNetwork">Activa esta opción para permitir que los árboles se ajusten a las carreteras</string>
+    <string name="TreeSnapToProp">Activa esta opción para permitir que los árboles se ajusten a los props</string>
+    <string name="TreeSnapToPropLabel">Ajuste de árboles en props no funciona al 100% debido a que algunos props no tienen forma definida para la proyección de rayos. Ej. \"Ploppable Surfaces\"</string>
+</resources>

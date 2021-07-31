@@ -1,6 +1,8 @@
 ﻿using ColossalFramework;
+using ColossalFramework.IO;
 using HarmonyLib;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -100,58 +102,59 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
-        /* This patches the TreeManager::Data::Deserialize method */
-        private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            bool firstSig = false, secondSig = false;
-            LocalBuilder maxLen = il.DeclareLocal(typeof(int)), num4;
-            Label IsFixedHeight = il.DefineLabel();
-            MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
+        public static void CustomSetPosY(TreeInstance[] trees, int treeID) {
+            if ((trees[treeID].m_flags & 32) == 0) {
+                trees[treeID].m_posY = 0;
+            }
+        }
 
+        private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            bool firstSig = false, secondSig = false, thirdSig = false;
+            MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
             var codes = instructions.ToList();
-            codes.Insert(0, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.EnsureCapacity))));
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].opcode == OpCodes.Stloc_3 && !firstSig) {
-                    firstSig = true;
-                    codes.InsertRange(i + 1, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit),
-                        new CodeInstruction(OpCodes.Stloc_S, maxLen),
+            for(int i = 0; i < codes.Count; i++) {
+                if(!firstSig && codes[i].opcode == OpCodes.Call && codes[i].operand == AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))) {
+                    codes.InsertRange(i + 2, new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldloc_0),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.EnsureCapacity)))
                     });
-                }
-                if (codes[i].opcode == OpCodes.Ldloc_3) {
-                    if (codes[i - 1].operand != null) {
-                        var local = codes[i - 1].operand as LocalBuilder;
-                        if (local.LocalIndex != 19) {
-                            codes[i] = new CodeInstruction(OpCodes.Ldloc_S, maxLen);
+                    firstSig = true;
+                } else if(!secondSig && codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Ldlen && codes[i + 2].opcode == OpCodes.Conv_I4 && codes[i + 3].opcode == OpCodes.Stloc_3) {
+                    codes.RemoveRange(i, 3);
+                    codes.Insert(i, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
+                    secondSig = true;
+                } else if(!thirdSig && codes[i].Calls(AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version)))) {
+                    while(++i < codes.Count) {
+                        if(codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
+                            codes.InsertRange(i, new CodeInstruction[] {
+                                new CodeInstruction(OpCodes.Call, integratedDeserialize),
+                                new CodeInstruction(OpCodes.Ldloc_0),
+                                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
+                                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer))),
+                                new CodeInstruction(OpCodes.Stloc_1),
+                                new CodeInstruction(OpCodes.Ldloc_1),
+                                new CodeInstruction(OpCodes.Ldlen),
+                                new CodeInstruction(OpCodes.Conv_I4),
+                                new CodeInstruction(OpCodes.Stloc_3)
+                            });
+                            break;
                         }
                     }
-                }
-                if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree))) && !secondSig) {
-                    secondSig = true;
-                    num4 = codes[i + 2].operand as LocalBuilder;
-                    codes.InsertRange(i + 1, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldloc_1),
-                        new CodeInstruction(OpCodes.Ldloc_S, num4),
-                        new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance)),
-                        new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.FixedHeight))),
-                        new CodeInstruction(OpCodes.Brtrue_S, IsFixedHeight),
-                    });
-                    codes.InsertRange(i - 7, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Call, integratedDeserialize),
-                        new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
-                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer))),
-                        new CodeInstruction(OpCodes.Stloc_1),
-                        new CodeInstruction(OpCodes.Ldloc_1),
-                        new CodeInstruction(OpCodes.Ldlen),
-                        new CodeInstruction(OpCodes.Conv_I4),
-                        new CodeInstruction(OpCodes.Stloc_3)
-                    });
-                }
-                if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_posY))) && secondSig) {
-                    codes[i + 1] = codes[i + 1].WithLabels(IsFixedHeight);
+                    for(i += 10; i < codes.Count; i++) {
+                        if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree)))) {
+                            codes.RemoveRange(i + 1, 5);
+                            codes.InsertRange(i + 1, new CodeInstruction[] {
+                                codes[i + 1],
+                                codes[i + 2],
+                                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.CustomSetPosY)))
+                            });
+                            break;
+                        }
+                    }
+                    thirdSig = true;
+                    break;
                 }
             }
-
             return codes.AsEnumerable();
         }
 
@@ -160,22 +163,22 @@ namespace TreeAnarchy.Patches {
         private const int ReplaceTree = 2;
         private static void RemoveOrReplaceTree(uint treeID) {
             switch (RemoveReplaceOrKeep) {
-                case RemoveTree:
-                    try {
-                        Singleton<TreeManager>.instance.ReleaseTree(treeID);
-                    } catch {
-                        Debug.Log($"TreeAnarchy: Error occured releasing tree during prefab initialization");
-                    }
-                    break;
-                case ReplaceTree:
-                    TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                    TreeInfo treeInfo = PrefabCollection<TreeInfo>.GetLoaded(0);
-                    buffer[treeID].Info = treeInfo;
-                    buffer[treeID].m_infoIndex = (ushort)treeInfo.m_prefabDataIndex;
-                    break;
-                default:
-                    /* Keep missing tree */
-                    break;
+            case RemoveTree:
+                try {
+                    Singleton<TreeManager>.instance.ReleaseTree(treeID);
+                } catch {
+                    Debug.Log($"TreeAnarchy: Error occured releasing tree during prefab initialization");
+                }
+                break;
+            case ReplaceTree:
+                TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                TreeInfo treeInfo = PrefabCollection<TreeInfo>.GetLoaded(0);
+                buffer[treeID].Info = treeInfo;
+                buffer[treeID].m_infoIndex = (ushort)treeInfo.m_prefabDataIndex;
+                break;
+            default:
+                /* Keep missing tree */
+                break;
             }
         }
 
@@ -246,6 +249,7 @@ namespace TreeAnarchy.Patches {
 
         private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool sigFound = false;
+            int firstIndex = -1, lastIndex = -1;
             var codes = instructions.ToList();
 
             for (int i = 0; i < codes.Count; i++) {
@@ -254,10 +258,29 @@ namespace TreeAnarchy.Patches {
                     codes.RemoveRange(index, 3);
                     codes.Insert(index, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
                     sigFound = true;
+                } else if (codes[i].LoadsField(AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_burningTrees))) && firstIndex < 0) {
+                    firstIndex = i - 1;
+                } else if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Singleton<LoadingManager>), nameof(Singleton<LoadingManager>.instance))) && lastIndex < 0 && sigFound) {
+                    lastIndex = i;
                 }
             }
+            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
+            codes.InsertRange(firstIndex, new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Ldc_I4_0),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(ColossalFramework.IO.DataSerializer), nameof(ColossalFramework.IO.DataSerializer.WriteUInt24)))
+            });
 
             return codes.AsEnumerable();
+        }
+
+        private static IEnumerable<CodeInstruction> AwakeTranspiler(IEnumerable<CodeInstruction> instructions) {
+            foreach(var code in instructions) {
+                if (code.LoadsConstant(DefaultTreeLimit)) {
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeLimit)));
+                } else if(code.LoadsConstant(DefaultTreeUpdateCount)) {
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeUpdateLimit)));
+                } else yield return code;
+            }
         }
 
         internal void InjectResize(Harmony harmony) {
@@ -294,7 +317,10 @@ namespace TreeAnarchy.Patches {
             try {
                 if (!isTranspilerPatched) {
                     InjectResize(harmony);
-                    harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), @"CalculateSelfHeightTranspiler")));
+                    harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"),
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.CalculateSelfHeightTranspiler))));
+                    harmony.Patch(AccessTools.Method(typeof(TreeManager), @"Awake"),
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.AwakeTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                         transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.DeserializeTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
@@ -308,8 +334,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal static void EnsureCapacity() {
-            TreeManager manager = Singleton<TreeManager>.instance;
+        internal static void EnsureCapacity(TreeManager manager) {
             if (manager.m_trees.m_buffer.Length != MaxTreeLimit) {
                 manager.m_trees = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 manager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];

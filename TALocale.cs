@@ -22,11 +22,21 @@ namespace TreeAnarchy {
                     locale = "zh-CN";
                 }
             }
-            LoadLocale(CultureInfo.GetCultureInfo(locale));
+            switch (CultureInfo.InstalledUICulture.Name) {
+            case "ms":
+            case "ms-MY":
+                locale = "ms";
+                break;
+            case "ja":
+            case "ja-JP":
+                locale = "ja";
+                break;
+            }
+            LoadLocale(locale);
         }
 
-        private void LoadLocale(CultureInfo culture) {
-            string localeFile = String.Format(m_directory + m_fileNameTemplate, culture.Name);
+        private void LoadLocale(string culture) {
+            string localeFile = String.Format(m_directory + m_fileNameTemplate, culture);
             XmlDocument locale = new XmlDocument();
             try {
                 locale.Load(localeFile);

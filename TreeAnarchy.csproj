@@ -90,6 +90,16 @@
   <ItemGroup>
     <None Include="Localization\TreeAnarchy.de.locale" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Localization\TreeAnarchy.es.locale" />
+    <None Include="Localization\TreeAnarchy.ko.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Localization\TreeAnarchy.ja.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Localization\TreeAnarchy.ms.locale" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)" mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"

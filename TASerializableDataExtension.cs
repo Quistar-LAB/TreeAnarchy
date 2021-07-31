@@ -13,8 +13,9 @@ namespace TreeAnarchy {
     public class TASerializableDataExtension : ISerializableDataExtension {
         private enum Format : uint {
             Version4 = 4,
-            Version5 = 5,
-            Version6 = 6,
+            Version5,
+            Version6, 
+            Version7, 
         }
 
         private const string TREE_ANARCHY_KEY = @"TreeAnarchy";
@@ -70,8 +71,8 @@ namespace TreeAnarchy {
 
             private void RepackBuffer(int maxLimit, int treeCount, Format version, Array32<TreeInstance> existingTreeBuffer, float[] existingTreeScaleBuffer) {
                 if (maxLimit > MaxTreeLimit) {
+                    TreeManager tmInstance = Singleton<TreeManager>.instance;
                     if (treeCount > MaxTreeLimit) {
-                        TreeManager tmInstance = Singleton<TreeManager>.instance;
                         tmInstance.m_trees = existingTreeBuffer;
                         UpdateTreeLimit(maxLimit);
                         /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
@@ -93,8 +94,7 @@ namespace TreeAnarchy {
                             oldScales[i] = existingScales[i];
                         }
                     }
-
-                    for (int i = DefaultTreeLimit, offsetIndex = 1; i < existingBuffer.Length; i++) {
+                    for (uint i = DefaultTreeLimit, offsetIndex = 1; i < existingBuffer.Length; i++) {
                         if (existingBuffer[i].m_flags != 0) {
                             while (oldBuffer[offsetIndex].m_flags != 0) { offsetIndex++; } /* Find available slot in old buffer */
                             oldBuffer[offsetIndex].m_flags = existingBuffer[i].m_flags;
@@ -102,8 +102,16 @@ namespace TreeAnarchy {
                             oldBuffer[offsetIndex].m_posX = existingBuffer[i].m_posX;
                             oldBuffer[offsetIndex].m_posZ = existingBuffer[i].m_posZ;
                             oldBuffer[offsetIndex].m_posY = existingBuffer[i].m_posY;
-                            if (version > Format.Version6) {
+                            if (version >= Format.Version6) {
                                 oldScales[offsetIndex] = existingScales[i];
+                            }
+                            /* re-order burning tree also */
+                            if(version >= Format.Version7) {
+                                for (int j = 0; j < tmInstance.m_burningTrees.m_size; j++) {
+                                    if (tmInstance.m_burningTrees[j].m_treeIndex == i) {
+                                        tmInstance.m_burningTrees.m_buffer[j].m_treeIndex = offsetIndex;
+                                    }
+                                }
                             }
                         }
                     }
@@ -111,6 +119,7 @@ namespace TreeAnarchy {
             }
 
             public void Deserialize(DataSerializer s) {
+                TreeManager treeManager = Singleton<TreeManager>.instance;
                 int maxLen = s.ReadInt32(); // Read in Max limit
                 int treeCount = 0;
                 EnsureCapacity(maxLen, out Array32<TreeInstance> newBuffer, out TreeInstance[] trees, out float[] treeScaleBuffer);
@@ -161,6 +170,23 @@ namespace TreeAnarchy {
                     }
                     @float.EndRead();
                 }
+                if((Format)s.version >= Format.Version7) {
+                    int burningListSize = (int)s.ReadUInt24();
+                    treeManager.m_burningTrees.EnsureCapacity(burningListSize);
+                    for (int n = 0; n < burningListSize; n++) {
+                        TreeManager.BurningTree item;
+                        item.m_treeIndex = s.ReadUInt24();
+                        item.m_fireIntensity = (byte)s.ReadUInt8();
+                        item.m_fireDamage = (byte)s.ReadUInt8();
+                        if (item.m_treeIndex != 0u) {
+                            treeManager.m_burningTrees.Add(item);
+                            trees[item.m_treeIndex].m_flags |= 64;
+                            if (item.m_fireIntensity != 0) {
+                                trees[item.m_treeIndex].m_flags |= 128;
+                            }
+                        }
+                    }
+                }
                 /* Now Resize / Repack buffer if necessary */
                 RepackBuffer(maxLen, treeCount, (Format)s.version, newBuffer, treeScaleBuffer);
             }
@@ -169,7 +195,8 @@ namespace TreeAnarchy {
 
             public void Serialize(DataSerializer s) {
                 int treeLimit = MaxTreeLimit;
-                TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
+                TreeManager treeManager = Singleton<TreeManager>.instance;
+                TreeInstance[] buffer = treeManager.m_trees.m_buffer;
                 float[] treeScaleBuffer = Singleton<TreeScaleManager>.instance.m_treeScales;
 
                 // Important to save treelimit as it is an adjustable variable on every load
@@ -223,6 +250,12 @@ namespace TreeAnarchy {
                     }
                 }
                 @float.EndWrite();
+                s.WriteUInt24((uint)treeManager.m_burningTrees.m_size);
+                for (int m = 0; m < treeManager.m_burningTrees.m_size; m++) {
+                    s.WriteUInt24(treeManager.m_burningTrees.m_buffer[m].m_treeIndex);
+                    s.WriteUInt8(treeManager.m_burningTrees.m_buffer[m].m_fireIntensity);
+                    s.WriteUInt8(treeManager.m_burningTrees.m_buffer[m].m_fireDamage);
+                }
             }
         }
 
@@ -269,7 +302,7 @@ namespace TreeAnarchy {
                 byte[] data;
                 if (OldFormatLoaded) EraseData(OldTreeUnlimiterKey);
                 using (var stream = new MemoryStream()) {
-                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version6, new Data());
+                    DataSerializer.Serialize(stream, DataSerializer.Mode.Memory, (uint)Format.Version7, new Data());
                     data = stream.ToArray();
                 }
                 SaveData(TREE_ANARCHY_KEY, data);

@@ -1,0 +1,48 @@
+<!DOCTYPE root [
+    <!ELEMENT root ANY>
+    <!ELEMENT string ANY>
+    <!ATTLIST string name ID #REQUIRED>
+]>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+    <!-- Tree Resize -->
+    <string name="IncreaseTreeSize">Besarkan saiz pokok</string>
+    <string name="DecreaseTreeSize">Kecilkan saiz pokok</string>
+    <string name="PressAnyKey">Tekan mana-mana kekunci</string>
+    <!-- Tab Strips -->
+    <string name="MainOptionTab">Pilihan Utama</string>
+    <string name="TreeSnappingTab">Lekat Pokok</string>
+    <string name="KeyboardShortcutTab">Ikatan Kekunci</string>
+    <string name="KeyBindDescription">Apabila mengikat kekunci, sila pastikan untuk gunakan pengubah suai (SHIFT | CTRL | ALT) untuk Lekat Pokok dan Kunci Hutan. Untuk kekunci pintasan pembesaran dan pengecilan saiz pokok, ia diperlakukan secara istimewa supaya anda tidak perlu guna pengubah suai, tetapi pastikan untuk pilih kekunci pintasan yang unik.</string>
+    <!-- Main options -->
+    <string name="MaxTreeLimitTitle">Tetapkan Had Pokok Tersuai</string>
+    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
+    <string name="MaxTreeLimit">Had Pokok Maksimum:  {0} pokok</string>
+    <string name="WindEffect">Dayakan Kesan Pokok ke atas Angin [Tetapan asal permainan didayakan]</string>
+    <string name="WindEffectLabel">Pilihan ini memberi kesan terhadap perilaku permainan di mana ketinggian pokok bantu mengurangkan dan melemahkan angin di peta.</string>
+    <string name="RandomTreeRotation">Putaran Pokok Rawak</string>
+    <string name="TreeSwayFactor">Faktor Goyang Pokok</string>
+    <string name="LockForestry">Kunci Hutan</string>
+    <string name="PersistentLock">Kunci kekal ke atas sumber perhutanan</string>
+    <string name="SwayLabel">Alatan dan hiasan yang berguna. Kunci hutan mengelakkan pokok daripada mencipta sumber perhutanan dan membuang tanah subur. Pendayaan Kunci Kekal akan mendayakan Kunci Hutan setiap kali permainan bermula. Ini untuk mengelakkan pengguna daripada terlupa untuk mengaktifkan Kunci Hutan semasa masuk permainan dan memusnahkan tanah subur di peta</string>
+    <string name="Important">Penting! Mesti ditetapkan sebelum memulakan/memuatkan permainan
+
+Tetapan berikut hanya digunakan ketika memuat Format Pokok Tiada Had yang Lama</string>
+    <string name="ReplaceRemoveDesc">Perilaku lalai ditetapkan untuk mengekalkan pokok yang hilang. Jika anda pilih untuk buang, maka pokok akan dibuang daripada permainan disimpan. Jika anda pilih untuk menggantikan pokok, maka pokok vanila pertama digunakan untuk menggantikan pokok yang hilang</string>
+    <string name="ReplaceRemoveName">Perilaku pemuatan untuk format permainan pokok tiada had yang lama</string>
+    <string name="ReplaceRemoveDropdown0">Kekalkan pokok yang hilang</string>
+    <string name="ReplaceRemoveDropdown1">Buangkan pokok yang hilang</string>
+    <string name="ReplaceRemoveDropdown2">Gantikan pokok yang hilang</string>
+    <!-- Tree Snapping specific -->
+    <string name="TreeSnap">Lekat Pokok</string>
+    <string name="TreeSnapLabel">Pilihan ini membolehkan pergerakan bebas pokok, dan membolehkan jajaran pokok dilekatkan ke bangunan dan perhiasan</string>
+    <string name="ExperimentalTreeSnap">Guna Lekat Pokok Jenis Uji Kaji</string>
+    <string name="ExperimentalTreeSnapLabel">Lekat pokok jenis uji kaji ialah sejenis godam dalam mod Moveit, membolehkan pokok dilekatkan ke Bangunan, Rangkaian, Perhiasan. Lekat pokok berfungsi ketika menggerakkan pokok, tetapi semasa mengklon, akan berlaku ofset setelah klon diletakkan. Untuk menyelesaikan isu ini, nyahpilih pokok dan pilih semula mana-mana pokok untuk menetapkan semula kedudukan. Saya sedang berusaha dengan rangka kerja dalaman MoveIt semasa waktu lapang untuk menambah baik pengalaman pengguna</string>
+    <string name="TreeSnapToBuilding">Dayakan pilihan untuk bolehkan jajaran pokok dilekatkan ke bangunan</string>
+    <string name="TreeSnapToBuildingLabel">Lekat pokok ke sub-bangunan tidak berfungsi kerana tebar sinar tidak mengenali sub-bangunan</string>
+    <string name="TreeSnapToNetwork">Dayakan pilihan untuk bolehkan jajaran pokok dilekatkan ke rangkaian</string>
+    <string name="TreeSnapToProp">Dayakan pilihan untuk bolehkan jajaran pokok dilekatkan ke perhiasan</string>
+    <string name="TreeSnapToPropLabel">Lekat pokok ke perhiasan tidak berfungsi 100% kerana sesetengah perhiasan tidak mempunyai bentuk tetap untuk tebar sinar. cth. Permukaan Boleh Letak</string>
+</resources>

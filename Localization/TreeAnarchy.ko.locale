@@ -1,0 +1,48 @@
+<!DOCTYPE root [
+    <!ELEMENT root ANY>
+    <!ELEMENT string ANY>
+    <!ATTLIST string name ID #REQUIRED>
+]>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+    <!-- Tree Resize -->
+    <string name="IncreaseTreeSize">나무 크기 증가</string>
+    <string name="DecreaseTreeSize">나무 크기 감소</string>
+    <string name="PressAnyKey">아무 키나 누르세요</string>
+    <!-- Tab Strips -->
+    <string name="MainOptionTab">메인 옵션</string>
+    <string name="TreeSnappingTab">Tree Snapping</string>
+    <string name="KeyboardShortcutTab">키 설정</string>
+    <string name="KeyBindDescription">Tree Snapping과 Lock Forestry에 단축키 설정 시 수정자(SHIFT | CONTROL | ALT) 를 함께 사용해야 합니다. 나무 크기 증가 및 감소 단축키의 경우 특수 처리되므로 수정자를 사용할 필요는 없지만 중복되지 않은 단축키인지 확인하십시오.</string>
+    <!-- Main options -->
+    <string name="MaxTreeLimitTitle">사용자 정의 나무 제한 구성</string>
+    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
+    <string name="MaxTreeLimit">최대 나무 한도: {0}</string>
+    <string name="WindEffect">나무 바람 효과 활성화 [게임 기본값은 활성화입니다]</string>
+    <string name="WindEffectLabel">이 옵션은 맵에서 나무의 키가 희석되고 바람이 약해지는 정상적인 게임 동작에 영향을 미칩니다.</string>
+    <string name="RandomTreeRotation">랜덤 나무 회전</string>
+    <string name="TreeSwayFactor">나무 흔들림 계수</string>
+    <string name="LockForestry">Lock Forestry</string>
+    <string name="PersistentLock">임업 자원을 지속적으로 잠금</string>
+    <string name="SwayLabel">시각적으로 유용함. Lock forestry는 나무가 임업 자원을 만들어내고 비옥한 토지를 제거하는 것을 방지합니다. 지속적 잠금을 활성화하면 매 게임 시작 시 Lock forestry가 활성화되도록 설정됩니다. 이것은 사용자가 게임에 들어갈 대 Lock forestry를 켜는 것을 잊고 맵 상의 비옥한 땅이 파괴되는 것을 방지하기 위함입니다.</string>
+    <string name="Important">중요! 게임을 시작/로드하기 전에 설정해야 합니다.
+
+다음 설정은 오래된 Unlimited Trees 형식에서 로드할 때만 사용됩니다.</string>
+    <string name="ReplaceRemoveDesc">누락된 나무를 유지하도록 기본 동작이 설정됩니다. 제거를 선택하면 세이브에서 나무가 제거됩니다. 나무를 교체하기로 선택한 경우 첫 번째 바닐라 나무가 누락된 나무를 대체하는 데 사용됩니다.</string>
+    <string name="ReplaceRemoveName">오래된 무제한 나무 게임 형식에 대한 로드 동작</string>
+    <string name="ReplaceRemoveDropdown0">누락된 나무 유지</string>
+    <string name="ReplaceRemoveDropdown1">누락된 나무 제거</string>
+    <string name="ReplaceRemoveDropdown2">누락된 나무 교체</string>
+    <!-- Tree Snapping specific -->
+    <string name="TreeSnap">Tree Snapping</string>
+    <string name="TreeSnapLabel">이 옵션은 나무의 자유 이동을 허용하며 건물 및 프롭에 나무를 스냅할 수 있게 합니다.</string>
+    <string name="ExperimentalTreeSnap">실험적인 Tree Snapping 사용</string>
+    <string name="ExperimentalTreeSnapLabel">실험적인 tree snapping은 MoveIt 모드의 해킹으로, 빌딩, 네트워크, 프롭에 tree snapping을 허용합니다. 나무를 이동할 때는 Tree snapping이 잘 작동하지만 복제 시에는 배치한 후 오프셋이 발생합니다. 이 문제를 해결하려면 나무를 선택취소하고 위치를 재설정할 나무를 다시 선택하십시오. 더 나은 경험을 제공하기 위해 현재 여가 시간에 MoveIt 내부 프레임워크에서 작업하고 있습니다.</string>
+    <string name="TreeSnapToBuilding">나무가 빌딩에 스냅되도록 허용하려면 이 옵션을 활성화</string>
+    <string name="TreeSnapToBuildingLabel">레이 캐스팅이 서브빌딩을 인식하지 못하기 때문에 서브빌딩에는 Tree snapping이 작동하지 않습니다.</string>
+    <string name="TreeSnapToNetwork">나무가 네트워크에 스냅되도록 허용하려면 이 옵션을 활성화</string>
+    <string name="TreeSnapToProp">나무가 프롭에 스냅되도록 허용하려면 이 옵션을 활성화</string>
+    <string name="TreeSnapToPropLabel">레이 캐스팅을 위해 정의된 모양이 없는 일부 프롭(예: Ploppable Surfaces)이 있기 때문에 프롭에 대한 Tree snapping이 100% 작동하지는 않습니다.</string>
+</resources>
