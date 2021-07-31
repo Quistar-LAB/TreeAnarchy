@@ -14,8 +14,8 @@ namespace TreeAnarchy {
         private enum Format : uint {
             Version4 = 4,
             Version5,
-            Version6, 
-            Version7, 
+            Version6,
+            Version7,
         }
 
         private const string TREE_ANARCHY_KEY = @"TreeAnarchy";
@@ -106,7 +106,7 @@ namespace TreeAnarchy {
                                 oldScales[offsetIndex] = existingScales[i];
                             }
                             /* re-order burning tree also */
-                            if(version >= Format.Version7) {
+                            if (version >= Format.Version7) {
                                 for (int j = 0; j < tmInstance.m_burningTrees.m_size; j++) {
                                     if (tmInstance.m_burningTrees[j].m_treeIndex == i) {
                                         tmInstance.m_burningTrees.m_buffer[j].m_treeIndex = offsetIndex;
@@ -170,7 +170,7 @@ namespace TreeAnarchy {
                     }
                     @float.EndRead();
                 }
-                if((Format)s.version >= Format.Version7) {
+                if ((Format)s.version >= Format.Version7) {
                     int burningListSize = (int)s.ReadUInt24();
                     treeManager.m_burningTrees.EnsureCapacity(burningListSize);
                     for (int n = 0; n < burningListSize; n++) {

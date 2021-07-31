@@ -2,7 +2,6 @@
 using ColossalFramework.IO;
 using HarmonyLib;
 using System;
-using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -112,20 +111,20 @@ namespace TreeAnarchy.Patches {
             bool firstSig = false, secondSig = false, thirdSig = false;
             MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
             var codes = instructions.ToList();
-            for(int i = 0; i < codes.Count; i++) {
-                if(!firstSig && codes[i].opcode == OpCodes.Call && codes[i].operand == AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))) {
+            for (int i = 0; i < codes.Count; i++) {
+                if (!firstSig && codes[i].opcode == OpCodes.Call && codes[i].operand == AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))) {
                     codes.InsertRange(i + 2, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.EnsureCapacity)))
                     });
                     firstSig = true;
-                } else if(!secondSig && codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Ldlen && codes[i + 2].opcode == OpCodes.Conv_I4 && codes[i + 3].opcode == OpCodes.Stloc_3) {
+                } else if (!secondSig && codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Ldlen && codes[i + 2].opcode == OpCodes.Conv_I4 && codes[i + 3].opcode == OpCodes.Stloc_3) {
                     codes.RemoveRange(i, 3);
                     codes.Insert(i, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
                     secondSig = true;
-                } else if(!thirdSig && codes[i].Calls(AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version)))) {
-                    while(++i < codes.Count) {
-                        if(codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
+                } else if (!thirdSig && codes[i].Calls(AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version)))) {
+                    while (++i < codes.Count) {
+                        if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
                             codes.InsertRange(i, new CodeInstruction[] {
                                 new CodeInstruction(OpCodes.Call, integratedDeserialize),
                                 new CodeInstruction(OpCodes.Ldloc_0),
@@ -140,7 +139,7 @@ namespace TreeAnarchy.Patches {
                             break;
                         }
                     }
-                    for(i += 10; i < codes.Count; i++) {
+                    for (i += 10; i < codes.Count; i++) {
                         if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree)))) {
                             codes.RemoveRange(i + 1, 5);
                             codes.InsertRange(i + 1, new CodeInstruction[] {
@@ -274,10 +273,10 @@ namespace TreeAnarchy.Patches {
         }
 
         private static IEnumerable<CodeInstruction> AwakeTranspiler(IEnumerable<CodeInstruction> instructions) {
-            foreach(var code in instructions) {
+            foreach (var code in instructions) {
                 if (code.LoadsConstant(DefaultTreeLimit)) {
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeLimit)));
-                } else if(code.LoadsConstant(DefaultTreeUpdateCount)) {
+                } else if (code.LoadsConstant(DefaultTreeUpdateCount)) {
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(MaxTreeUpdateLimit)));
                 } else yield return code;
             }
