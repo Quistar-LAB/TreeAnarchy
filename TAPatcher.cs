@@ -6,7 +6,7 @@ using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
     internal class TAPatcher {
-        private const string HARMONYID = @"quistar.treeanarchy.mod";
+        internal const string HARMONYID = @"quistar.treeanarchy.mod";
 
         private static bool isCorePatched = false;
         internal static FieldInfo MoveItUseTreeSnap = null;
