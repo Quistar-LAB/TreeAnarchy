@@ -88,9 +88,7 @@ ReadData:
             }
         }
 
-        private ushort ReadUShort() {
-            return ushortStream[position++];
-        }
+        private ushort ReadUShort() => ushortStream[position++];
 
         private int ReadInt() {
             int num = ushortStream[position++] << 16;
