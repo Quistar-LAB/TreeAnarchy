@@ -265,21 +265,21 @@ namespace TreeAnarchy {
 
         public void OnLoadData() { }
 
-        public static void IntegratedDeserialize() {
+        public static void IntegratedDeserialize(TreeInstance[] trees) {
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
                     if (oldData != null) {
                         if (oldData.Length < 2 || oldData.Length % 2 != 0) {
-                            Debug.Log("TreeAnarchy: Invalid Old Data, Not Loading Tree Data");
+                            TALog("Invalid Old Data, Not Loading Tree Data");
                             return;
                         }
                         OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
                         if (oldSerializer.Deserialize()) {
-                            Debug.Log("TreeAnarchy: Old Format Loaded");
+                            TALog("Old Format Loaded");
                             OldFormatLoaded = true;
                         } else {
-                            Debug.Log("TreeAnarchy: Invalid Data Format");
+                            TALog("Invalid Data Format");
                         }
                         return;
                     }
@@ -287,10 +287,14 @@ namespace TreeAnarchy {
                 // Work on our new data format
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.TryGetValue(TREE_ANARCHY_KEY, out byte[] data)) {
                     if (data is null) {
-                        Debug.Log("TreeAnarchy: No extra trees to load");
+                        TALog("No extra trees to load");
                         return;
                     }
                     using var stream = new MemoryStream(data); DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
+                } else {
+                    for(int i = DefaultTreeLimit; i < trees.Length; i++) {
+                        trees[i].m_flags = 0;
+                    }
                 }
             } catch (Exception e) {
                 Debug.LogException(e);
@@ -298,6 +302,9 @@ namespace TreeAnarchy {
         }
 
         public void OnSaveData() {
+#if DEBUGPROFILE
+            TALog("Saving Data --- Begin");
+#endif
             try {
                 byte[] data;
                 if (OldFormatLoaded) EraseData(OldTreeUnlimiterKey);
@@ -306,7 +313,7 @@ namespace TreeAnarchy {
                     data = stream.ToArray();
                 }
                 SaveData(TREE_ANARCHY_KEY, data);
-                Debug.Log($"TreeAnarchy: Saved {data.Length} bytes of data");
+                TALog($"Saved {data.Length} bytes of data");
             } catch (Exception e) {
                 Debug.LogException(e);
             }
