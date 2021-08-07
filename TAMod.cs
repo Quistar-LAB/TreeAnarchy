@@ -1,42 +1,45 @@
 ﻿using CitiesHarmony.API;
 using ColossalFramework;
 using ColossalFramework.Globalization;
+using ColossalFramework.Plugins;
 using ICities;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Xml;
+using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.8";
+        internal const string m_modVersion = "0.9.9";
         internal const string m_assemblyVersion = m_modVersion + ".*";
-        private const string m_modName = "Unlimited Trees: Reboot";
-        private const string m_modDesc = "An improved Unlimited Trees Mod. Lets you plant more trees with tree snapping";
+        private const string m_modName = "Tree Anarchy";
+        private const string m_modDesc = "Lets you plant more trees with tree snapping";
+        private const string m_debugLogFile = "00TreeAnarchyDebug.log";
 
         internal const string KeybindingConfigFile = "TreeAnarchyKeyBindSetting";
 
         /* Some standard constant definition for tree limits */
         private static float m_ScaleFactor = 4f;
-        internal const int DefaultTreeLimit = 262144;
-        internal const int DefaultTreeUpdateCount = 4096;
+        public const int DefaultTreeLimit = 262144;
+        public const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
-        //internal static bool EnableRRKDebug = false;
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
-        internal static bool TreeEffectOnWind = true;
-        internal static int LastMaxTreeLimit = DefaultTreeLimit;
-        internal static int CheckLowLimit {
+        public static bool TreeEffectOnWind = true;
+        public static int LastMaxTreeLimit = DefaultTreeLimit;
+        public static int CheckLowLimit {
             get => MaxTreeLimit - 12144;
         }
-        internal static int CheckHighLimit {
+        public static int CheckHighLimit {
             get => MaxTreeLimit - 5;
         }
 
-        internal static int MaxTreeLimit {
+        public static int MaxTreeLimit {
             get => (int)(DefaultTreeLimit * TreeScaleFactor);
         }
-        internal static float TreeScaleFactor {
+        public static float TreeScaleFactor {
             get => m_ScaleFactor;
             set {
                 LastTreeScaleFactor = m_ScaleFactor;
@@ -44,46 +47,35 @@ namespace TreeAnarchy {
             }
         }
         internal static float LastTreeScaleFactor { get; private set; } = m_ScaleFactor;
-        internal static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
+        public static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
 
         /* Experimental mode */
-        internal static bool UseExperimental = false;
+        public static bool UseExperimental = false;
         internal static bool EnableProfiling = false;
+        /* Tree Performance Related */
+        public static int BeginSkipFrameCount = 12;
 
         /* Tree Snapping */
-        internal static bool UseTreeSnapping = false;
-        internal static bool UseExperimentalTreeSnapping = false;
-        internal static bool UseTreeSnapToBuilding = true;
-        internal static bool UseTreeSnapToNetwork = true;
-        internal static bool UseTreeSnapToProp = true;
+        public static bool UseTreeSnapping = false;
+        public static bool UseExperimentalTreeSnapping = false;
+        public static bool UseTreeSnapToBuilding = true;
+        public static bool UseTreeSnapToNetwork = true;
+        public static bool UseTreeSnapToProp = true;
 
         /* Lock Forestry */
-        internal static bool UseLockForestry = false;
+        public static bool UseLockForestry = false;
         internal static bool PersistentLockForestry = true;
 
-        /* Tree Movement Releated */
-        internal static float TreeSwayFactor = 1f;
-        internal static bool RandomTreeRotation = true;
-        internal static int RandomTreeRotationFactor = 1000;
+        /* Tree Movement Related */
+        public static float TreeSwayFactor = 1f;
+        public static bool RandomTreeRotation = true;
+        public static int RandomTreeRotationFactor = 1000;
 
-        internal static bool UseModifiedTreeCap {
-            get {
-                switch (Singleton<SimulationManager>.instance.m_metaData.m_updateMode) {
-                case SimulationManager.UpdateMode.LoadGame:
-                case SimulationManager.UpdateMode.LoadMap:
-                case SimulationManager.UpdateMode.NewGameFromMap:
-                case SimulationManager.UpdateMode.NewGameFromScenario:
-                case SimulationManager.UpdateMode.NewMap:
-                case SimulationManager.UpdateMode.LoadScenario:
-                case SimulationManager.UpdateMode.NewScenarioFromGame:
-                case SimulationManager.UpdateMode.NewScenarioFromMap:
-                case SimulationManager.UpdateMode.UpdateScenarioFromGame:
-                case SimulationManager.UpdateMode.UpdateScenarioFromMap:
-                    return true;
-                }
-                return false;
-            }
-        }
+        /* Tree Anarchy Related */
+        public static bool UseTreeAnarchy = false;
+
+        /* Indicators */
+        public static bool ShowIndicators = true;
 
         internal static bool IsInGame = false;
 
@@ -104,6 +96,7 @@ namespace TreeAnarchy {
         }
 
         public void OnEnabled() {
+            CreateDebugFile();
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
@@ -123,12 +116,12 @@ namespace TreeAnarchy {
         private static bool localeInitialized = false;
         public void OnSettingsUI(UIHelperBase helper) {
             if (!localeInitialized) {
+                OutputPluginsList();
                 SingletonLite<TALocale>.instance.Init();
                 LocaleManager.eventLocaleChanged += SingletonLite<TALocale>.instance.OnLocaleChanged;
                 localeInitialized = true;
             }
-            TAUI optionPanel = new TAUI();
-            optionPanel.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
+            TAUI.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
         }
         #endregion
         #region ILoadingExtension
@@ -147,10 +140,16 @@ namespace TreeAnarchy {
         }
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
+            if (ShowIndicators && (Singleton<ToolManager>.instance.m_properties.m_mode & ItemClass.Availability.MapEditor) == ItemClass.Availability.None) {
+                TAUI.CreateMainUI();
+            }
             IsInGame = true;
         }
 
         void ILoadingExtension.OnLevelUnloading() {
+            if (!(TAUI.mainUIPanel is null)) {
+                UnityEngine.Object.Destroy(TAUI.mainUIPanel);
+            }
             IsInGame = false;
         }
         #endregion
@@ -174,6 +173,7 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
+                ShowIndicators = bool.Parse(xmlConfig.DocumentElement.GetAttribute("ShowIndicators"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
                 return false;
@@ -184,17 +184,18 @@ namespace TreeAnarchy {
         internal static void SaveSettings() {
             XmlDocument xmlConfig = new XmlDocument();
             XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
-            root.Attributes.Append(AddElement<float>(xmlConfig, "ScaleFactor", m_ScaleFactor));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapping", UseTreeSnapping));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToBuilding", UseTreeSnapToBuilding));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToNetwork", UseTreeSnapToNetwork));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "UseTreeSnapToProp", UseTreeSnapToProp));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
-            root.Attributes.Append(AddElement<float>(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "LockForestry", UseLockForestry));
-            root.Attributes.Append(AddElement<bool>(xmlConfig, "PersistentLock", PersistentLockForestry));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "ScaleFactor", m_ScaleFactor));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapping", UseTreeSnapping));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToBuilding", UseTreeSnapToBuilding));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToNetwork", UseTreeSnapToNetwork));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToProp", UseTreeSnapToProp));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "LockForestry", UseLockForestry));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "PersistentLock", PersistentLockForestry));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "ShowIndicators", ShowIndicators));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
@@ -203,6 +204,37 @@ namespace TreeAnarchy {
             XmlAttribute attr = doc.CreateAttribute(name);
             attr.Value = t.ToString();
             return attr;
+        }
+
+        private static readonly Stopwatch profiler = new Stopwatch();
+        private void CreateDebugFile() {
+            profiler.Start();
+            /* Create Debug Log File */
+            string path = Path.Combine(Application.dataPath, m_debugLogFile);
+            using FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+            using StreamWriter sw = new StreamWriter(debugFile);
+            sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
+            sw.WriteLine(Environment.OSVersion);
+            sw.WriteLine($"C# CLR Version {Environment.Version}");
+            sw.WriteLine($"Unity Version {Application.unityVersion}");
+            sw.WriteLine("-------------------------------------");
+        }
+
+        private void OutputPluginsList() {
+            using FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None);
+            using StreamWriter sw = new StreamWriter(debugFile);
+            sw.WriteLine("Mods Installed are:");
+            foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+                sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? "** Enabled **" : "** Disabled **")}");
+            }
+            sw.WriteLine("-------------------------------------");
+        }
+
+        internal static void TALog(string msg) {
+            var ticks = profiler.ElapsedTicks;
+            using FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append);
+            using StreamWriter sw = new StreamWriter(debugFile);
+            sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
         }
     }
 }
