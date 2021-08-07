@@ -19,7 +19,7 @@ namespace TreeAnarchy.Patches {
 
         internal void Enable(Harmony harmony) {
             for (int i = 0; i < 360; i++) {
-                treeQuaternion[i] = Quaternion.Euler(0f, i, 0f);
+                treeQuaternion[i] = Quaternion.Euler(0, i, 0);
             }
             wmInstance = Singleton<WeatherManager>.instance;
             if (!transpilerPatched) {
@@ -65,8 +65,10 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count; i++) {
                 if (codes[i].opcode == OpCodes.Callvirt && codes[i].Calls(AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) }))) {
                     codes.RemoveRange(i - 2, 3);
-                    codes.Insert(i - 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetWindSpeed))));
-                    codes.Insert(i - 2, new CodeInstruction(OpCodes.Ldarg_1));
+                    codes.InsertRange(i - 2, new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Ldarg_1),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeMovement), nameof(TreeMovement.GetWindSpeed)))
+                    });
                 }
             }
             return codes.AsEnumerable();
@@ -88,16 +90,15 @@ namespace TreeAnarchy.Patches {
         }
 
         public static float GetWindSpeed(Vector3 pos) {
+            /* Apparently the lambda expression (a = (a ? > 127 : 127 : a) < 0 ? 0 : a) produces
+             * unreliable results.. mono bug? Using local functions instead so they can be inlined
+             * which shaved off ~5ms for this routine */
+            int clampi(int a) { a = a > 127 ? 127 : a; return a < 0 ? 0 : a; }
+            float clampf(float f) { f = f > 2f ? 2f : f; return f < 0f ? 0f : f; }
             WeatherManager.WindCell[] windGrids = wmInstance.m_windGrid;
-            //int x = (int)(pos.x * 0.0074074074f + 63.5f);
-            //int y = (int)(pos.z * 0.0074074074f + 63.5f);
-            //x = (x > 127 ? 127 : x) < 0 ? 0 : x;
-            int x = Mathf.Clamp(Mathf.FloorToInt(pos.x / 135f + 64f - 0.5f), 0, 127);
-            //y = (y > 127 ? 127 : y) < 0 ? 0 : y;
-            int y = Mathf.Clamp(Mathf.FloorToInt(pos.z / 135f + 64f - 0.5f), 0, 127);
-            float windHeight = ((pos.y - windGrids[y * 128 + x].m_totalHeight * 0.015625f) * 0.02f + 1);
-            //return (windHeight > 2f ? 2f : windHeight) < 0 ? 0 : windHeight * TreeSwayFactor;
-            return Mathf.Clamp(windHeight * 0.02f + 1, 0f, 2f) * TreeSwayFactor;
+            int x = clampi((int)(pos.x * 0.0074074074f + 63.5f));
+            int y = clampi((int)(pos.z * 0.0074074074f + 63.5f));
+            return clampf((pos.y - windGrids[y * 128 + x].m_totalHeight * 0.015625f) * 0.02f + 1) * TreeSwayFactor;
         }
 
 
