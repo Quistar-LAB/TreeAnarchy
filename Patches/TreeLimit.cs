@@ -25,7 +25,6 @@ namespace TreeAnarchy.Patches {
         private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             var codes = new List<CodeInstruction>(instructions);
 
-            int insertionIndex = -1;
             Label returnTreeManagerLabel = il.DefineLabel();
             LocalBuilder num2 = null, a = null; // local variables in WeatherManager::CalculateSelfHeight()
 
@@ -33,7 +32,6 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count - 1; i++) // -1 since we will be checking i + 1
             {
                 if (codes[i].opcode == OpCodes.Call && codes[i].ToString().Contains("TreeManager")) {
-                    insertionIndex = i;
                     // rewind and find num2 and a
                     int k = i - 10; // should be within 10 instructions
                     for (int j = i; j > k; j--) {
@@ -44,40 +42,38 @@ namespace TreeAnarchy.Patches {
                         }
                     }
                     codes[i].labels.Add(returnTreeManagerLabel);
+                    codes.InsertRange(i, new CodeInstruction[] {
+                        /* The following instructions injects the following snippet into WeatherManager::CalculateSelfHeight()
+                            if (TreeAnarchyConfig.TreeEffectOnWind)   //My Additions to overide tree effects.
+                            {
+                                return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
+                            }
+                        */
+                        new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind))),
+                        new CodeInstruction(OpCodes.Brfalse_S, returnTreeManagerLabel),
+                        new CodeInstruction(OpCodes.Ldloc_S, num2),
+                        new CodeInstruction(OpCodes.Ldloc_S, a),
+                        new CodeInstruction(OpCodes.Add),
+                        new CodeInstruction(OpCodes.Ldc_I4_1),
+                        new CodeInstruction(OpCodes.Shr),
+                        new CodeInstruction(OpCodes.Ldc_I4_0),
+                        new CodeInstruction(OpCodes.Ldc_I4, 65535),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) })),
+                        new CodeInstruction(OpCodes.Conv_U2),
+                        new CodeInstruction(OpCodes.Ret)
+                    });
+                    break;
                 }
-            }
-
-            if (insertionIndex != -1) {
-                codes.InsertRange(insertionIndex, new CodeInstruction[] {
-                    /* The following instructions injects the following snippet into WeatherManager::CalculateSelfHeight()
-                        if (TreeAnarchyConfig.TreeEffectOnWind)   //My Additions to overide tree effects.
-                        {
-                            return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
-                        }
-                    */
-                    new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind))),
-                    new CodeInstruction(OpCodes.Brfalse_S, returnTreeManagerLabel),
-                    new CodeInstruction(OpCodes.Ldloc_S, num2),
-                    new CodeInstruction(OpCodes.Ldloc_S, a),
-                    new CodeInstruction(OpCodes.Add),
-                    new CodeInstruction(OpCodes.Ldc_I4_1),
-                    new CodeInstruction(OpCodes.Shr),
-                    new CodeInstruction(OpCodes.Ldc_I4_0),
-                    new CodeInstruction(OpCodes.Ldc_I4, 65535),
-                    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) })),
-                    new CodeInstruction(OpCodes.Conv_U2),
-                    new CodeInstruction(OpCodes.Ret)
-                });
             }
 
             return codes.AsEnumerable();
         }
 
-        private const int MAX_MAP_TREES = 250000;
+        private const int MAX_MAPEDITOR_TREES = 250000;
         private const int MAX_MAP_TREES_CEILING = DefaultTreeLimit - 5;
         private static IEnumerable<CodeInstruction> CheckLimitsTranspiler(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
-                if (instruction.Is(OpCodes.Ldc_I4, MAX_MAP_TREES))
+                if (instruction.Is(OpCodes.Ldc_I4, MAX_MAPEDITOR_TREES))
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckLowLimit)));
                 else if (instruction.Is(OpCodes.Ldc_I4, MAX_MAP_TREES_CEILING))
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(CheckHighLimit)));
@@ -101,10 +97,12 @@ namespace TreeAnarchy.Patches {
             return codes.AsEnumerable();
         }
 
+        private static int treeCount = 0;
         public static void CustomSetPosY(TreeInstance[] trees, int treeID) {
             if ((trees[treeID].m_flags & 32) == 0) {
                 trees[treeID].m_posY = 0;
             }
+            treeCount++;
         }
 
         private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
@@ -125,7 +123,11 @@ namespace TreeAnarchy.Patches {
                 } else if (!thirdSig && codes[i].Calls(AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version)))) {
                     while (++i < codes.Count) {
                         if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
+                            List<Label> labels = codes[i].labels;
+                            CodeInstruction LdLoc_1 = new CodeInstruction(OpCodes.Ldloc_1).WithLabels(codes[i].labels);
+                            codes[i] = new CodeInstruction(OpCodes.Ldc_I4_1);
                             codes.InsertRange(i, new CodeInstruction[] {
+                                LdLoc_1,
                                 new CodeInstruction(OpCodes.Call, integratedDeserialize),
                                 new CodeInstruction(OpCodes.Ldloc_0),
                                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
@@ -166,7 +168,7 @@ namespace TreeAnarchy.Patches {
                 try {
                     Singleton<TreeManager>.instance.ReleaseTree(treeID);
                 } catch {
-                    Debug.Log($"TreeAnarchy: Error occured releasing tree during prefab initialization");
+                    TALog("Error occured releasing tree during prefab initialization");
                 }
                 break;
             case ReplaceTree:
@@ -188,7 +190,7 @@ namespace TreeAnarchy.Patches {
                     return true;
                 }
             } catch {
-                Debug.Log("TreeAnarchy: Exception occured during valiidate tree prefab. This is harmless");
+                TALog("Exception occured during valiidate tree prefab. This is harmless");
             }
             return false;
         }
@@ -217,30 +219,23 @@ namespace TreeAnarchy.Patches {
         }
 
         private static IEnumerable<CodeInstruction> AfterDeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int insertIndex = -1;
             bool firstSig = false;
             bool secondSig = false;
             Label isOldFormatExit = il.DefineLabel();
             var codes = instructions.ToList();
 
-            var snippet = new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.OldAfterDeserializeHandler))),
-                new CodeInstruction(OpCodes.Brtrue, isOldFormatExit)
-            };
-
             for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 2].opcode == OpCodes.Br && !firstSig) {
-                    insertIndex = i;
+                if (!firstSig && codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 2].opcode == OpCodes.Br) {
+                    codes.InsertRange(i, new CodeInstruction[] {
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.OldAfterDeserializeHandler))),
+                        new CodeInstruction(OpCodes.Brtrue, isOldFormatExit)
+                    });
                     firstSig = true;
-                }
-                if (codes[i].opcode == OpCodes.Ldloc_0 && codes[i + 1].opcode == OpCodes.Ldloc_0 && !secondSig) {
+                } else if (!secondSig && codes[i].opcode == OpCodes.Ldloc_0 && codes[i + 1].opcode == OpCodes.Ldloc_0) {
                     codes[i].WithLabels(isOldFormatExit);
                     secondSig = true;
                     break;
                 }
-            }
-            if (insertIndex > 0) {
-                codes.InsertRange(insertIndex, snippet);
             }
 
             return codes.AsEnumerable();
@@ -266,7 +261,7 @@ namespace TreeAnarchy.Patches {
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(ColossalFramework.IO.DataSerializer), nameof(ColossalFramework.IO.DataSerializer.WriteUInt24)))
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(DataSerializer), nameof(DataSerializer.WriteUInt24)))
             });
 
             return codes.AsEnumerable();
@@ -282,7 +277,28 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal void InjectResize(Harmony harmony) {
+        public static int BeginRenderSkipCount = 0;
+        private static IEnumerable<CodeInstruction> BeginRenderingImplTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            Label CountExpired = il.DefineLabel();
+            var codes = instructions.ToList();
+
+            codes[0].WithLabels(CountExpired);
+            codes.InsertRange(0, new CodeInstruction[] {
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TreeLimit), nameof(BeginRenderSkipCount))),
+                new CodeInstruction(OpCodes.Dup),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Add),
+                new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(TreeLimit), nameof(BeginRenderSkipCount))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(BeginSkipFrameCount))),
+                new CodeInstruction(OpCodes.Rem),
+                new CodeInstruction(OpCodes.Brfalse_S, CountExpired),
+                new CodeInstruction(OpCodes.Ret),
+            });
+
+            return codes.AsEnumerable();
+        }
+
+        private void InjectTreeLimit(Harmony harmony) {
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
 
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
@@ -309,23 +325,25 @@ namespace TreeAnarchy.Patches {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(NRMTreesModifiedTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CheckLimitsTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeManager), @"Awake"),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(AwakeTranspiler))));
         }
 
         static bool isTranspilerPatched = false;
         internal void Enable(Harmony harmony) {
             try {
                 if (!isTranspilerPatched) {
-                    InjectResize(harmony);
+                    InjectTreeLimit(harmony);
                     harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.CalculateSelfHeightTranspiler))));
-                    harmony.Patch(AccessTools.Method(typeof(TreeManager), @"Awake"),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.AwakeTranspiler))));
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CalculateSelfHeightTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.DeserializeTranspiler))));
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(DeserializeTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.SerializeTranspiler))));
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(SerializeTranspiler))));
                     harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.AfterDeserializeTranspiler))));
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(AfterDeserializeTranspiler))));
+                    harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(BeginRenderingImplTranspiler))));
                     isTranspilerPatched = true;
                 }
             } catch (Exception e) {
@@ -333,13 +351,16 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        internal static void EnsureCapacity(TreeManager manager) {
+        public static void EnsureCapacity(TreeManager manager) {
+            TALog($"Begin -- TreeManager::BufferSize={manager.m_trees.m_buffer.Length}, MaxTreeLimit={MaxTreeLimit}");
             if (manager.m_trees.m_buffer.Length != MaxTreeLimit) {
                 manager.m_trees = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 manager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
+                Array.Clear(manager.m_trees.m_buffer, 0, manager.m_trees.m_buffer.Length);
                 manager.m_trees.CreateItem(out uint _);
                 Singleton<TreeScaleManager>.instance.ResizeBuffer(MaxTreeLimit);
             }
+            TALog($"End -- TreeManager::BufferSize={manager.m_trees.m_buffer.Length}, MaxTreeLimit={MaxTreeLimit}");
         }
     }
 }
