@@ -65,6 +65,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TAMerger.cs" />
+    <Compile Include="Patches\TreeAnarchy.cs" />
     <Compile Include="TALocale.cs" />
     <Compile Include="TAKeyBinding.cs" />
     <Compile Include="Patches\TreeVariation.cs" />
@@ -99,6 +101,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Localization\TreeAnarchy.ms.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\LockForestryDisabled.png" />
+    <EmbeddedResource Include="Resources\LockForestryEnabled.png" />
+    <EmbeddedResource Include="Resources\TreeSnapDisabled.png" />
+    <EmbeddedResource Include="Resources\TreeSnapEnabled.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

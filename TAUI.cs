@@ -1,102 +1,185 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
 using System;
+using System.IO;
+using System.Reflection;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
-    internal class TAUI {
+    internal static class TAUI {
         private const float MaxScaleFactor = 8.0f;
         private const float MinScaleFactor = 1.5f;
         internal const float DefaultFontScale = 0.95f;
         internal const float SmallFontScale = 0.85f;
+        private const string TREESNAPSPRITENAME = "TreeSnap";
+        private const string LOCKFORESTRYSPRITENAME = "LockForestry";
 
         internal const string MainOptionPanelName = "MainOptionContainer";
         internal const string TreeSnapPanelName = "TreeSnapContainer";
         internal const string TreeSnapCBName = "TreeSnapCB";
         internal const string LockForestryCBName = "LockForestryCB";
+        internal const uint TREESNAPID = 0x0000;
+        internal const uint LOCKFORESTRYID = 0x0001;
 
-        private UITabstrip tabBar = default;
-        private UILabel MaxTreeLabel = default;
-        private UILabel WindEffectLabel = default;
-        private UILabel TreeSnapLabel = default;
-        private UICheckBox WindEffect = default;
-        private UICheckBox TreeSnapCB = default;
-        private UICheckBox ExperimentalTreeSnap = default;
-        private UIPanel TreeSnapOptionsPanel = default;
-        private UICheckBox TreeSnapToBuilding = default;
-        private UICheckBox TreeSnapToNetwork = default;
-        private UICheckBox TreeSnapToProp = default;
-        private UICheckBox TreeRotation = default;
-        private UICheckBox LockForestryCB = default;
-        private UICheckBox PersistentLock = default;
-        private UISlider TreeSwayFactor = default;
-        private UISlider TreeScaleFactor = default;
-        private UIDropDown RemoveReplaceDropDown = default;
+        private static UITabstrip tabBar = default;
+        private static UILabel MaxTreeLabel = default;
+        public static UICheckBox TreeSnapCB = default;
+        public static UICheckBox LockForestryCB = default;
+        private static UISlider TreeScaleFactor;
 
-        private void OnTreeWindCheckChanged(UIComponent _, bool isChecked) {
+        /* Main Indicator Panel data */
+        internal static UIPanel mainUIPanel;
+        private static UIPanel treeSnapIndicator;
+        private static UIPanel treeAnarchyIndicator;
+        private static UIPanel lockForestryIndicator;
+
+        private static void OnTreeWindCheckChanged(UIComponent _, bool isChecked) {
             TreeEffectOnWind = isChecked;
             SaveSettings();
         }
-        private void OnTreeSnapCheckChanged(UIComponent _, bool isChecked) {
+        private static void OnTreeSnapCheckChanged(UIComponent _, bool isChecked) {
             UseTreeSnapping = isChecked;
             if (TAPatcher.MoveItUseTreeSnap != null) {
                 TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
             }
             SaveSettings();
         }
-        private void OnExperimentalTreeSnapCheckChanged(UIComponent _, bool isChecked) {
-            UseExperimentalTreeSnapping = isChecked;
-            if (isChecked) {
-                TreeSnapOptionsPanel.Show();
-            } else {
-                TreeSnapOptionsPanel.Hide();
-            }
-            SaveSettings();
-        }
-        private void OnTreeSnapToBuildingCheckChanged(UIComponent _, bool isChecked) {
-            UseTreeSnapToBuilding = isChecked;
-            SaveSettings();
-        }
-        private void OnTreeSnapToNetworkCheckChanged(UIComponent _, bool isChecked) {
-            UseTreeSnapToNetwork = isChecked;
-            SaveSettings();
-        }
-        private void OnTreeSnapToPropCheckChanged(UIComponent _, bool isChecked) {
-            UseTreeSnapToProp = isChecked;
-            SaveSettings();
-        }
-        private void OnTreeRotationCheckChanged(UIComponent _, bool isChecked) {
+        private static void OnTreeRotationCheckChanged(UIComponent _, bool isChecked) {
             RandomTreeRotation = isChecked;
             if (RandomTreeRotation) RandomTreeRotationFactor = 1000;
             else RandomTreeRotationFactor = 0;
             SaveSettings();
         }
-        private void OnTreeSwayFactorChanged(UIComponent _, float val) {
+        private static void OnTreeSwayFactorChanged(UIComponent _, float val) {
             TAMod.TreeSwayFactor = val;
             if (IsInGame) Patches.TreeMovement.UpdateTreeSway();
             SaveSettings();
         }
-        private void OnLockForestryCheckChanged(UIComponent _, bool isChecked) {
+        private static void OnLockForestryCheckChanged(UIComponent _, bool isChecked) {
             UseLockForestry = isChecked;
             SaveSettings();
         }
-        private void OnPersistentLockCheckChanged(UIComponent _, bool isChecked) {
+        private static void OnPersistentLockCheckChanged(UIComponent _, bool isChecked) {
             PersistentLockForestry = isChecked;
             SaveSettings();
         }
-        private void OnTreeScaleFactorChanged(UIComponent _, float val) {
+        private static void OnTreeScaleFactorChanged(UIComponent _, float val) {
             TAMod.TreeScaleFactor = val;
             MaxTreeLabel.text = String.Format(SingletonLite<TALocale>.instance.GetLocale("MaxTreeLimit"), MaxTreeLimit);
             SaveSettings();
         }
 
-        private void OnReplaceRemoveKeepEventChanged(UIComponent _, int val) {
+        private static void OnReplaceRemoveKeepEventChanged(UIComponent _, int val) {
             RemoveReplaceOrKeep = val;
             SaveSettings();
         }
 
-        internal UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
+        private static void OnIndicatorCheckChanged(UIComponent _, bool isChecked) {
+            ShowIndicators = isChecked;
+            SaveSettings();
+        }
+
+        private static void SetIndicatorImpl(bool isEnabled, UIPanel indicator) {
+            if (isEnabled) {
+                indicator.backgroundSprite = indicator.stringUserData + "Enabled";
+                return;
+            }
+            indicator.backgroundSprite = indicator.stringUserData + "Disabled";
+        }
+
+        public static void SetIndicator(bool isEnabled, uint typeID) {
+            switch (typeID) {
+            case TREESNAPID: SetIndicatorImpl(isEnabled, treeSnapIndicator); break;
+            case LOCKFORESTRYID: SetIndicatorImpl(isEnabled, lockForestryIndicator); break;
+            }
+        }
+
+        private static void Indicator_Clicked(UIComponent component, UIMouseEventParameter eventParam) {
+            switch (component.objectUserData) {
+            case TREESNAPID:
+                UseTreeSnapping = !UseTreeSnapping;
+                SetIndicatorImpl(UseTreeSnapping, component as UIPanel);
+                break;
+            case LOCKFORESTRYID:
+                UseLockForestry = !UseLockForestry;
+                SetIndicatorImpl(UseLockForestry, component as UIPanel);
+                break;
+            }
+        }
+
+        private static UIPanel CreateIndicator(UIPanel anchor, uint id, string sprite, string name) {
+            UIPanel ind;
+            ind = mainUIPanel.AddUIComponent<UIPanel>();
+            ind.atlas = CreateTextureAtlas("TA" + name.Replace(" ", "") + "Atlas", new string[] { sprite + @"Enabled", sprite + @"Disabled" });
+            ind.size = new Vector3(24, 24);
+            ind.eventClicked += Indicator_Clicked;
+            ind.playAudioEvents = true;
+            ind.name = sprite;
+            ind.stringUserData = sprite;
+            ind.objectUserData = id;
+            ind.relativePosition = anchor is null ? Vector3.zero : new Vector3(anchor.relativePosition.x + anchor.width, 0);
+            return ind;
+        }
+
+        private const int MainPanelWidth = 80;
+        private const int MainPanelHeight = 24;
+        internal static void CreateMainUI() {
+            mainUIPanel = UIView.GetAView().AddUIComponent(typeof(UIPanel)) as UIPanel;
+            mainUIPanel.name = @"TreeAnarchyPanel";
+            mainUIPanel.size = new Vector3(MainPanelWidth, MainPanelHeight);
+
+            UIPanel refPanel = UIView.GetAView().FindUIComponent<UIPanel>(@"Demand");
+            mainUIPanel.relativePosition = refPanel.absolutePosition + new Vector3(refPanel.width + 10, refPanel.height * 0.5f - 12);
+
+            treeSnapIndicator = CreateIndicator(null, TREESNAPID, TREESNAPSPRITENAME, "Tree Snapping");
+            SetIndicatorImpl(UseTreeSnapping, treeSnapIndicator);
+            treeSnapIndicator.tooltip = "Tree Snapping";
+            lockForestryIndicator = CreateIndicator(treeSnapIndicator, LOCKFORESTRYID, LOCKFORESTRYSPRITENAME, "Lock Forestry");
+            SetIndicatorImpl(UseLockForestry, lockForestryIndicator);
+            lockForestryIndicator.tooltip = "Lock Forestry";
+        }
+
+
+        private const int spriteMaxSize = 32;
+        private static UITextureAtlas CreateTextureAtlas(string atlasName, string[] spriteNames) {
+            Texture2D texture2D = new Texture2D(spriteMaxSize, spriteMaxSize, TextureFormat.ARGB32, false);
+            Texture2D[] textures = new Texture2D[spriteNames.Length];
+
+            for (int i = 0; i < spriteNames.Length; i++) {
+                textures[i] = LoadTextureFromAssembly(spriteNames[i] + ".png");
+            }
+
+            Rect[] regions = texture2D.PackTextures(textures, 2, spriteMaxSize);
+
+            UITextureAtlas textureAtlas = ScriptableObject.CreateInstance<UITextureAtlas>();
+            Material material = UnityEngine.Object.Instantiate(UIView.GetAView().defaultAtlas.material);
+            material.mainTexture = texture2D;
+            textureAtlas.material = material;
+            textureAtlas.name = atlasName;
+
+            for (int i = 0; i < spriteNames.Length; i++) {
+                UITextureAtlas.SpriteInfo item = new UITextureAtlas.SpriteInfo {
+                    name = spriteNames[i],
+                    texture = textures[i],
+                    region = regions[i],
+                };
+                textureAtlas.AddSprite(item);
+            }
+            return textureAtlas;
+        }
+
+        private static Texture2D LoadTextureFromAssembly(string filename) {
+            UnmanagedMemoryStream s = (UnmanagedMemoryStream)Assembly.GetExecutingAssembly().GetManifestResourceStream("TreeAnarchy.Resources." + filename);
+            byte[] buf = new byte[s.Length];
+            s.Read(buf, 0, buf.Length);
+            Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
+            texture2D.LoadImage(buf);
+            texture2D.Compress(true);
+            return texture2D;
+        }
+
+        private static UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
             UIButton tabButton = tabStrip.AddTab(tabName);
 
             tabButton.normalBgSprite = "SubBarButtonBase";
@@ -120,9 +203,12 @@ namespace TreeAnarchy {
             return rootPanel;
         }
 
-        internal void InitializeOptionPanel(UIHelper helper) {
+        internal static void InitializeOptionPanel(UIHelper helper) {
             TALocale locale = SingletonLite<TALocale>.instance;
             UIPanel rootPanel = (UIPanel)helper.self;
+            if (!(tabBar is null)) {
+                UnityEngine.Object.Destroy(tabBar);
+            }
             tabBar = rootPanel.AddUIComponent<UITabstrip>();
             tabBar.relativePosition = new Vector3(0, 0);
             UITabContainer tabContainer = rootPanel.AddUIComponent<UITabContainer>();
@@ -146,45 +232,44 @@ namespace TreeAnarchy {
             UIPanel treesnapPanel = AddTab(tabBar, locale.GetLocale("TreeSnappingTab"), 1, true);
             treesnapPanel.cachedName = TreeSnapPanelName;
             UIHelper treesnapHelper = new UIHelper(treesnapPanel);
-            ShowTreeSnappingOptions(treesnapHelper);
+            ShowTreeAnarchyOptions(treesnapHelper);
 
             AddTab(tabBar, locale.GetLocale("KeyboardShortcutTab"), 2, true).gameObject.AddComponent<TAKeyBinding>();
         }
 
-        internal void ShowStandardOptions(UIHelper option) {
+        private static void ShowStandardOptions(UIHelper option) {
             TALocale locale = SingletonLite<TALocale>.instance;
-            UILabel swayLabel = default;
             UIPanel panel = (UIPanel)option.self;
-            AddCheckBox(ref panel, ref WindEffect, locale.GetLocale("WindEffect"), TreeEffectOnWind, OnTreeWindCheckChanged);
-            AddLabel(ref panel, WindEffect, ref WindEffectLabel, SmallFontScale, locale.GetLocale("WindEffectLabel"));
-            AddCheckBox(ref panel, ref TreeRotation, locale.GetLocale("RandomTreeRotation"), RandomTreeRotation, OnTreeRotationCheckChanged);
+            _ = AddCheckBox(panel, "Enable in game indicators", ShowIndicators, OnIndicatorCheckChanged);
+            UICheckBox WindEffect = AddCheckBox(panel, locale.GetLocale("WindEffect"), TreeEffectOnWind, OnTreeWindCheckChanged);
+            _ = AddLabel(panel, WindEffect, SmallFontScale, locale.GetLocale("WindEffectLabel"));
+            UICheckBox TreeRotation = AddCheckBox(panel, locale.GetLocale("RandomTreeRotation"), RandomTreeRotation, OnTreeRotationCheckChanged);
             TreeRotation.width = 300;
             UIPanel SwayPanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             UILabel SwayFactorLabel = SwayPanel.Find<UILabel>("Label");
             SwayFactorLabel.text = locale.GetLocale("TreeSwayFactor");
+            SwayFactorLabel.textScale = DefaultFontScale;
             SwayFactorLabel.width += 50;
-            AddSlider(ref SwayPanel, ref TreeSwayFactor, 0f, 1f, 0.1f, TAMod.TreeSwayFactor, OnTreeSwayFactorChanged);
+            SwayFactorLabel.Disable();
+            UISlider TreeSwayFactor = AddSlider(SwayPanel, 0f, 1f, 0.1f, TAMod.TreeSwayFactor, OnTreeSwayFactorChanged);
             SwayPanel.AlignTo(TreeRotation, UIAlignAnchor.TopRight);
-            SwayPanel.relativePosition = new Vector3(320, -5);
+            SwayPanel.relativePosition = new Vector3(320, 0);
             TreeSwayFactor.width += 40;
-            AddCheckBox(ref panel, ref LockForestryCB, locale.GetLocale("LockForestry"), UseLockForestry, OnLockForestryCheckChanged);
+            LockForestryCB = AddCheckBox(panel, locale.GetLocale("LockForestry"), UseLockForestry, OnLockForestryCheckChanged);
             LockForestryCB.cachedName = LockForestryCBName;
             LockForestryCB.name = LockForestryCBName;
             LockForestryCB.width = 300;
-            AddCheckBox(ref panel, ref PersistentLock, locale.GetLocale("PersistentLock"), PersistentLockForestry, OnPersistentLockCheckChanged);
-            AddLabel(ref panel, PersistentLock, ref swayLabel, SmallFontScale, locale.GetLocale("SwayLabel"));
-            SwayPanel.zOrder = TreeRotation.zOrder - 1;
+            UICheckBox PersistentLock = AddCheckBox(panel, locale.GetLocale("PersistentLock"), PersistentLockForestry, OnPersistentLockCheckChanged);
+            _ = AddLabel(panel, PersistentLock, SmallFontScale, locale.GetLocale("SwayLabel"));
+            SwayPanel.BringToFront();
         }
 
-        internal float ShowTreeLimitOption(UIHelper option) {
+        private static float ShowTreeLimitOption(UIHelper option) {
             float totalHeight = 0;
-            UILabel ImportantMsg = default;
-            UILabel ReplaceRemoveLabel = default;
-            UILabel MaxTreeTitle = default;
             UIPanel panel = (UIPanel)option.self;
             TALocale locale = SingletonLite<TALocale>.instance;
 
-            MaxTreeTitle = panel.AddUIComponent<UILabel>();
+            UILabel MaxTreeTitle = panel.AddUIComponent<UILabel>();
             MaxTreeTitle.AlignTo(panel, UIAlignAnchor.BottomLeft);
             MaxTreeTitle.width = panel.width - 80;
             MaxTreeTitle.wordWrap = true;
@@ -192,8 +277,6 @@ namespace TreeAnarchy {
             MaxTreeTitle.textScale = 1.15f;
             MaxTreeTitle.text = locale.GetLocale("MaxTreeLimitTitle");
             MaxTreeTitle.relativePosition = new Vector3(25, 25);
-
-            //MaxTreeTitle.height -= 20;
             totalHeight += MaxTreeTitle.height;
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>("Label");
@@ -202,56 +285,30 @@ namespace TreeAnarchy {
             MaxTreeLabel.autoHeight = true;
             MaxTreeLabel.text = String.Format(locale.GetLocale("MaxTreeLimit"), MaxTreeLimit);
             totalHeight += MaxTreeLabel.height;
-            AddSlider(ref ScalePanel, ref TreeScaleFactor, MinScaleFactor, MaxScaleFactor, 0.5f, TAMod.TreeScaleFactor, OnTreeScaleFactorChanged);
+            TreeScaleFactor = AddSlider(ScalePanel, MinScaleFactor, MaxScaleFactor, 0.5f, TAMod.TreeScaleFactor, OnTreeScaleFactorChanged);
             TreeScaleFactor.width = panel.width - 150;
             totalHeight += TreeScaleFactor.height;
-            AddLabel(ref panel, ScalePanel, ref ImportantMsg, DefaultFontScale, locale.GetLocale("Important"));
-            totalHeight += ImportantMsg.height;
-            AddDropdown(ref panel, ref RemoveReplaceDropDown, locale.GetLocale("ReplaceRemoveName"),
+            totalHeight += AddLabel(panel, ScalePanel, DefaultFontScale, locale.GetLocale("Important")).height;
+            UIDropDown RemoveReplaceDropDown = AddDropdown(panel, locale.GetLocale("ReplaceRemoveName"),
                 new string[] { locale.GetLocale("ReplaceRemoveDropdown0"), locale.GetLocale("ReplaceRemoveDropdown1"), locale.GetLocale("ReplaceRemoveDropdown2") },
                 0, OnReplaceRemoveKeepEventChanged);
             totalHeight += RemoveReplaceDropDown.height;
-            AddLabel(ref panel, RemoveReplaceDropDown, ref ReplaceRemoveLabel, SmallFontScale, locale.GetLocale("ReplaceRemoveDesc"));
+            UILabel ReplaceRemoveLabel = AddLabel(panel, RemoveReplaceDropDown, SmallFontScale, locale.GetLocale("ReplaceRemoveDesc"));
             ReplaceRemoveLabel.relativePosition = new Vector3(0, RemoveReplaceDropDown.height + 5);
             totalHeight += ReplaceRemoveLabel.height;
             return totalHeight;
         }
 
-        internal void ShowTreeSnappingOptions(UIHelper option) {
-            UILabel treeSnapToPropLabel = default;
-            UILabel treeSnapToBuildingLabel = default;
-            UILabel ExperimentalTreeSnapLabel = default;
+        private static void ShowTreeAnarchyOptions(UIHelper option) {
             UIPanel panel = (UIPanel)option.self;
             TALocale locale = SingletonLite<TALocale>.instance;
-            AddCheckBox(ref panel, ref TreeSnapCB, locale.GetLocale("TreeSnap"), UseTreeSnapping, OnTreeSnapCheckChanged);
+            TreeSnapCB = AddCheckBox(panel, locale.GetLocale("TreeSnap"), UseTreeSnapping, OnTreeSnapCheckChanged);
             TreeSnapCB.cachedName = TreeSnapCBName;
             TreeSnapCB.name = TreeSnapCBName;
-            AddLabel(ref panel, TreeSnapCB, ref TreeSnapLabel, SmallFontScale, locale.GetLocale("TreeSnapLabel"));
-            AddCheckBox(ref panel, ref ExperimentalTreeSnap, locale.GetLocale("ExperimentalTreeSnap"), UseExperimentalTreeSnapping, OnExperimentalTreeSnapCheckChanged);
-            AddLabel(ref panel, ExperimentalTreeSnap, ref ExperimentalTreeSnapLabel, SmallFontScale, locale.GetLocale("ExperimentalTreeSnapLabel"));
-
-            TreeSnapOptionsPanel = panel.AddUIComponent<UIPanel>();
-            if (UseExperimentalTreeSnapping) {
-                TreeSnapOptionsPanel.Show();
-            } else {
-                TreeSnapOptionsPanel.Hide();
-            }
-            TreeSnapOptionsPanel.width = panel.width - 50;
-            TreeSnapOptionsPanel.autoLayoutPadding.top = 5;
-            TreeSnapOptionsPanel.autoLayoutPadding.left = 10;
-            TreeSnapOptionsPanel.autoLayoutPadding.right = 10;
-            TreeSnapOptionsPanel.autoLayout = true;
-            TreeSnapOptionsPanel.autoFitChildrenVertically = true;
-            TreeSnapOptionsPanel.autoLayoutDirection = LayoutDirection.Vertical;
-            UIHelper treeSnapOptionsHelper = new UIHelper(TreeSnapOptionsPanel);
-            AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToBuilding, locale.GetLocale("TreeSnapToBuilding"), UseTreeSnapToBuilding, OnTreeSnapToBuildingCheckChanged);
-            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToBuilding, ref treeSnapToBuildingLabel, SmallFontScale, locale.GetLocale("TreeSnapToBuildingLabel"));
-            AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToNetwork, locale.GetLocale("TreeSnapToNetwork"), UseTreeSnapToNetwork, OnTreeSnapToNetworkCheckChanged);
-            AddCheckBox(ref TreeSnapOptionsPanel, ref TreeSnapToProp, locale.GetLocale("TreeSnapToProp"), UseTreeSnapToProp, OnTreeSnapToPropCheckChanged);
-            AddLabel(ref TreeSnapOptionsPanel, TreeSnapToProp, ref treeSnapToPropLabel, SmallFontScale, locale.GetLocale("TreeSnapToPropLabel"));
+            _ = AddLabel(panel, TreeSnapCB, SmallFontScale, locale.GetLocale("TreeSnapLabel"));
         }
 
-        private void UpdateState(bool isInGame) {
+        private static void UpdateState(bool isInGame) {
             if (isInGame) {
                 TreeScaleFactor.Disable();
                 return;
@@ -259,17 +316,19 @@ namespace TreeAnarchy {
             TreeScaleFactor.Enable();
         }
 
-        private void AddCheckBox(ref UIPanel panel, ref UICheckBox cb, string name, bool defaultVal, PropertyChangedEventHandler<bool> callback) {
-            cb = (UICheckBox)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsCheckBoxTemplate"));
+        private static UICheckBox AddCheckBox(UIPanel panel, string name, bool defaultVal, PropertyChangedEventHandler<bool> callback) {
+            UICheckBox cb = (UICheckBox)panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsCheckBoxTemplate"));
             cb.isChecked = defaultVal;
             cb.autoSize = true;
             cb.text = name;
             cb.eventCheckChanged += new PropertyChangedEventHandler<bool>(callback);
             cb.height += 10;
             panel.height += cb.height;
+            return cb;
         }
-        private void AddLabel(ref UIPanel panel, UIComponent alignTo, ref UILabel label, float fontScale, string text) {
-            label = panel.AddUIComponent<UILabel>();
+
+        private static UILabel AddLabel(UIPanel panel, UIComponent alignTo, float fontScale, string text) {
+            UILabel label = panel.AddUIComponent<UILabel>();
             label.AlignTo(alignTo, UIAlignAnchor.BottomLeft);
             label.width = panel.width - 80;
             label.wordWrap = true;
@@ -282,29 +341,33 @@ namespace TreeAnarchy {
             space.isInteractive = false;
             space.height = label.height;
             panel.height += label.height;
+            return label;
         }
-        private void AddSlider(ref UIPanel panel, ref UISlider slider, float min, float max, float step, float defaultVal, PropertyChangedEventHandler<float> callback) {
-            slider = panel.Find<UISlider>("Slider");
+
+        private static UISlider AddSlider(UIPanel panel, float min, float max, float step, float defaultVal, PropertyChangedEventHandler<float> callback) {
+            UISlider slider = panel.Find<UISlider>("Slider");
             slider.minValue = min;
             slider.maxValue = max;
             slider.stepSize = step;
             slider.value = defaultVal;
             slider.eventValueChanged += new PropertyChangedEventHandler<float>(callback);
             panel.height += slider.height;
+            return slider;
         }
 
-        private void AddDropdown(ref UIPanel panel, ref UIDropDown dropDown, string text, string[] options, int defaultSelection, PropertyChangedEventHandler<int> callback) {
+        private static UIDropDown AddDropdown(UIPanel panel, string text, string[] options, int defaultSelection, PropertyChangedEventHandler<int> callback) {
             UIPanel uiPanel = panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsDropdownTemplate")) as UIPanel;
             uiPanel.Find<UILabel>("Label").text = text;
-            dropDown = uiPanel.Find<UIDropDown>("Dropdown");
+            UIDropDown dropDown = uiPanel.Find<UIDropDown>("Dropdown");
             dropDown.width = 300;
             dropDown.items = options;
             dropDown.selectedIndex = defaultSelection;
             dropDown.eventSelectedIndexChanged += new PropertyChangedEventHandler<int>(callback);
             panel.height += dropDown.height;
+            return dropDown;
         }
 
-        internal void SetTreeLimitSlider(float value) {
+        internal static void SetTreeLimitSlider(float value) {
             TreeScaleFactor.value = value;
             SaveSettings();
         }
