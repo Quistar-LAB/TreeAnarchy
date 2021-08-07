@@ -66,6 +66,7 @@ namespace TreeAnarchy.Patches {
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SampleSnapDetailHeight)))
                     });
+                    break;
                 }
             }
 
@@ -151,6 +152,7 @@ namespace TreeAnarchy.Patches {
                     if (codes[i + 1].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
                         codes[i] = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
                     }
+                    break;
                 }
             }
 
