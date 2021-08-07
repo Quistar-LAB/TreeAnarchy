@@ -148,7 +148,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 2),
@@ -173,7 +172,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 3),
@@ -198,7 +196,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 4),
@@ -223,7 +220,6 @@ namespace TreeAnarchy.Patches {
                     break;
                 }
             }
-
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
             codes.InsertRange(firstIndex, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldloca_S, 4),
