@@ -32,18 +32,18 @@ namespace TreeAnarchy {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
                 Event e = Event.current;
                 if (m_treeSnapping.IsPressed(e)) {
-                    if (UseTreeSnapping) UseTreeSnapping = false;
-                    else UseTreeSnapping = true;
+                    UseTreeSnapping = !UseTreeSnapping;
                     if (TAPatcher.isMoveItBeta && TAPatcher.MoveItUseTreeSnap != null) {
                         TAPatcher.MoveItUseTreeSnap.SetValue(null, UseTreeSnapping);
                     }
-                    component.GetComponentInParent<UITabContainer>().Find<UICheckBox>(TAUI.TreeSnapCBName).isChecked = UseTreeSnapping;
+                    TAUI.TreeSnapCB.isChecked = UseTreeSnapping;
+                    TAUI.SetIndicator(UseTreeSnapping, TAUI.TREESNAPID);
                     SaveSettings();
                 }
                 if (m_lockForestry.IsPressed(e)) {
-                    if (UseLockForestry) UseLockForestry = false;
-                    else UseLockForestry = true;
-                    component.GetComponentInParent<UITabContainer>().Find<UICheckBox>(TAUI.LockForestryCBName).isChecked = UseLockForestry;
+                    UseLockForestry = !UseLockForestry;
+                    TAUI.LockForestryCB.isChecked = UseLockForestry;
+                    TAUI.SetIndicator(UseLockForestry, TAUI.LOCKFORESTRYID);
                     SaveSettings();
                 }
                 if (IsCustomPressed(m_incrTreeVariation, e)) {
