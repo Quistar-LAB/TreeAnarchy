@@ -4,7 +4,6 @@ using ICities;
 using System;
 using System.IO;
 using System.Threading;
-using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 using static TreeAnarchy.TAOldDataSerializer;
@@ -66,7 +65,7 @@ namespace TreeAnarchy {
                 }
                 newArray = tmInstance.m_trees;
                 treeBuffer = tmInstance.m_trees.m_buffer;
-                treeScale = Singleton<TreeScaleManager>.instance.m_treeScales;
+                treeScale = SingletonLite<TAManager>.instance.m_treeScales;
             }
 
             private void RepackBuffer(int maxLimit, int treeCount, Format version, Array32<TreeInstance> existingTreeBuffer, float[] existingTreeScaleBuffer) {
@@ -78,7 +77,7 @@ namespace TreeAnarchy {
                         /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
                         tmInstance.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                         if (version >= Format.Version6) {
-                            SingletonLite<TreeScaleManager>.instance.m_treeScales = existingTreeScaleBuffer;
+                            SingletonLite<TAManager>.instance.m_treeScales = existingTreeScaleBuffer;
                         }
                         return; /* Just return with existing buffers */
                     }
@@ -86,7 +85,7 @@ namespace TreeAnarchy {
                     TreeInstance[] existingBuffer = existingTreeBuffer.m_buffer;
                     TreeInstance[] oldBuffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
                     float[] existingScales = existingTreeScaleBuffer;
-                    float[] oldScales = Singleton<TreeScaleManager>.instance.m_treeScales;
+                    float[] oldScales = SingletonLite<TAManager>.instance.m_treeScales;
                     /* make sure to fill in 1~262144 trees first */
                     for (int i = 1; i < DefaultTreeLimit; i++) {
                         if (existingBuffer[i].m_flags != 0) {
@@ -197,7 +196,7 @@ namespace TreeAnarchy {
                 int treeLimit = MaxTreeLimit;
                 TreeManager treeManager = Singleton<TreeManager>.instance;
                 TreeInstance[] buffer = treeManager.m_trees.m_buffer;
-                float[] treeScaleBuffer = Singleton<TreeScaleManager>.instance.m_treeScales;
+                float[] treeScaleBuffer = SingletonLite<TAManager>.instance.m_treeScales;
 
                 // Important to save treelimit as it is an adjustable variable on every load
                 s.WriteInt32(treeLimit);
@@ -292,7 +291,7 @@ namespace TreeAnarchy {
                     }
                     using var stream = new MemoryStream(data); DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
                 } else {
-                    for(int i = DefaultTreeLimit; i < trees.Length; i++) {
+                    for (int i = DefaultTreeLimit; i < trees.Length; i++) {
                         trees[i].m_flags = 0;
                     }
                 }
