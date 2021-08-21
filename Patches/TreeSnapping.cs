@@ -10,39 +10,47 @@ using System.Reflection.Emit;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
-namespace TreeAnarchy.Patches {
-    public class TreeSnapping {
+namespace TreeAnarchy {
+    internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private const float errorMargin = 0.075f;
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
-        private static bool isTranspilerPatched = false;
-        private static bool isMoveItPatched = false;
-        internal void Enable(Harmony harmony) {
-            if (!isTranspilerPatched) {
-                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalculateTreeTranspiler))));
-                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TreeToolSimulationStepTranspiler))));
-                harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.TreeToolCreateTreeTranspiler))));
-                isTranspilerPatched = true;
-            }
+        private void EnableTreeSnappingPatches(Harmony harmony) {
+            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(CalculateTreeTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepTranspiler))));
+            harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCreateTreeTranspiler))));
         }
 
-        internal void PatchMoveIt(Harmony harmony) {
-            if (!isMoveItPatched) {
-                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.MoveableTreeTransformPrefix))));
-                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneGeometryPrefix))));
-                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.RenderCloneOverlayPrefix))));
-                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
-                    new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
-                    typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
-                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ClonePrefix))));
-                isMoveItPatched = true;
-            }
+        private void PatchMoveItSnapping(Harmony harmony) {
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeTransformPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneGeometryPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneOverlayPrefix))));
+            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
+                new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
+                typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ClonePrefix))));
+        }
+
+        private void DisableTreeSnappingPatches(Harmony harmony) {
+            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"), HarmonyPatchType.Transpiler, HARMONYID);
+        }
+
+        private void DisableMoveItSnappingPatches(Harmony harmony) {
+            harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)), HarmonyPatchType.Prefix, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)), HarmonyPatchType.Prefix, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
+                new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
+                typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
+                HarmonyPatchType.Prefix, HARMONYID);
         }
 
         public static float SampleSnapDetailHeight(ref TreeInstance tree, Vector3 position) {
@@ -64,7 +72,7 @@ namespace TreeAnarchy.Patches {
                     codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.SampleSnapDetailHeight)))
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)))
                     });
                     break;
                 }
@@ -107,7 +115,7 @@ namespace TreeAnarchy.Patches {
                 if (codes[i].Calls(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect)))) {
                     codes.InsertRange(i + 1, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_S, 4),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.CalcFixedHeight)))
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)))
                     });
                     break;
                 }
@@ -127,7 +135,7 @@ namespace TreeAnarchy.Patches {
                     List<Label> labels = codes[i + 1].labels;
                     var snippet = new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloca_S, raycastInput).WithLabels(labels),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeSnapping), nameof(TreeSnapping.ConfigureRaycastInput)))
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)))
                     };
                     codes[i + 1].labels.Clear();
                     codes.InsertRange(i + 1, snippet);
@@ -219,7 +227,7 @@ namespace TreeAnarchy.Patches {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = TreeVariation.GetTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
+            float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
             //float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
@@ -234,7 +242,7 @@ namespace TreeAnarchy.Patches {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
             Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = TreeVariation.GetTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
+            float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
             //float scale = treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;

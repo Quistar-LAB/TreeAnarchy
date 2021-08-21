@@ -9,8 +9,8 @@ using System.Reflection.Emit;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
-namespace TreeAnarchy.Patches {
-    public class TreeLimit {
+namespace TreeAnarchy {
+    internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
             foreach (var instruction in instructions) {
                 if (instruction.LoadsConstant(LastMaxTreeLimit))
@@ -113,7 +113,7 @@ namespace TreeAnarchy.Patches {
                 if (!firstSig && codes[i].opcode == OpCodes.Call && codes[i].operand == AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))) {
                     codes.InsertRange(i + 2, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.EnsureCapacity)))
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)))
                     });
                     firstSig = true;
                 } else if (!secondSig && codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Ldlen && codes[i + 2].opcode == OpCodes.Conv_I4 && codes[i + 3].opcode == OpCodes.Stloc_3) {
@@ -147,7 +147,7 @@ namespace TreeAnarchy.Patches {
                             codes.InsertRange(i + 1, new CodeInstruction[] {
                                 codes[i + 1],
                                 codes[i + 2],
-                                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.CustomSetPosY)))
+                                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CustomSetPosY)))
                             });
                             break;
                         }
@@ -227,7 +227,7 @@ namespace TreeAnarchy.Patches {
             for (int i = 0; i < codes.Count; i++) {
                 if (!firstSig && codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 2].opcode == OpCodes.Br) {
                     codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeLimit), nameof(TreeLimit.OldAfterDeserializeHandler))),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.OldAfterDeserializeHandler))),
                         new CodeInstruction(OpCodes.Brtrue, isOldFormatExit)
                     });
                     firstSig = true;
@@ -284,11 +284,11 @@ namespace TreeAnarchy.Patches {
 
             codes[0].WithLabels(CountExpired);
             codes.InsertRange(0, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TreeLimit), nameof(BeginRenderSkipCount))),
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount))),
                 new CodeInstruction(OpCodes.Dup),
                 new CodeInstruction(OpCodes.Ldc_I4_1),
                 new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(TreeLimit), nameof(BeginRenderSkipCount))),
+                new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount))),
                 new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(BeginSkipFrameCount))),
                 new CodeInstruction(OpCodes.Rem),
                 new CodeInstruction(OpCodes.Brfalse_S, CountExpired),
@@ -299,8 +299,7 @@ namespace TreeAnarchy.Patches {
         }
 
         private void InjectTreeLimit(Harmony harmony) {
-            HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(ReplaceLDCI4_MaxTreeLimit)));
-
+            HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ReplaceLDCI4_MaxTreeLimit)));
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), transpiler: replaceLDCI4);
@@ -322,45 +321,70 @@ namespace TreeAnarchy.Patches {
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(NRMTreesModifiedTranspiler))));
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(NRMTreesModifiedTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CheckLimitsTranspiler))));
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(CheckLimitsTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeManager), @"Awake"),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(AwakeTranspiler))));
+                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(AwakeTranspiler))));
         }
 
-        static bool isTranspilerPatched = false;
-        internal void Enable(Harmony harmony) {
+        private void EnableTreeLimitPatches(Harmony harmony) {
             try {
-                if (!isTranspilerPatched) {
-                    InjectTreeLimit(harmony);
-                    harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(CalculateSelfHeightTranspiler))));
-                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(DeserializeTranspiler))));
-                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(SerializeTranspiler))));
-                    harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(AfterDeserializeTranspiler))));
-                    harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
-                        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeLimit), nameof(BeginRenderingImplTranspiler))));
-                    isTranspilerPatched = true;
-                }
+                InjectTreeLimit(harmony);
+                harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(CalculateSelfHeightTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(DeserializeTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(SerializeTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(AfterDeserializeTranspiler))));
+                harmony.Patch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(BeginRenderingImplTranspiler))));
             } catch (Exception e) {
                 Debug.LogException(e);
             }
         }
 
+        private void DisableTreeLimitPatches(Harmony harmony) {
+            harmony.Unpatch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(DisasterHelpers), nameof(DisasterHelpers.DestroyTrees)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(FireCopterAI), @"FindBurningTree"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(ForestFireAI), @"FindClosestTree"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeTool), @"ApplyBrush"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.RayCast)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.SampleSmoothHeight)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CheckLimits)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"Awake"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), "BeginRenderingImpl"), HarmonyPatchType.Transpiler, HARMONYID);
+        }
+
         public static void EnsureCapacity(TreeManager manager) {
-            TALog($"Begin -- TreeManager::BufferSize={manager.m_trees.m_buffer.Length}, MaxTreeLimit={MaxTreeLimit}");
             if (manager.m_trees.m_buffer.Length != MaxTreeLimit) {
                 manager.m_trees = new Array32<TreeInstance>((uint)MaxTreeLimit);
                 manager.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
                 Array.Clear(manager.m_trees.m_buffer, 0, manager.m_trees.m_buffer.Length);
                 manager.m_trees.CreateItem(out uint _);
-                Singleton<TreeScaleManager>.instance.ResizeBuffer(MaxTreeLimit);
+                SingletonLite<TAManager>.instance.SetScaleBuffer(MaxTreeLimit);
             }
-            TALog($"End -- TreeManager::BufferSize={manager.m_trees.m_buffer.Length}, MaxTreeLimit={MaxTreeLimit}");
         }
     }
 }
