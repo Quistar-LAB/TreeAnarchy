@@ -7,55 +7,59 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
-    <!-- Indicator Messages -->
-    <string name="TreeSnapIsOff">樹木沿表面功能已關閉</string>
-    <string name="TreeSnapIsOn">樹木沿表面功能已開啓</string>
-    <string name="LockForestryIsOff">林業資源已解鎖</string>
-    <string name="LockForestryIsOn">林業資源已鎖定</string>
-    <string name="TreeAnarchyIsOff">樹木無碰撞已關閉</string>
-    <string name="TreeAnarchyIsOn">樹木無碰撞已開啓</string>
-    <!-- Tree Anarchy -->
-    <string name="TreeAnarchy">樹木種植限制解鎖</string>
-    <string name="TreeAnarchyDesc">此選項勾選後可無限制的任意種植樹木。當擺放道路或樓房時，可依下方選項所選方式隱藏樹木或刪除樹木</string>
-    <string name="TreeAnarchyBehaviour">與道路或樓房重叠時反應</string>
-    <string name="TreeAnarchyHideTree">隱藏樹木</string>
-    <string name="TreeAnarchyDeleteTree">刪除樹木</string>
-    <!-- Tree Resize -->
-    <string name="IncreaseTreeSize">放大樹木</string>
-    <string name="DecreaseTreeSize">縮小樹木</string>
-    <string name="PressAnyKey">按任意按鍵</string>
-    <!-- Tab Strips -->
-    <string name="MainOptionTab">主要選項</string>
-    <string name="TreeAnarchyTab">樹木限制選項</string>
-    <string name="KeyboardShortcutTab">熱鍵組合</string>
-    <string name="KeyBindDescription">建立熱鍵時，”沿表面功能“及”鎖定林業資源“需使用修饰符如：SHIFT，CONTROL，ALT等按鍵。放大樹木及縮小樹木功能這兩個熱鍵經特別處理，可不需要使用修飾符案件，但是請使用目前沒被綁定的熱鍵。</string>
-    <!-- Main options -->
-    <string name="MaxTreeLimitTitle">調整自定樹木限制</string>
-    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
-    <string name="MaxTreeLimit">最大支持樹木量： {0} 樹木</string>
-    <string name="WindEffect">調整樹木對風的影響 【初始游戲設置是開啓的】</string>
-    <string name="WindEffectLabel">這選項可調整風經樹木的大小高低而弱化的現象</string>
-    <string name="RandomTreeRotation">隨機樹木旋轉</string>
-    <string name="TreeSwayFactor">樹木搖晃因數</string>
-    <string name="LockForestry">鎖定林業資源</string>
-    <string name="PersistentLock">保持林業資源鎖定狀態</string>
-    <string name="SwayLabel">這裏是一些有用的效果及功能。鎖定林業資源可使種植樹木時避免移除農業資源。如果啓用”保持林業資源鎖定狀態“，每次重啓游戲時，”鎖定林業資源“會被啓用，並可避免進入游戲時，樹林把農業資源給毀掉</string>
-    <string name="Important">注意！此設定需在進入游戲前設定好
-    
+  <!-- Misc Trees -->
+  <string name="GroupTrees">樹木合并</string>
+  <string name="UngroupTrees">取消樹木合并</string>
+  <string name="TerrainConformTrees">地形合成樹木</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator">啓動模組畫面指示</string>
+  <string name="TreeSnapIsOff">樹木沿表面功能已關閉</string>
+  <string name="TreeSnapIsOn">樹木沿表面功能已開啓</string>
+  <string name="LockForestryIsOff">林業資源已解鎖</string>
+  <string name="LockForestryIsOn">林業資源已鎖定</string>
+  <string name="TreeAnarchyIsOff">樹木無碰撞已關閉</string>
+  <string name="TreeAnarchyIsOn">樹木無碰撞已開啓</string>
+  <!-- Tree Anarchy -->
+  <string name="TreeAnarchy">樹木種植限制解鎖</string>
+  <string name="TreeAnarchyDesc">此選項勾選後可無限制的任意種植樹木。當擺放道路或樓房時，可依下方選項所選方式隱藏樹木或刪除樹木</string>
+  <string name="TreeAnarchyBehaviour">與道路或樓房重叠時反應</string>
+  <string name="TreeAnarchyHideTree">隱藏樹木</string>
+  <string name="TreeAnarchyDeleteTree">刪除樹木</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">放大樹木</string>
+  <string name="DecreaseTreeSize">縮小樹木</string>
+  <string name="PressAnyKey">按任意按鍵</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">主要選項</string>
+  <string name="TreeAnarchyTab">樹木限制選項</string>
+  <string name="KeyboardShortcutTab">熱鍵組合</string>
+  <string name="KeyBindDescription">建立熱鍵時，”沿表面功能“及”鎖定林業資源“需使用修饰符如：SHIFT，CONTROL，ALT等按鍵。放大樹木及縮小樹木功能這兩個熱鍵經特別處理，可不需要使用修飾符案件，但是請使用目前沒被綁定的熱鍵。</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">調整自定樹木限制</string>
+  <string name="MaxTreeLimit">最大支持樹木量： {0} 樹木</string>
+  <string name="WindEffect">調整樹木對風的影響 【初始游戲設置是開啓的】</string>
+  <string name="WindEffectLabel">這選項可調整風經樹木的大小高低而弱化的現象</string>
+  <string name="RandomTreeRotation">隨機樹木旋轉</string>
+  <string name="TreeSwayFactor">樹木搖晃因數</string>
+  <string name="LockForestry">鎖定林業資源</string>
+  <string name="PersistentLock">保持林業資源鎖定狀態</string>
+  <string name="SwayLabel">這裏是一些有用的效果及功能。鎖定林業資源可使種植樹木時避免移除農業資源。如果啓用”保持林業資源鎖定狀態“，每次重啓游戲時，”鎖定林業資源“會被啓用，並可避免進入游戲時，樹林把農業資源給毀掉</string>
+  <string name="Important">注意！此設定需在進入游戲前設定好
+
 下方設定是針對載入原初舊版本無限樹木模組格式</string>
-    <string name="ReplaceRemoveDesc">當找不到樹木游戲資產時，默認處理方法是保留這些樹木。如果您選擇移除，當您載入游戲時，這些樹木就會被移除。如果您選擇替換樹木時，游戲默認第一個初始樹木會替代這些找不到的樹木</string>
-    <string name="ReplaceRemoveName">舊無限樹木格式載入模式</string>
-    <string name="ReplaceRemoveDropdown0">保留找不到的樹木</string>
-    <string name="ReplaceRemoveDropdown1">移除找不到的樹木</string>
-    <string name="ReplaceRemoveDropdown2">替換找不到的樹木</string>
-    <!-- Tree Snapping specific -->
-    <string name="TreeSnap">樹木沿表面</string>
-    <string name="TreeSnapLabel">此選項可解除樹木移動限制，進行上下左右調整，同時也可沿著大樓、道路、等表面自動調整高低</string>
-    <string name="ExperimentalTreeSnap">啓用正在測試的沿表面功能</string>
-    <string name="ExperimentalTreeSnapLabel">樹木沿表面測試碼是篡改MoveIt模組程式碼，並可讓樹木沿著大樓，道路，道具等表面自動調整高低。使用MoveIt移動樹木時，此功能可正常貼著表面自動調整高低，但使用複製功能時，在複製樹木后偏移會產生，此偏移可透過選擇其他地面樹木恢復坐標。我目前正對MoveIt模組編寫改良程式碼，但是編寫時間不多，需要時間。</string>
-    <string name="TreeSnapToBuilding">啓用此選項可讓樹木沿著大樓表面自動調整高低</string>
-    <string name="TreeSnapToBuildingLabel">樹木沿表面對於副樓無效，因爲游戲光綫投射功能不認副樓</string>
-    <string name="TreeSnapToNetwork">啓用此選項可讓樹木沿著道路表面自動調整高低</string>
-    <string name="TreeSnapToProp">啓用此選項可使樹木自動沿著道具表面自動調整高低</string>
-    <string name="TreeSnapToPropLabel">樹木沿著道具表面不是100%，因有些道具例如：Ploppable Surface沒定義正確大小定點。最後還是需要手動調整</string>
+  <string name="ReplaceRemoveDesc">當找不到樹木游戲資產時，默認處理方法是保留這些樹木。如果您選擇移除，當您載入游戲時，這些樹木就會被移除。如果您選擇替換樹木時，游戲默認第一個初始樹木會替代這些找不到的樹木</string>
+  <string name="ReplaceRemoveName">舊無限樹木格式載入模式</string>
+  <string name="ReplaceRemoveDropdown0">保留找不到的樹木</string>
+  <string name="ReplaceRemoveDropdown1">移除找不到的樹木</string>
+  <string name="ReplaceRemoveDropdown2">替換找不到的樹木</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">樹木沿表面</string>
+  <string name="TreeSnapLabel">此選項可解除樹木移動限制，進行上下左右調整，同時也可沿著大樓、道路、等表面自動調整高低</string>
+  <string name="ExperimentalTreeSnap">啓用正在測試的沿表面功能</string>
+  <string name="ExperimentalTreeSnapLabel">樹木沿表面測試碼是篡改MoveIt模組程式碼，並可讓樹木沿著大樓，道路，道具等表面自動調整高低。使用MoveIt移動樹木時，此功能可正常貼著表面自動調整高低，但使用複製功能時，在複製樹木后偏移會產生，此偏移可透過選擇其他地面樹木恢復坐標。我目前正對MoveIt模組編寫改良程式碼，但是編寫時間不多，需要時間。</string>
+  <string name="TreeSnapToBuilding">啓用此選項可讓樹木沿著大樓表面自動調整高低</string>
+  <string name="TreeSnapToBuildingLabel">樹木沿表面對於副樓無效，因爲游戲光綫投射功能不認副樓</string>
+  <string name="TreeSnapToNetwork">啓用此選項可讓樹木沿著道路表面自動調整高低</string>
+  <string name="TreeSnapToProp">啓用此選項可使樹木自動沿著道具表面自動調整高低</string>
+  <string name="TreeSnapToPropLabel">樹木沿著道具表面不是100%，因有些道具例如：Ploppable Surface沒定義正確大小定點。最後還是需要手動調整</string>
 </resources>
