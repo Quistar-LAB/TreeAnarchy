@@ -1,7 +1,7 @@
 ﻿using CitiesHarmony.API;
 using ColossalFramework;
-using ColossalFramework.Globalization;
 using ColossalFramework.Plugins;
+using ColossalFramework.UI;
 using ICities;
 using System;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "0.9.9";
+        internal const string m_modVersion = "1.0.0";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Tree Anarchy";
         private const string m_modDesc = "Lets you plant more trees with tree snapping";
@@ -25,8 +25,8 @@ namespace TreeAnarchy {
         public const int DefaultTreeLimit = 262144;
         public const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
-        internal static int RemoveReplaceOrKeep = 0;
-        internal static bool OldFormatLoaded = false;
+        public static int RemoveReplaceOrKeep = 0;
+        public static bool OldFormatLoaded = false;
         public static bool TreeEffectOnWind = true;
         public static int LastMaxTreeLimit = DefaultTreeLimit;
         public static int CheckLowLimit {
@@ -46,7 +46,7 @@ namespace TreeAnarchy {
                 m_ScaleFactor = value;
             }
         }
-        internal static float LastTreeScaleFactor { get; private set; } = m_ScaleFactor;
+        public static float LastTreeScaleFactor { get; private set; } = m_ScaleFactor;
         public static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
 
         /* Experimental mode */
@@ -73,6 +73,7 @@ namespace TreeAnarchy {
 
         /* Tree Anarchy Related */
         public static bool UseTreeAnarchy = false;
+        public static bool DeleteOnOverlap = false;
 
         /* Indicators */
         public static bool ShowIndicators = true;
@@ -97,59 +98,50 @@ namespace TreeAnarchy {
 
         public void OnEnabled() {
             CreateDebugFile();
+            SingletonLite<TAPatcher>.instance.CheckIncompatibleMods();
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
             if (PersistentLockForestry) UseLockForestry = true;
-            TAPatcher patcher = new TAPatcher();
-            HarmonyHelper.DoOnHarmonyReady(() => patcher.EnableCore());
+            SingletonLite<TAManager>.instance.SetScaleBuffer(MaxTreeLimit);
+            HarmonyHelper.DoOnHarmonyReady(() => SingletonLite<TAPatcher>.instance.EnableCore());
         }
 
         public void OnDisabled() {
             if (HarmonyHelper.IsHarmonyInstalled) {
-                TAPatcher patcher = new TAPatcher();
-                patcher.DisableCore();
+                SingletonLite<TAPatcher>.instance.DisableCore();
             }
+            SingletonLite<TALocale>.instance.Destroy();
             SaveSettings();
         }
 
-        private static bool localeInitialized = false;
         public void OnSettingsUI(UIHelperBase helper) {
-            if (!localeInitialized) {
-                OutputPluginsList();
-                SingletonLite<TALocale>.instance.Init();
-                LocaleManager.eventLocaleChanged += SingletonLite<TALocale>.instance.OnLocaleChanged;
-                localeInitialized = true;
-            }
-            TAUI.InitializeOptionPanel(helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper);
+            SingletonLite<TALocale>.instance.Init();
+            ((helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper).self as UIPanel).AddUIComponent<TAOptionPanel>();
         }
         #endregion
         #region ILoadingExtension
         void ILoadingExtension.OnCreated(ILoading loading) {
+            OutputPluginsList();
             if (HarmonyHelper.IsHarmonyInstalled) {
-                TAPatcher patcher = new TAPatcher();
-                patcher.LateEnable();
+                SingletonLite<TAPatcher>.instance.LateEnable();
             }
         }
 
         void ILoadingExtension.OnReleased() {
             if (HarmonyHelper.IsHarmonyInstalled) {
-                TAPatcher patcher = new TAPatcher();
-                patcher.DisableLatePatch();
+                SingletonLite<TAPatcher>.instance.DisableLatePatch();
             }
         }
 
         void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
             if (ShowIndicators && (Singleton<ToolManager>.instance.m_properties.m_mode & ItemClass.Availability.MapEditor) == ItemClass.Availability.None) {
-                TAUI.CreateMainUI();
+                UIView.GetAView().FindUIComponent<UIPanel>("InfoPanel").AddUIComponent<TAIndicator>();
             }
             IsInGame = true;
         }
 
         void ILoadingExtension.OnLevelUnloading() {
-            if (!(TAUI.mainUIPanel is null)) {
-                UnityEngine.Object.Destroy(TAUI.mainUIPanel);
-            }
             IsInGame = false;
         }
         #endregion
@@ -174,6 +166,8 @@ namespace TreeAnarchy {
                 UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
                 ShowIndicators = bool.Parse(xmlConfig.DocumentElement.GetAttribute("ShowIndicators"));
+                UseTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeAnarchy"));
+                DeleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute("DeleteOnOverlap"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
                 return false;
@@ -196,6 +190,8 @@ namespace TreeAnarchy {
             _ = root.Attributes.Append(AddElement(xmlConfig, "LockForestry", UseLockForestry));
             _ = root.Attributes.Append(AddElement(xmlConfig, "PersistentLock", PersistentLockForestry));
             _ = root.Attributes.Append(AddElement(xmlConfig, "ShowIndicators", ShowIndicators));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeAnarchy", UseTreeAnarchy));
+            _ = root.Attributes.Append(AddElement(xmlConfig, "DeleteOnOverlap", DeleteOnOverlap));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
