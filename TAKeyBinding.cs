@@ -1,6 +1,5 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
-using TreeAnarchy.Patches;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -13,6 +12,16 @@ namespace TreeAnarchy {
         private static readonly string toggleTreeSnapping = "toggleTreeSnapping";
         [RebindableKey("TreeAnarchy")]
         private static readonly string toggleLockForestry = "toggleLockForestry";
+#if ENABLETREEANARCHY
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string toggleTreeAnarchy = "toggleTreeAnarchy";
+#endif
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string groupTrees = "groupTrees";
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string ungroupTrees = "ungroupTrees";
+        [RebindableKey("TreeAnarchy")]
+        private static readonly string terrainConformTrees = "terrainConformTrees";
         [RebindableKey("TreeAnarchy")]
         private static readonly string incrementTreeSize = "incrTreeVariation";
         [RebindableKey("TreeAnarchy")]
@@ -20,11 +29,23 @@ namespace TreeAnarchy {
 
         private static readonly InputKey defaultToggleTreeSnappingKey = SavedInputKey.Encode(KeyCode.S, false, false, true);
         private static readonly InputKey defaultToggleLockForestryKey = SavedInputKey.Encode(KeyCode.F, false, false, true);
+#if ENABLETREEANARCHY
+        private static readonly InputKey defaultToggleTreeAnarchyKey = SavedInputKey.Encode(KeyCode.A, false, false, true);
+#endif
+        private static readonly InputKey defaultGroupTreeKey = SavedInputKey.Encode(KeyCode.G, true, false, false);
+        private static readonly InputKey defaultUngroupTreeKey = SavedInputKey.Encode(KeyCode.U, true, false, false);
+        private static readonly InputKey defaultTerrainConformTrees = SavedInputKey.Encode(KeyCode.T, false, false, true);
         private static readonly InputKey defaultIncrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Period, false, false, false);
         private static readonly InputKey defaultDecrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Comma, false, false, false);
 
         private static readonly SavedInputKey m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
         private static readonly SavedInputKey m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
+#if ENABLETREEANARCHY
+        private static readonly SavedInputKey m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
+#endif
+        private static readonly SavedInputKey m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
+        private static readonly SavedInputKey m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
+        private static readonly SavedInputKey m_terrainConformTrees = new SavedInputKey(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
         private static readonly SavedInputKey m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
         private static readonly SavedInputKey m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
 
@@ -32,38 +53,57 @@ namespace TreeAnarchy {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
                 Event e = Event.current;
                 if (m_treeSnapping.IsPressed(e)) {
-                    UseTreeSnapping = !UseTreeSnapping;
-                    if (TAPatcher.isMoveItBeta && TAPatcher.MoveItUseTreeSnap != null) {
-                        TAPatcher.MoveItUseTreeSnap.SetValue(null, UseTreeSnapping);
+                    bool state = UseTreeSnapping = !UseTreeSnapping;
+                    if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                        TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                     }
-                    TAUI.TreeSnapCB.isChecked = UseTreeSnapping;
-                    TAUI.SetIndicator(UseTreeSnapping, TAUI.TREESNAPID);
+                    TAOptionPanel.SetTreeSnapState(state);
+                    TAIndicator.TreeSnapIndicator.SetState(state);
+                    SaveSettings();
+                } else if (m_lockForestry.IsPressed(e)) {
+                    bool state = UseLockForestry = !UseLockForestry;
+                    TAOptionPanel.SetLockForestryState(state);
+                    TAIndicator.LockForestryIndicator.SetState(state);
                     SaveSettings();
                 }
-                if (m_lockForestry.IsPressed(e)) {
-                    UseLockForestry = !UseLockForestry;
-                    TAUI.LockForestryCB.isChecked = UseLockForestry;
-                    TAUI.SetIndicator(UseLockForestry, TAUI.LOCKFORESTRYID);
+#if ENABLETREEANARCHY
+                else if (m_treeAnarchy.IsPressed(e)) {
+                    bool state = UseTreeAnarchy = !UseTreeAnarchy;
+                    TAOptionPanel.SetTreeAnarchyState(state);
+                    TAIndicator.TreeAnarchyIndicator.SetState(state);
                     SaveSettings();
                 }
-                if (IsCustomPressed(m_incrTreeVariation, e)) {
-                    Singleton<TreeScaleManager>.instance.IncrementTreeSize();
-                }
-                if (IsCustomPressed(m_decrTreeVariation, e)) {
-                    Singleton<TreeScaleManager>.instance.DecrementTreeSize();
+#endif
+                else if (m_groupTrees.IsPressed(e)) {
+                    SingletonLite<TAManager>.instance.GroupTrees();
+                } else if (m_ungroupTrees.IsPressed(e)) {
+                    SingletonLite<TAManager>.instance.UngroupTrees();
+                } else if (m_terrainConformTrees.IsPressed(e)) {
+                    SingletonLite<TAManager>.instance.TerrainConformTrees();
+                } else if (IsCustomPressed(m_incrTreeVariation, e)) {
+                    SingletonLite<TAManager>.instance.IncrementTreeSize();
+                } else if (IsCustomPressed(m_decrTreeVariation, e)) {
+                    SingletonLite<TAManager>.instance.DecrementTreeSize();
                 }
             }
         }
 
         protected void Awake() {
             UILabel desc = component.AddUIComponent<UILabel>();
+            desc.padding.top = 10;
             desc.width = component.width - 50;
             desc.autoHeight = true;
             desc.wordWrap = true;
-            desc.textScale = TAUI.SmallFontScale;
+            desc.textScale = TAOptionPanel.SmallFontScale;
             desc.text = SingletonLite<TALocale>.instance.GetLocale("KeyBindDescription");
             AddKeymapping("TreeSnap", m_treeSnapping);
             AddKeymapping("LockForestry", m_lockForestry);
+#if ENABLETREEANARCHY
+            AddKeymapping("TreeAnarchy", m_treeAnarchy);
+#endif
+            AddKeymapping("TerrainConformTrees", m_terrainConformTrees);
+            AddKeymapping("GroupTrees", m_groupTrees);
+            AddKeymapping("UngroupTrees", m_ungroupTrees);
             AddKeymapping("IncreaseTreeSize", m_incrTreeVariation);
             AddKeymapping("DecreaseTreeSize", m_decrTreeVariation);
         }
