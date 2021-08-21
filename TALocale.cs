@@ -12,6 +12,7 @@ namespace TreeAnarchy {
         private const string m_fileNameTemplate = @"TreeAnarchy.{0}.locale";
         private XmlDocument m_xmlLocale;
         private string m_directory;
+        private bool isInitialized = false;
 
         public void OnLocaleChanged() {
             string locale = SingletonLite<LocaleManager>.instance.language;
@@ -33,6 +34,10 @@ namespace TreeAnarchy {
                 break;
             }
             LoadLocale(locale);
+            TAOptionPanel[] optionPanel = UnityEngine.Object.FindObjectsOfType<TAOptionPanel>();
+            foreach (var panel in optionPanel) {
+                panel.Invalidate();
+            }
         }
 
         private void LoadLocale(string culture) {
@@ -49,13 +54,21 @@ namespace TreeAnarchy {
         }
 
         internal void Init() {
-            foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
-                if (fileID.AsUInt64 == m_thisModID) {
-                    m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
-                    break;
+            if (!isInitialized) {
+                foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
+                    if (fileID.AsUInt64 == m_thisModID) {
+                        m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
+                        break;
+                    }
                 }
+                LocaleManager.eventLocaleChanged += OnLocaleChanged;
+                OnLocaleChanged();
+                isInitialized = true;
             }
-            OnLocaleChanged();
+        }
+
+        internal void Destroy() {
+            LocaleManager.eventLocaleChanged -= OnLocaleChanged;
         }
 
         internal string GetLocale(string name) => m_xmlLocale.GetElementById(name).InnerText;
