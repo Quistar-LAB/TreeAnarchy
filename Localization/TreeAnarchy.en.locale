@@ -7,13 +7,31 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Misc Trees -->
+    <string name="GroupTrees">Group Trees</string>
+    <string name="UngroupTrees">Ungroup Trees</string>
+    <string name="TerrainConformTrees">Terrain Conform Trees</string>
+    <!-- Indicator Messages -->
+    <string name="EnableIndicator">Enable in game indicators</string>
+    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
+    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
+    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
+    <string name="LockForestryIsOn">Lock Forestry is ON</string>
+    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
+    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">Tree Anarchy</string>
+    <string name="TreeAnarchyDesc">Allows you to place trees anywhere. When you place networks or buildings, you may use the following setting to hide the tree or delete the tree</string>
+    <string name="TreeAnarchyBehaviour">Behavior when overlap occurs</string>
+    <string name="TreeAnarchyHideTree">Hide Tree</string>
+    <string name="TreeAnarchyDeleteTree">Delete Tree</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">Increase tree size</string>
     <string name="DecreaseTreeSize">Decrease tree size</string>
     <string name="PressAnyKey">Press any key</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">Main Options</string>
-    <string name="TreeSnappingTab">Tree Snapping</string>
+    <string name="TreeAnarchyTab">Tree Anarchy</string>
     <string name="KeyboardShortcutTab">Key Binding</string>
     <string name="KeyBindDescription">When binding hotkeys, please make sure to use modifiers (SHIFT | CONTROL | ALT) for Tree Snapping and Lock Forestry. For tree size increment and decrement hotkeys, it is specially treated so you don't have to use modifiers, but please make sure to pick a unique hotkey.</string>
     <!-- Main options -->

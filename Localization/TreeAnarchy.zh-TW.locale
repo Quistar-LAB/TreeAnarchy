@@ -7,13 +7,26 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Indicator Messages -->
+    <string name="TreeSnapIsOff">樹木沿表面功能已關閉</string>
+    <string name="TreeSnapIsOn">樹木沿表面功能已開啓</string>
+    <string name="LockForestryIsOff">林業資源已解鎖</string>
+    <string name="LockForestryIsOn">林業資源已鎖定</string>
+    <string name="TreeAnarchyIsOff">樹木無碰撞已關閉</string>
+    <string name="TreeAnarchyIsOn">樹木無碰撞已開啓</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">樹木種植限制解鎖</string>
+    <string name="TreeAnarchyDesc">此選項勾選後可無限制的任意種植樹木。當擺放道路或樓房時，可依下方選項所選方式隱藏樹木或刪除樹木</string>
+    <string name="TreeAnarchyBehaviour">與道路或樓房重叠時反應</string>
+    <string name="TreeAnarchyHideTree">隱藏樹木</string>
+    <string name="TreeAnarchyDeleteTree">刪除樹木</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">放大樹木</string>
     <string name="DecreaseTreeSize">縮小樹木</string>
     <string name="PressAnyKey">按任意按鍵</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">主要選項</string>
-    <string name="TreeSnappingTab">樹木沿表面</string>
+    <string name="TreeAnarchyTab">樹木限制選項</string>
     <string name="KeyboardShortcutTab">熱鍵組合</string>
     <string name="KeyBindDescription">建立熱鍵時，”沿表面功能“及”鎖定林業資源“需使用修饰符如：SHIFT，CONTROL，ALT等按鍵。放大樹木及縮小樹木功能這兩個熱鍵經特別處理，可不需要使用修飾符案件，但是請使用目前沒被綁定的熱鍵。</string>
     <!-- Main options -->

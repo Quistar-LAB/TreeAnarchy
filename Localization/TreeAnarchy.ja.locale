@@ -7,13 +7,26 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Indicator Messages -->
+    <string name="TreeSnapIsOff">Tree Snapping はオフ</string>
+    <string name="TreeSnapIsOn">Tree Snapping はオン</string>
+    <string name="LockForestryIsOff">Lock Forestry はオフ</string>
+    <string name="LockForestryIsOn">Lock Forestry はオン</string>
+    <string name="TreeAnarchyIsOff">Tree Anarchy はオフ</string>
+    <string name="TreeAnarchyIsOn">Tree Anarchy はオン</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">Tree Anarchy</string>
+    <string name="TreeAnarchyDesc">ツリーを好きな場所に置けます。ネットワークや建物に置く場合は、設定でツリーを隠したり削除も可能です</string>
+    <string name="TreeAnarchyBehaviour">重複時の動作</string>
+    <string name="TreeAnarchyHideTree">ツリーを隠す</string>
+    <string name="TreeAnarchyDeleteTree">ツリーを削除</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">ツリーのサイズを拡大</string>
     <string name="DecreaseTreeSize">ツリーのサイズを縮小</string>
     <string name="PressAnyKey">何かキーを押してください</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">メインのオプション</string>
-    <string name="TreeSnappingTab">Tree Snapping</string>
+    <string name="TreeAnarchyTab">Tree Anarchy</string>
     <string name="KeyboardShortcutTab">ショートカットキーの割り当て</string>
     <string name="KeyBindDescription">ショートカットの設定は、キーバインド (SHIFT / CONTROL / ALT) で複数のキーを組み合わせてください。そして、Tree SnappingとLock Forestryのオプションを有効化してください。ツリーのサイズを増減するホットキーは、特別な処理をしているので複数のキーを使用する必要はありません。しかし、誤動作を防止するために重複しないホットキーの選択を推奨します。</string>
     <!-- Main options -->

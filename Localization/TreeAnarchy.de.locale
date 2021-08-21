@@ -7,13 +7,26 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Indicator Messages -->
+    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
+    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
+    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
+    <string name="LockForestryIsOn">Lock Forestry is ON</string>
+    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
+    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">Baum-Anarchie</string>
+    <string name="TreeAnarchyDesc">Erlaubt es dir, Bäume überall zu platzieren. Wenn du Netzwerke oder Gebäude platzierst, kannst du mit der folgenden Einstellung den Baum verstecken oder den Baum löschen</string>
+    <string name="TreeAnarchyBehaviour">Verhalten bei Überlappung</string>
+    <string name="TreeAnarchyHideTree">Baum verbergen</string>
+    <string name="TreeAnarchyDeleteTree">Baum löschen</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">Baum vergrößern</string>
     <string name="DecreaseTreeSize">Baum verkleinern</string>
     <string name="PressAnyKey">Drücke eine Taste</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">Haupteinstellungen</string>
-    <string name="TreeSnappingTab">Baum einrasten</string>
+    <string name="TreeAnarchyTab">Baum-Anarchie</string>
     <string name="KeyboardShortcutTab">Tastenkürzel</string>
     <string name="KeyBindDescription">Beim Einstellen von Tastenkürzeln sollten Modifikatoren (SHIFT | STEUERUNG | ALT) für Baum einrasten und Sperren der Waldressource verwendet werden. Die Tastenkürzel für das Vergrößern bzw. Verkleinern der Bäume wird speziell behandelt, so dass keine Modifikatoren verwenden müssen. Es muss aber darauf geachtet werden, ein eindeutiges Tastenkürzel auszuwählen.</string>
     <!-- Main options -->

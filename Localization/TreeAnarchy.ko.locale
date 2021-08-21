@@ -7,13 +7,26 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Indicator Messages -->
+    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
+    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
+    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
+    <string name="LockForestryIsOn">Lock Forestry is ON</string>
+    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
+    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">Tree Anarchy</string>
+    <string name="TreeAnarchyDesc">Allows you to place trees anywhere. When you place networks or buildings, you may use the following setting to hide the tree or delete the tree</string>
+    <string name="TreeAnarchyBehaviour">Behavior when overlap occurs</string>
+    <string name="TreeAnarchyHideTree">Hide Tree</string>
+    <string name="TreeAnarchyDeleteTree">Delete Tree</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">나무 크기 증가</string>
     <string name="DecreaseTreeSize">나무 크기 감소</string>
     <string name="PressAnyKey">아무 키나 누르세요</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">메인 옵션</string>
-    <string name="TreeSnappingTab">Tree Snapping</string>
+    <string name="TreeAnarchyTab">Tree Anarchy</string>
     <string name="KeyboardShortcutTab">키 설정</string>
     <string name="KeyBindDescription">Tree Snapping과 Lock Forestry에 단축키 설정 시 수정자(SHIFT | CONTROL | ALT) 를 함께 사용해야 합니다. 나무 크기 증가 및 감소 단축키의 경우 특수 처리되므로 수정자를 사용할 필요는 없지만 중복되지 않은 단축키인지 확인하십시오.</string>
     <!-- Main options -->

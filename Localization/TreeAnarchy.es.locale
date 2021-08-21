@@ -7,13 +7,26 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+    <!-- Indicator Messages -->
+    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
+    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
+    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
+    <string name="LockForestryIsOn">Lock Forestry is ON</string>
+    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
+    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
+    <!-- Tree Anarchy -->
+    <string name="TreeAnarchy">Tree Anarchy</string>
+    <string name="TreeAnarchyDesc">Allows you to place trees anywhere. When you place networks or buildings, you may use the following setting to hide the tree or delete the tree</string>
+    <string name="TreeAnarchyBehaviour">Behavior when overlap occurs</string>
+    <string name="TreeAnarchyHideTree">Hide Tree</string>
+    <string name="TreeAnarchyDeleteTree">Delete Tree</string>
     <!-- Tree Resize -->
     <string name="IncreaseTreeSize">Incrementar tamaño de árboles</string>
     <string name="DecreaseTreeSize">Disminuir tamaño de árboles</string>
     <string name="PressAnyKey">Presiona cualquier tecla</string>
     <!-- Tab Strips -->
     <string name="MainOptionTab">Opciones Principales</string>
-    <string name="TreeSnappingTab">Ajuste de árbol</string>
+    <string name="TreeAnarchyTab">Tree Anarchy</string>
     <string name="KeyboardShortcutTab">Configuración de tecla</string>
     <string name="KeyBindDescription">Al configurar teclas, asegúrate de usar modificadores (Mayús | Control | Alt) para el Ajuste de Árboles y Bloqueo Forestal. Para la configuración de teclas para incrementar y reducir el tamaño de árboles, no tienes que usar modificadores, sin embargo asegúrate de seleccionar una tecla única.</string>
     <!-- Main options -->
