@@ -16,12 +16,16 @@ namespace TreeAnarchy {
         [RebindableKey("TreeAnarchy")]
         private static readonly string toggleTreeAnarchy = "toggleTreeAnarchy";
 #endif
+#if ENABLETREEGROUP
         [RebindableKey("TreeAnarchy")]
         private static readonly string groupTrees = "groupTrees";
         [RebindableKey("TreeAnarchy")]
         private static readonly string ungroupTrees = "ungroupTrees";
+#endif
+#if ENABLETERRAINCONFORM
         [RebindableKey("TreeAnarchy")]
         private static readonly string terrainConformTrees = "terrainConformTrees";
+#endif
         [RebindableKey("TreeAnarchy")]
         private static readonly string incrementTreeSize = "incrTreeVariation";
         [RebindableKey("TreeAnarchy")]
@@ -32,9 +36,13 @@ namespace TreeAnarchy {
 #if ENABLETREEANARCHY
         private static readonly InputKey defaultToggleTreeAnarchyKey = SavedInputKey.Encode(KeyCode.A, false, false, true);
 #endif
+#if ENABLETREEGROUP
         private static readonly InputKey defaultGroupTreeKey = SavedInputKey.Encode(KeyCode.G, true, false, false);
         private static readonly InputKey defaultUngroupTreeKey = SavedInputKey.Encode(KeyCode.U, true, false, false);
+#endif
+#if ENABLETERRAINCONFORM
         private static readonly InputKey defaultTerrainConformTrees = SavedInputKey.Encode(KeyCode.T, false, false, true);
+#endif
         private static readonly InputKey defaultIncrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Period, false, false, false);
         private static readonly InputKey defaultDecrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Comma, false, false, false);
 
@@ -43,9 +51,13 @@ namespace TreeAnarchy {
 #if ENABLETREEANARCHY
         private static readonly SavedInputKey m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
 #endif
+#if ENABLETREEGROUP
         private static readonly SavedInputKey m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
         private static readonly SavedInputKey m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
+#endif
+#if ENABLETERRAINCONFORM
         private static readonly SavedInputKey m_terrainConformTrees = new SavedInputKey(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
+#endif
         private static readonly SavedInputKey m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
         private static readonly SavedInputKey m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
 
@@ -74,13 +86,19 @@ namespace TreeAnarchy {
                     SaveSettings();
                 }
 #endif
+#if ENABLETREEGROUP
                 else if (m_groupTrees.IsPressed(e)) {
                     SingletonLite<TAManager>.instance.GroupTrees();
                 } else if (m_ungroupTrees.IsPressed(e)) {
                     SingletonLite<TAManager>.instance.UngroupTrees();
-                } else if (m_terrainConformTrees.IsPressed(e)) {
+                }
+#endif
+#if ENABLETERRAINCONFORM
+                else if (m_terrainConformTrees.IsPressed(e)) {
                     SingletonLite<TAManager>.instance.TerrainConformTrees();
-                } else if (IsCustomPressed(m_incrTreeVariation, e)) {
+                }
+#endif
+                else if (IsCustomPressed(m_incrTreeVariation, e)) {
                     SingletonLite<TAManager>.instance.IncrementTreeSize();
                 } else if (IsCustomPressed(m_decrTreeVariation, e)) {
                     SingletonLite<TAManager>.instance.DecrementTreeSize();
@@ -101,9 +119,13 @@ namespace TreeAnarchy {
 #if ENABLETREEANARCHY
             AddKeymapping("TreeAnarchy", m_treeAnarchy);
 #endif
+#if ENABLETERRAINCONFORM
             AddKeymapping("TerrainConformTrees", m_terrainConformTrees);
+#endif
+#if ENABLETREEGROUP
             AddKeymapping("GroupTrees", m_groupTrees);
             AddKeymapping("UngroupTrees", m_ungroupTrees);
+#endif
             AddKeymapping("IncreaseTreeSize", m_incrTreeVariation);
             AddKeymapping("DecreaseTreeSize", m_decrTreeVariation);
         }

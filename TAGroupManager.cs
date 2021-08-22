@@ -25,6 +25,7 @@ namespace TreeAnarchy {
         }
 
         private Randomizer m_randomizer;
+        public ushort m_defaultInfoIndex;
         public static Dictionary<uint, FastList<TreeGroupList>> m_groupedTrees;
         public int m_groupedCount;
 
@@ -53,9 +54,9 @@ namespace TreeAnarchy {
                         Vector3 curPos = position + trees[j].offset;
                         float scale = trees[j].scale;
                         matrices[j].SetTRS(curPos, TAPatcher.GetRandomQuaternion(curPos.sqrMagnitude), new Vector3(scale, scale, scale));
-                        Graphics.DrawMesh(prefab.m_mesh, matrices[j], prefab.m_material, prefab.m_prefabDataLayer, null, 0, materialBlock);
+                        //Graphics.DrawMesh(prefab.m_mesh, matrices[j], prefab.m_material, prefab.m_prefabDataLayer, null, 0, materialBlock);
                     }
-                    //Graphics.DrawMeshInstanced(prefab.m_mesh, 0, prefab.m_material, matrices, trees.Length, materialBlock, UnityEngine.Rendering.ShadowCastingMode.On, false, prefab.m_prefabDataLayer);
+                    Graphics.DrawMeshInstanced(prefab.m_mesh, 0, prefab.m_material, matrices, trees.Length, materialBlock, UnityEngine.Rendering.ShadowCastingMode.Off, false, prefab.m_prefabDataLayer);
                 }
             }
             /*
@@ -79,35 +80,60 @@ namespace TreeAnarchy {
 
         }
 
-
-
-        private TreeInfo CreateTreePrefab(string name = null) {
-            GameObject go = new GameObject(string.IsNullOrEmpty(name) ? name : "TATreePrefab");
-            go.AddComponent<Rigidbody>();
-            go.AddComponent<MeshCollider>();
-            go.AddComponent<MeshFilter>();
-            go.AddComponent<MeshRenderer>();
-            TreeInfo prefab = go.AddComponent<TreeInfo>();
-            prefab.m_generatedInfo = new TreeInfoGen();
-            go.GetComponent<PrefabInfo>().m_isCustomContent = true;
-            go.SetActive(false);
-            return prefab;
+        private ushort InsertPrefabCollection(TreeInfo treeInfo) {
+            FastList<PrefabCollection<TreeInfo>.PrefabData> m_simulationPrefabs =
+                typeof(PrefabCollection<TreeInfo>).GetField("m_simulationPrefabs", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).
+                GetValue(null) as FastList<PrefabCollection<TreeInfo>.PrefabData>;
+            m_simulationPrefabs.Add(new PrefabCollection<TreeInfo>.PrefabData {
+                m_name = treeInfo.name,
+                m_refcount = 1,
+                m_replaced = false,
+                m_prefab = treeInfo
+            });
+            return (ushort)(m_simulationPrefabs.m_size - 1);
         }
 
-        private TreeInfo CloneTreePrefab(string name = null) {
-            GameObject go = new GameObject("TATreePrefab");
-            go.SetActive(false);
-            go.AddComponent<MeshRenderer>();
-            MeshFilter filter = go.AddComponent<MeshFilter>();
-            filter.mesh = new Mesh();
-            TreeInfo prefab = go.AddComponent<TreeInfo>();
-            prefab.m_generatedInfo = new TreeInfoGen();
-            go.GetComponent<PrefabInfo>().m_isCustomContent = true;
-            if (!(name is null)) {
-                go.name = name;
+        public TreeInfo CreateTreePrefab(out ushort infoIndex, string name = null) {
+            int prefabCount = PrefabCollection<TreeInfo>.PrefabCount();
+            TreeInfo infoOrig = default;
+            for(uint i = 0; i < prefabCount; i++) {
+                infoOrig = PrefabCollection<TreeInfo>.GetPrefab(i);
+                if (infoOrig.m_mesh.isReadable) break;
             }
+
+            GameObject go = new GameObject(string.IsNullOrEmpty(name) ? name : "TATreePrefab");
+            go.transform.parent = infoOrig.transform.parent;
+            MeshFilter filter = go.AddComponent<MeshFilter>();
+            filter.mesh = UnityEngine.Object.Instantiate(infoOrig.m_mesh);
+            MeshRenderer renderer = go.AddComponent<MeshRenderer>();
+            renderer.material = UnityEngine.Object.Instantiate(infoOrig.m_material);
+            TreeInfo prefab = go.AddComponent<TreeInfo>();
+            prefab.m_generatedInfo = new TreeInfoGen {
+                m_treeInfo = prefab,
+            };
+            prefab.m_class = new ItemClass();
+            prefab.m_mesh = filter.sharedMesh;
+            infoIndex = InsertPrefabCollection(prefab);
+            prefab.m_generatedInfo.m_treeInfo.m_prefabDataIndex = infoIndex;
+            prefab.m_prefabDataLayer = infoOrig.m_prefabDataLayer;
+            prefab.m_prefabDataIndex = infoIndex;
+            prefab.m_prefabInitialized = true;
+            go.GetComponent<PrefabInfo>().m_isCustomContent = true;
+            go.SetActive(false);
             return prefab;
         }
+
+        private TreeInfo ClonePrefab(TreeInfo treeInfo = null, string name = null) {
+            if (treeInfo is null) {
+                treeInfo = PrefabCollection<TreeInfo>.GetPrefab(m_defaultInfoIndex);
+            }
+            GameObject go = UnityEngine.Object.Instantiate(treeInfo.gameObject);
+            go.SetActive(false);
+            go.GetComponent<PrefabInfo>().m_isCustomContent = true;
+            if (!(name is null)) go.name = name;
+            return go.GetComponent<TreeInfo>();
+        }
+
 
         private bool PackTrees(TreeInstance[] trees, Instance[] selection, out int treeCount, out Vector3 center, out FastList<TreeGroupList> packedTrees) {
             treeCount = 0;
@@ -143,9 +169,11 @@ namespace TreeAnarchy {
                     for (int i = 0; i < treeList.Length; i++) {
                         treeList[i].offset = center - treeList[i].position;
                     }
+                    TreeInfo prefab = PrefabCollection<TreeInfo>.GetPrefab(infoIndex);
+                    prefab.m_material.enableInstancing = true;
                     packedTrees.Add(new TreeGroupList {
                         m_prefabIndex = infoIndex,
-                        m_info = PrefabCollection<TreeInfo>.GetPrefab(infoIndex),
+                        m_info = prefab,
                         m_groupList = entry.Value
                     });
                 }
@@ -180,33 +208,48 @@ namespace TreeAnarchy {
             prefab.m_generatedInfo.m_uvmapArea = 0f;
             prefab.m_generatedInfo.m_treeInfo = prefab;
             prefab.m_generatedInfo.m_treeInfo.m_mesh = prefab.m_mesh;
+            prefab.m_prefabInitialized = true;
         }
 
-        private void ReleaseTrees(TreeManager tm, Instance[] selection) {
-            for (int i = 0; i < selection.Length; i++) {
-                Instance selected = selection[i];
+        private void ReleaseTrees(TreeManager tm, HashSet<Instance> selection) {
+            List<Instance> removeList = new List<Instance>();
+            foreach(var selected in selection) {
                 if (selected is MoveableTree && !selected.id.IsEmpty && selected.id.Tree > 0) {
                     tm.ReleaseTree(selected.id.Tree);
+                    removeList.Add(selected);
                 }
+            }
+            foreach(var removeItem in removeList) {
+                selection.Remove(removeItem);
             }
         }
 
-        private bool CreateGroupedTrees(out uint groupTreeID, Instance[] selection) {
+        private bool CreateGroupedTrees(out uint groupTreeID, HashSet<Instance> selection) {
             groupTreeID = 0;
             TreeManager tmInstance = Singleton<TreeManager>.instance;
             TreeInstance[] trees = tmInstance.m_trees.m_buffer;
-            if (PackTrees(trees, selection, out int treeCount, out Vector3 center, out FastList<TreeGroupList> packedTrees) && treeCount > 1) {
-                TreeInfo prefabInfo = CloneTreePrefab($"TAGrouped{m_groupedCount}");
+            if (PackTrees(trees, selection.ToArray(), out int treeCount, out Vector3 center, out FastList<TreeGroupList> packedTrees) && treeCount > 1) {
+                TreeInfo prefabInfo = ClonePrefab(name: "TAGrouped" + m_groupedCount.ToString());
                 CalculateGeneratedInfo(prefabInfo, packedTrees.m_buffer);
                 if (tmInstance.CreateTree(out groupTreeID, ref m_randomizer, prefabInfo, center, true)) {
                     ReleaseTrees(tmInstance, selection);
                     trees[groupTreeID].m_flags |= TreeGroupFlag;
+                    trees[groupTreeID].m_infoIndex = m_defaultInfoIndex;
+                    trees[groupTreeID].Info = prefabInfo;
                     m_groupedTrees.Add(groupTreeID, packedTrees);
                     m_groupedCount++;
                     return true;
                 }
             }
             return false;
+        }
+
+        public void GroupTrees() {
+            if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0) {
+                if(CreateGroupedTrees(out uint treeID, MoveIt.Action.selection)) {
+                    MoveIt.Action.selection.Add(new MoveableTree(new InstanceID { Tree = treeID }));
+                }
+            }
         }
 
         private Instance[] UngroupTrees(TreeManager tmInstance, TreeInstance[] treeBuffer, uint treeID) {
@@ -229,12 +272,6 @@ namespace TreeAnarchy {
             return null;
         }
 
-        public void GroupTrees() {
-            if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0) {
-                CreateGroupedTrees(out uint _, MoveIt.Action.selection.ToArray());
-            }
-        }
-
         public void UngroupTrees() {
             try {
                 while (!Monitor.TryEnter(this, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
@@ -242,14 +279,23 @@ namespace TreeAnarchy {
                     TreeManager tmInstance = Singleton<TreeManager>.instance;
                     TreeInstance[] trees = tmInstance.m_trees.m_buffer;
                     List<Instance> newSelections = new List<Instance>();
+                    List<Instance> removeList = new List<Instance>();
                     foreach (Instance selected in MoveIt.Action.selection) {
                         if (selected is MoveableTree) {
                             uint treeID = selected.id.Tree;
                             if ((trees[treeID].m_flags & TreeGroupFlag) != 0) {
-                                MoveIt.Action.selection.Remove(selected);
-                                MoveIt.Action.selection.UnionWith(UngroupTrees(tmInstance, trees, treeID));
+                                newSelections.AddRange(UngroupTrees(tmInstance, trees, treeID));
+                                removeList.Add(selected);
                             }
                         }
+                    }
+                    if(removeList.Count > 0) {
+                        for(int i = 0; i < removeList.Count; i++) {
+                            MoveIt.Action.selection.Remove(removeList[i]);
+                        }
+                    }
+                    if(newSelections.Count > 0) {
+                        MoveIt.Action.selection.UnionWith(newSelections);
                     }
                 }
             } finally {

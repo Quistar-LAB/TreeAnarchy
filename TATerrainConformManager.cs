@@ -10,7 +10,7 @@ namespace TreeAnarchy {
         private static readonly Shader defTCShader = Shader.Find("Custom/Props/Prop/Fence");
 
         private TreeInfo ClonePrefab(TreeInfo origPrefab) {
-            TreeInfo newPrefab = CreateTreePrefab(origPrefab.name + "_TC");
+            TreeInfo newPrefab = CreateTreePrefab(out ushort infoIndex, origPrefab.name + "_TC");
             newPrefab.m_mesh = origPrefab.m_mesh;
             newPrefab.m_material = origPrefab.m_material;
             newPrefab.m_material.shader = defTCShader;

@@ -138,6 +138,8 @@ namespace TreeAnarchy {
             if (ShowIndicators && (Singleton<ToolManager>.instance.m_properties.m_mode & ItemClass.Availability.MapEditor) == ItemClass.Availability.None) {
                 UIView.GetAView().FindUIComponent<UIPanel>("InfoPanel").AddUIComponent<TAIndicator>();
             }
+            SingletonLite<TAManager>.instance.CreateTreePrefab(out ushort infoIndex);
+            SingletonLite<TAManager>.instance.m_defaultInfoIndex = infoIndex;
             IsInGame = true;
         }
 
