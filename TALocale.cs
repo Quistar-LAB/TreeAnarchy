@@ -22,16 +22,21 @@ namespace TreeAnarchy {
                 } else {
                     locale = "zh-CN";
                 }
-            }
-            switch (CultureInfo.InstalledUICulture.Name) {
-            case "ms":
-            case "ms-MY":
-                locale = "ms";
-                break;
-            case "ja":
-            case "ja-JP":
-                locale = "ja";
-                break;
+            } else if(locale == "pt") {
+                if(CultureInfo.InstalledUICulture.Name == "pt-BR") {
+                    locale = "pt-BR";
+                }
+            } else {
+                switch (CultureInfo.InstalledUICulture.Name) {
+                case "ms":
+                case "ms-MY":
+                    locale = "ms";
+                    break;
+                case "ja":
+                case "ja-JP":
+                    locale = "ja";
+                    break;
+                }
             }
             LoadLocale(locale);
             TAOptionPanel[] optionPanel = UnityEngine.Object.FindObjectsOfType<TAOptionPanel>();

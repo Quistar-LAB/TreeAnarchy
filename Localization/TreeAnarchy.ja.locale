@@ -7,55 +7,59 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
-    <!-- Indicator Messages -->
-    <string name="TreeSnapIsOff">Tree Snapping はオフ</string>
-    <string name="TreeSnapIsOn">Tree Snapping はオン</string>
-    <string name="LockForestryIsOff">Lock Forestry はオフ</string>
-    <string name="LockForestryIsOn">Lock Forestry はオン</string>
-    <string name="TreeAnarchyIsOff">Tree Anarchy はオフ</string>
-    <string name="TreeAnarchyIsOn">Tree Anarchy はオン</string>
-    <!-- Tree Anarchy -->
-    <string name="TreeAnarchy">Tree Anarchy</string>
-    <string name="TreeAnarchyDesc">ツリーを好きな場所に置けます。ネットワークや建物に置く場合は、設定でツリーを隠したり削除も可能です</string>
-    <string name="TreeAnarchyBehaviour">重複時の動作</string>
-    <string name="TreeAnarchyHideTree">ツリーを隠す</string>
-    <string name="TreeAnarchyDeleteTree">ツリーを削除</string>
-    <!-- Tree Resize -->
-    <string name="IncreaseTreeSize">ツリーのサイズを拡大</string>
-    <string name="DecreaseTreeSize">ツリーのサイズを縮小</string>
-    <string name="PressAnyKey">何かキーを押してください</string>
-    <!-- Tab Strips -->
-    <string name="MainOptionTab">メインのオプション</string>
-    <string name="TreeAnarchyTab">Tree Anarchy</string>
-    <string name="KeyboardShortcutTab">ショートカットキーの割り当て</string>
-    <string name="KeyBindDescription">ショートカットの設定は、キーバインド (SHIFT / CONTROL / ALT) で複数のキーを組み合わせてください。そして、Tree SnappingとLock Forestryのオプションを有効化してください。ツリーのサイズを増減するホットキーは、特別な処理をしているので複数のキーを使用する必要はありません。しかし、誤動作を防止するために重複しないホットキーの選択を推奨します。</string>
-    <!-- Main options -->
-    <string name="MaxTreeLimitTitle">カスタムツリーの上限を設定</string>
-    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
-    <string name="MaxTreeLimit">ツリーの上限：  {0} 本</string>
-    <string name="WindEffect">風によるツリーの揺れを有効（ゲームのデフォルトで有効）</string>
-    <string name="WindEffectLabel">このオプションはマップ上にあるツリーの高さによって、風速が変化してゲームの動作に影響します。</string>
-    <string name="RandomTreeRotation">Random Tree Rotation</string>
-    <string name="TreeSwayFactor">ツリーの揺れ幅</string>
-    <string name="LockForestry">Lock Forestry</string>
-    <string name="PersistentLock">森林資源の永続的な固定化</string>
-    <string name="SwayLabel">便利な機能を紹介します。Lock forestryはツリーが森林資源を生み出し、ツリーを除去しても森林資源が無くなることを防ぎます。森林資源の永続的な固定化を有効にすると、ゲーム開始から常にLock Forestryが有効になります。これはゲーム開始時にLock Forestryの有効化を忘れて、マップ上から森林資源が無くなることを防ぎます。</string>
-    <string name="Important">重要！ゲーム開始時・マップをロードする前に設定する必要があります
+  <!-- Misc Trees -->
+  <string name="GroupTrees">ツリーをグループ化</string>
+  <string name="UngroupTrees">ツリーを非グループ化</string>
+  <string name="TerrainConformTrees">ツリーを地形に追従</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator">ゲーム内でインジケーターを表示</string>
+  <string name="TreeSnapIsOff">Tree Snapping はオフ</string>
+  <string name="TreeSnapIsOn">Tree Snapping はオン</string>
+  <string name="LockForestryIsOff">Lock Forestry はオフ</string>
+  <string name="LockForestryIsOn">Lock Forestry はオン</string>
+  <string name="TreeAnarchyIsOff">Tree Anarchy はオフ</string>
+  <string name="TreeAnarchyIsOn">Tree Anarchy はオン</string>
+  <!-- Tree Anarchy -->
+  <string name="TreeAnarchy">Tree Anarchy</string>
+  <string name="TreeAnarchyDesc">ツリーを好きな場所に置けます。ネットワークや建物に置く場合は、設定でツリーを隠したり削除も可能です</string>
+  <string name="TreeAnarchyBehaviour">重複時の動作</string>
+  <string name="TreeAnarchyHideTree">ツリーを隠す</string>
+  <string name="TreeAnarchyDeleteTree">ツリーを削除</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">ツリーサイズを拡大</string>
+  <string name="DecreaseTreeSize">ツリーサイズを縮小</string>
+  <string name="PressAnyKey">何かキーを押してください</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">主なオプション</string>
+  <string name="TreeAnarchyTab">Tree Anarchy</string>
+  <string name="KeyboardShortcutTab">ショートカットキー</string>
+  <string name="KeyBindDescription">ショートカットは、 キーバインド (SHIFT / CONTROL / ALT) で 複数のキーを 組み合わせてください。 そして、 Tree Snappingと Lock Forestryの オプションを有効化 してください。 ツリーサイズを 増減するホットキーは、 特別な処理をしているので 複数のキーを使用する 必要はありません。 しかし、 誤動作を防止するために 重複しないホットキーの選択を 推奨します。</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">カスタムツリーの上限設定</string>
+  <string name="MaxTreeLimit">ツリーの上限:  {0} 本</string>
+  <string name="WindEffect">風による揺れを有効化(デフォルトで有効)</string>
+  <string name="WindEffectLabel">このオプションは マップ上にある ツリーの高さによって、 風速が変化して ゲームの動作に影響します。</string>
+  <string name="RandomTreeRotation">Random Tree Rotation</string>
+  <string name="TreeSwayFactor">ツリーの揺れ幅</string>
+  <string name="LockForestry">Lock Forestry</string>
+  <string name="PersistentLock">森林資源の永続的な固定化</string>
+  <string name="SwayLabel">便利な機能: Lock forestryは ツリーが森林資源を生み出し、 ツリーを除去しても 森林資源が消える ことを防ぎます。森林資源の 永続的な固定化を有効にすると、 始めから Lock Forestryが 常に有効になります。ゲーム開始時に Lock Forestryの 有効化を忘れて、 マップ上から 森林資源が無くなる ことを防ぎます。</string>
+  <string name="Important">重要！ゲーム開始時・マップのロード前に設定する必要があります
 
-以下の設定は、古いUnlimited Trees MODからツリー情報の読み込み時に使用されます。</string>
-    <string name="ReplaceRemoveDesc">デフォルトの動作は、不足しているツリーを維持します。削除を選択するとマップ上からツリーが削除されて、 ツリーを置き換える場合はバニラのツリーを使用します。</string>
-    <string name="ReplaceRemoveName">古いUnlimited Trees MODから、ツリー情報を読み込み中</string>
-    <string name="ReplaceRemoveDropdown0">欠損しているツリー情報を維持</string>
-    <string name="ReplaceRemoveDropdown1">欠損しているツリー情報を削除</string>
-    <string name="ReplaceRemoveDropdown2">欠損しているツリー情報を置き換え</string>
-    <!-- Tree Snapping specific -->
-    <string name="TreeSnap">Tree Snapping</string>
-    <string name="TreeSnapLabel">ツリーを自由に動かせて、建物やPropにツリーをスナップさせることができます。</string>
-    <string name="ExperimentalTreeSnap">実験的な、Tree Snappingを使用</string>
-    <string name="ExperimentalTreeSnapLabel">実験中のTree SnappingはMove it! へ介入して、建物・ネットワーク・Propにツリーのスナップが可能です。ツリーの移動は問題なく動作しますが、複製して別の場所へ配置するとオフセットが発生します。解決するにはツリーの選択を解除し、適当なツリーを再選択して位置をリセットします。現在、私はより良い機能を提供するために、Move it! 内部の改良に取り組んでいます。</string>
-    <string name="TreeSnapToBuilding">このオプションを有効にすると、ツリーが建物にスナップします。</string>
-    <string name="TreeSnapToBuildingLabel">レイキャスティングが原因でSub Buildingが認識しない場合は、Tree snappingが機能しません。</string>
-    <string name="TreeSnapToNetwork">このオプションを有効にすると、ツリーがネットワークにスナップします。</string>
-    <string name="TreeSnapToProp">このオプションを有効にすると、ツリーがPropにスナップします。</string>
-    <string name="TreeSnapToPropLabel">一部のPropではレイキャスティングで定義された形状が無いため、Tree Snappingが100%機能しません。 (例えば、Ploppable Surfacesなど)</string>
+以下の設定は、古いUnlimited Trees MODからツリー情報の読み込みで使用されます</string>
+  <string name="ReplaceRemoveDesc">デフォルト動作は、 不足したツリーを維持・ 削除を選択すると ツリーが 削除・ ツリーを置き換える場合は バニラのツリーを 使用します。</string>
+  <string name="ReplaceRemoveName">古いUnlimited Trees MODから、ツリー情報をロード</string>
+  <string name="ReplaceRemoveDropdown0">欠損情報を維持</string>
+  <string name="ReplaceRemoveDropdown1">欠損情報を削除</string>
+  <string name="ReplaceRemoveDropdown2">欠損情報を置き換え</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">Tree Snapping</string>
+  <string name="TreeSnapLabel">ツリーを 自由に動かせて、 建物やPropに ツリーをスナップ させることができます。</string>
+  <string name="ExperimentalTreeSnap">実験的な、Tree Snappingを使用</string>
+  <string name="ExperimentalTreeSnapLabel">実験中の Tree Snappingは Move it! へ介入して、 建物・ネットワーク・Propに ツリーのスナップが 可能です。 ツリーの移動は問 題なく動作しますが、 複製して別の場所へ 配置するとオフセットが 発生します。 解決するには ツリーの選択を解除し、 適当なツリーを 再選択して位置を リセットします。 現在、 私はより良い機能を 提供するために、 Move it! 内部の 改良に取り組んでいます。</string>
+  <string name="TreeSnapToBuilding">このオプションを有効にすると、ツリーが建物にスナップします。</string>
+  <string name="TreeSnapToBuildingLabel">レイキャスティングが原因でSub Buildingが認識しない場合は、Tree snappingが機能しません。</string>
+  <string name="TreeSnapToNetwork">オプションを有効にすると、ツリーがネットワークにスナップします。</string>
+  <string name="TreeSnapToProp">オプションを有効にすると、ツリーがPropにスナップします。</string>
+  <string name="TreeSnapToPropLabel">一部のPropではレイキャスティングで定義された形状が無いため、Tree Snappingが100%機能しません(例えば、Ploppable Surfacesなど)</string>
 </resources>

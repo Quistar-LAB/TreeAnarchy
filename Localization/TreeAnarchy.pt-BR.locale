@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+  <!-- Misc Trees -->
+  <string name="GroupTrees">Group Trees</string>
+  <string name="UngroupTrees">Ungroup Trees</string>
+  <string name="TerrainConformTrees">Terrain Conform Trees</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator">Enable in game indicators</string>
+  <string name="TreeSnapIsOff">Ajustar árvores: DESL</string>
+  <string name="TreeSnapIsOn">Ajustar árvores: LIG</string>
+  <string name="LockForestryIsOff">Reflorestamento do solo: DESL</string>
+  <string name="LockForestryIsOn">Reflorestamento do solo: LIG</string>
+  <string name="TreeAnarchyIsOff">Árvores em todo lugar: DESL</string>
+  <string name="TreeAnarchyIsOn">Árvores em todo lugar: LIG</string>
+  <!-- Tree Anarchy -->
+  <string name="TreeAnarchy">Árvores em Todo Lugar</string>
+  <string name="TreeAnarchyDesc">Você poderá colocar árvores em todos os lugares. Ao construir estradas ou colocar construções, use a configuração para esconder / deletar árvores</string>
+  <string name="TreeAnarchyBehaviour">O que será feito com sobreposição</string>
+  <string name="TreeAnarchyHideTree">Esconder árvore</string>
+  <string name="TreeAnarchyDeleteTree">Deletar árvore</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">Aumentar árvores</string>
+  <string name="DecreaseTreeSize">Diminuir árvores</string>
+  <string name="PressAnyKey">Pressione qualquer tecla</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">Opções</string>
+  <string name="TreeAnarchyTab">Árvores em todo lugar</string>
+  <string name="KeyboardShortcutTab">Atalhos de teclas</string>
+  <string name="KeyBindDescription">Ao criar um atalho, por favor, tenha certeza de usar modificadores (Shift, Ctrl, Alt) para a \"Sobreposição de Árvores\" e \"Reflorestamento de Solo\". Atalhos para aumentar e diminuir árvores são tratados de maneira diferente, então escolha uma tecla que não está em uso.</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">Configurar limite de árvores</string>
+  <string name="MaxTreeLimit">Máximo de árvores: {0} árvores</string>
+  <string name="WindEffect">Balanço pelo vento, nas árvores (Padrão do jogo: LIG)</string>
+  <string name="WindEffectLabel">Muda o comportamento padrão do jogo, onde o tamanho das árvores diluem e enfraquecem o vento no mapa.</string>
+  <string name="RandomTreeRotation">Giro Aleatório de Árvores</string>
+  <string name="TreeSwayFactor">Balanço das Árvores</string>
+  <string name="LockForestry">Reflorestamento do Solo</string>
+  <string name="PersistentLock">Travar em Recursos Florestais</string>
+  <string name="SwayLabel">Ferramentas e embelezamento: Travar reflorestamento previne que ao colocar árvores e recursos florestais removam terra fértil. Habilitar \"Travar em Recursos Florestais\" definirá este comportamento como padrão em todos os inícios de jogo, para evitar que você destrua terra fértil caso esqueça de ligar esta função.</string>
+  <string name="Important">Importante! Deve estar configurado antes de começar/carregar um jogo!
+Estas configurações só serão usadas quando carregar do antigo mod \"Unlimited Trees\"</string>
+  <string name="ReplaceRemoveDesc">O padrão é manter as árvores que estão faltando. Se você selecionar \"remover\", elas serão removidas do arquivo do jogo (savegame). Se você escolher \"trocar\", a primeira árvore do jogo padrão vai substituir a que falta.</string>
+  <string name="ReplaceRemoveName">Comportamento para arquivos de jogo (savegame) que estavam com o mod \"Unlimited Trees\"</string>
+  <string name="ReplaceRemoveDropdown0">Manter as árvores que faltam</string>
+  <string name="ReplaceRemoveDropdown1">Remover as árvores que faltam</string>
+  <string name="ReplaceRemoveDropdown2">Substituir as árvores que faltam</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">Ajuste de Árvores</string>
+  <string name="TreeSnapLabel">Esta opção permite o movimento livre de árvores bem como que elas possam ser colocadas sobre construções e objetos</string>
+  <string name="ExperimentalTreeSnap">Usar o Ajuste de Árvores experimental</string>
+  <string name="ExperimentalTreeSnapLabel">O Ajuste de Árvores Experimental é uma mudança no mod MoveIt, que permite ajustar a árvore de acordo com Construções, Redes (estradas, cercas, etc), e Objetos (props). O Ajuste de Árvores funciona bem quando se move árvores, mas quando elas são clonadas, mudanças de posição acontecerão. Para resolver isso, desselecione a árvore e resselecione qualquer árvore para redefinir a posição. O criador do mod está trabalhando com o pessoal do MoveIt para melhorar isso</string>
+  <string name="TreeSnapToBuilding">Habilitar esta opção para permitir que árvores se ajustem à construções</string>
+  <string name="TreeSnapToBuildingLabel">Ajuste de árvores à construções subterrâneas não funciona porque a iluminação não reconhece estas construções</string>
+  <string name="TreeSnapToNetwork">Habilitar esta opção permite que as árvores se ajustem à Redes (estradas, cercas, etc)</string>
+  <string name="TreeSnapToProp">Habilitar esta opção permite que as árvores se ajustem a objetos (props)</string>
+  <string name="TreeSnapToPropLabel">O ajuste de árvores a objetos não funciona 100% porque alguns deles não têm uma forma definida para a iluminação, ex: Ploppable Surfaces</string>
+</resources>

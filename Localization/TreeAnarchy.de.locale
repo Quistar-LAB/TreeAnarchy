@@ -7,55 +7,58 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
-    <!-- Indicator Messages -->
-    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
-    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
-    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
-    <string name="LockForestryIsOn">Lock Forestry is ON</string>
-    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
-    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
-    <!-- Tree Anarchy -->
-    <string name="TreeAnarchy">Baum-Anarchie</string>
-    <string name="TreeAnarchyDesc">Erlaubt es dir, Bäume überall zu platzieren. Wenn du Netzwerke oder Gebäude platzierst, kannst du mit der folgenden Einstellung den Baum verstecken oder den Baum löschen</string>
-    <string name="TreeAnarchyBehaviour">Verhalten bei Überlappung</string>
-    <string name="TreeAnarchyHideTree">Baum verbergen</string>
-    <string name="TreeAnarchyDeleteTree">Baum löschen</string>
-    <!-- Tree Resize -->
-    <string name="IncreaseTreeSize">Baum vergrößern</string>
-    <string name="DecreaseTreeSize">Baum verkleinern</string>
-    <string name="PressAnyKey">Drücke eine Taste</string>
-    <!-- Tab Strips -->
-    <string name="MainOptionTab">Haupteinstellungen</string>
-    <string name="TreeAnarchyTab">Baum-Anarchie</string>
-    <string name="KeyboardShortcutTab">Tastenkürzel</string>
-    <string name="KeyBindDescription">Beim Einstellen von Tastenkürzeln sollten Modifikatoren (SHIFT | STEUERUNG | ALT) für Baum einrasten und Sperren der Waldressource verwendet werden. Die Tastenkürzel für das Vergrößern bzw. Verkleinern der Bäume wird speziell behandelt, so dass keine Modifikatoren verwenden müssen. Es muss aber darauf geachtet werden, ein eindeutiges Tastenkürzel auszuwählen.</string>
-    <!-- Main options -->
-    <string name="MaxTreeLimitTitle">Benutzerdefiniertes Baumlimit einstellen</string>
-    <!-- The {0} must be kept intact, as it is used to insert the tree limit number in program during runtime -->
-    <string name="MaxTreeLimit">Maximales Baumlimit:  {0} Bäume</string>
-    <string name="WindEffect">Windeffekt bei Bäumen aktivieren [Spielstandard ist aktiviert]</string>
-    <string name="WindEffectLabel">Diese Option wirkt sich auf das normale Spielverhalten bei der Höhenvarianten von Bäumen aus und schwächt den Wind auf der Karte.</string>
-    <string name="RandomTreeRotation">Zufällige Rotation der Bäume</string>
-    <string name="TreeSwayFactor">Faktor der Baumbewegung</string>
-    <string name="LockForestry">Waldressource sperren</string>
-    <string name="PersistentLock">Dauerhafte Sperrung von Waldressourcen</string>
-    <string name="SwayLabel">Nützliche optische Anpassungen und Werkzeuge. Sperre die Waldressourcen, um Bäume daran zu hindern, Waldressourcen zu schaffen und so fruchtbares Land zu entfernen. Durch Aktivieren der dauerhaften Sperrung wird dies bei jedem Spielstart aktiviert. Dies soll verhindern, dass Nutzer beim Laden eines Spiels das Sperren von Wäldern vergessen und dann fruchtbares Land auf der Karte zerstören</string>
-    <string name="Important">Wichtig! Muss vor dem Starten/Laden eines Spiels gesetzt werden
+  <!-- Misc Trees -->
+  <string name="GroupTrees">Bäume gruppieren</string>
+  <string name="UngroupTrees">Baumgruppen auflösen</string>
+  <string name="TerrainConformTrees">Bäume geländekonform setzen</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator">Aktiviere Indikatoren im Spiel</string>
+  <string name="TreeSnapIsOff">Einrasten von Bäumen ist AUS</string>
+  <string name="TreeSnapIsOn">Einrasten von Bäumen ist AN</string>
+  <string name="LockForestryIsOff">Sperren der Waldressourcen is AUS</string>
+  <string name="LockForestryIsOn">Sperren der Waldressourcen is AN</string>
+  <string name="TreeAnarchyIsOff">Anarchie für Bäume ist AUS</string>
+  <string name="TreeAnarchyIsOn">Anarchie für Bäume ist AN</string>
+  <!-- Tree Anarchy -->
+  <string name="TreeAnarchy">Baum-Anarchie</string>
+  <string name="TreeAnarchyDesc">Erlaubt es dir, Bäume überall zu platzieren. Wenn du Netzwerke oder Gebäude platzierst, kannst du mit der folgenden Einstellung den Baum verstecken oder den Baum löschen</string>
+  <string name="TreeAnarchyBehaviour">Verhalten bei Überlappung</string>
+  <string name="TreeAnarchyHideTree">Baum verbergen</string>
+  <string name="TreeAnarchyDeleteTree">Baum löschen</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">Baum vergrößern</string>
+  <string name="DecreaseTreeSize">Baum verkleinern</string>
+  <string name="PressAnyKey">Drücke eine Taste</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">Haupteinstellungen</string>
+  <string name="TreeAnarchyTab">Baum-Anarchie</string>
+  <string name="KeyboardShortcutTab">Tastenkürzel</string>
+  <string name="KeyBindDescription">Beim Einstellen von Tastenkürzeln sollten Modifikatoren (SHIFT | STEUERUNG | ALT) für Baum einrasten und Sperren der Waldressource verwendet werden. Die Tastenkürzel für das Vergrößern bzw. Verkleinern der Bäume wird speziell behandelt, so dass keine Modifikatoren verwenden müssen. Es muss aber darauf geachtet werden, ein eindeutiges Tastenkürzel auszuwählen.</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">Benutzerdefiniertes Baumlimit einstellen</string>
+  <string name="MaxTreeLimit">Maximales Baumlimit:  {0} Bäume</string>
+  <string name="WindEffect">Windeffekt bei Bäumen aktivieren</string>
+  <string name="WindEffectLabel">Diese Option wirkt sich auf das normale Spielverhalten bei der Höhenvarianten von Bäumen aus und schwächt den Wind auf der Karte. Spielstandard ist aktiviert</string>
+  <string name="RandomTreeRotation">Zufällige Rotation der Bäume</string>
+  <string name="TreeSwayFactor">Faktor der Baumbewegung</string>
+  <string name="LockForestry">Waldressource sperren</string>
+  <string name="PersistentLock">Dauerhafte Sperrung von Waldressourcen</string>
+  <string name="SwayLabel">Nützliche optische Anpassungen und Werkzeuge. Sperre die Waldressourcen, um Bäume daran zu hindern, Waldressourcen zu schaffen und so fruchtbares Land zu entfernen. Durch Aktivieren der dauerhaften Sperrung wird dies bei jedem Spielstart aktiviert. Dies soll verhindern, dass Nutzer beim Laden eines Spiels das Sperren von Wäldern vergessen und dann fruchtbares Land auf der Karte zerstören</string>
+  <string name="Important">Wichtig! Muss vor dem Starten/Laden eines Spiels gesetzt werden
 
 Die folgenden Einstellungen werden nur beim Laden aus dem alten Unlimited Trees Mod Format verwendet</string>
-    <string name="ReplaceRemoveDesc">Das Standardverhalten ist so eingestellt, dass die fehlenden Bäume erhalten bleiben. Wenn du Enfernen auswählst, werden die Bäume aus dem gespeicherten Spiel entfernt. Wenn du Ersetzen auswählst, wird der erste Vanilla-Baum verwendet, um die fehlenden Bäume zu ersetzen</string>
-    <string name="ReplaceRemoveName">Lade-Verhalten für das Spielformat der alten Unlimited Trees Mod</string>
-    <string name="ReplaceRemoveDropdown0">Fehlende Bäume behalten</string>
-    <string name="ReplaceRemoveDropdown1">Fehlende Bäume entfernen</string>
-    <string name="ReplaceRemoveDropdown2">Fehlende Bäume ersetzen</string>
-    <!-- Tree Snapping specific -->
-    <string name="TreeSnap">Baum einrasten</string>
-    <string name="TreeSnapLabel">Diese Option erlaubt die freie Bewegung von Bäumen und erlaubt das Einrasten von Bäumen auf Gebäude und Requisiten</string>
-    <string name="ExperimentalTreeSnap">Experimentelles Baum-Einrasten</string>
-    <string name="ExperimentalTreeSnapLabel">Experimentelle Baum-Einrastung ist ein Hack in die Move It Mod, der das Einrasten von Baumarten an Gebäuden, Netzwerken und Props ermöglicht. Die Baum-Einrastung funktioniert gut, wenn Bäume verschoben werden, aber beim Klonen kommt es nach der Platzierung des Klons zu Versätzen. Um diese zu beheben, wähle einen anderen, um die Position zurückzusetzen. Momentan arbeite ich an einem Framework um innerhalb der Move It Mod um diese weiter zu verbessern</string>
-    <string name="TreeSnapToBuilding">Aktiviere diese Option, um Bäume an Gebäuden einrasten zu lassen</string>
-    <string name="TreeSnapToBuildingLabel">Das Einrasten an Untergebäuden funktioniert nicht, da das die Unterbauten nicht erkannt werden können</string>
-    <string name="TreeSnapToNetwork">Aktiviere diese Option, um Bäume an Netzwerken einrasten zu lassen</string>
-    <string name="TreeSnapToProp">Aktiviere diese Option, um Bäume an Requisiten einrasten zu lassen</string>
-    <string name="TreeSnapToPropLabel">Das Einrasten an Requisiten funktioniert nicht zu 100% bei Requisiten, die keine Form dafür übergeben, so z.B. Ploppable Surfaces</string>
-</resources>
+  <string name="ReplaceRemoveDesc">Das Standardverhalten ist so eingestellt, dass die fehlenden Bäume erhalten bleiben. Wenn du Enfernen auswählst, werden die Bäume aus dem gespeicherten Spiel entfernt. Wenn du Ersetzen auswählst, wird der erste Vanilla-Baum verwendet, um die fehlenden Bäume zu ersetzen</string>
+  <string name="ReplaceRemoveName">Lade-Verhalten für das Spielformat der alten Unlimited Trees Mod</string>
+  <string name="ReplaceRemoveDropdown0">Fehlende Bäume behalten</string>
+  <string name="ReplaceRemoveDropdown1">Fehlende Bäume entfernen</string>
+  <string name="ReplaceRemoveDropdown2">Fehlende Bäume ersetzen</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">Baum einrasten</string>
+  <string name="TreeSnapLabel">Diese Option erlaubt die freie Bewegung von Bäumen und erlaubt das Einrasten von Bäumen auf Gebäude und Requisiten</string>
+  <string name="ExperimentalTreeSnap">Experimentelles Baum-Einrasten</string>
+  <string name="ExperimentalTreeSnapLabel">Experimentelle Baum-Einrastung ist ein Hack in die Move It Mod, der das Einrasten von Baumarten an Gebäuden, Netzwerken und Props ermöglicht. Die Baum-Einrastung funktioniert gut, wenn Bäume verschoben werden, aber beim Klonen kommt es nach der Platzierung des Klons zu Versätzen. Um diese zu beheben, wähle einen anderen, um die Position zurückzusetzen. Momentan arbeite ich an einem Framework um innerhalb der Move It Mod um diese weiter zu verbessern</string>
+  <string name="TreeSnapToBuilding">Aktiviere diese Option, um Bäume an Gebäuden einrasten zu lassen</string>
+  <string name="TreeSnapToBuildingLabel">Das Einrasten an Untergebäuden funktioniert nicht, da das die Unterbauten nicht erkannt werden können</string>
+  <string name="TreeSnapToNetwork">Aktiviere diese Option, um Bäume an Netzwerken einrasten zu lassen</string>
+  <string name="TreeSnapToProp">Aktiviere diese Option, um Bäume an Requisiten einrasten zu lassen</string>
+  <string name="TreeSnapToPropLabel">Das Einrasten an Requisiten funktioniert nicht zu 100% bei Requisiten, die keine Form dafür übergeben, so z.B. Ploppable Surfaces</string></resources>

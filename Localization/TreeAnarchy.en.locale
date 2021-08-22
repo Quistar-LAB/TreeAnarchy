@@ -37,8 +37,8 @@ TreeAnarchy Default Locale Template
     <!-- Main options -->
     <string name="MaxTreeLimitTitle">Configure Custom Tree Limit</string>
     <string name="MaxTreeLimit">Maximum Tree Limit:  {0} trees</string>
-    <string name="WindEffect">Enable Tree Effect on Wind [Original game default is enabled]</string>
-    <string name="WindEffectLabel">This option affects the normal game behavior of tree's height diluting and weakening the wind on the map.</string>
+    <string name="WindEffect">Enable Tree Effect on Wind</string>
+    <string name="WindEffectLabel">This option affects the normal game behavior of tree's height diluting and weakening the wind on the map. Original game default is enabled</string>
     <string name="RandomTreeRotation">Random Tree Rotation</string>
     <string name="TreeSwayFactor">Tree Sway Factor</string>
     <string name="LockForestry">Lock Forestry</string>

@@ -37,8 +37,8 @@ TreeAnarchy Default Locale Template
   <!-- Main options -->
   <string name="MaxTreeLimitTitle">调整自定树木限制</string>
   <string name="MaxTreeLimit">最大支持树木量： {0} 树木</string>
-  <string name="WindEffect">调整树木对风的影响 【初始游戏设置是开启的】</string>
-  <string name="WindEffectLabel">这选项可调整风经树木的大小高低而弱化的现象</string>
+  <string name="WindEffect">调整树木对风的影响</string>
+  <string name="WindEffectLabel">这选项可调整风经树木的大小高低而弱化的现象。初始游戏设置是开启的</string>
   <string name="RandomTreeRotation">随机树木旋转</string>
   <string name="TreeSwayFactor">树木摇晃因数</string>
   <string name="LockForestry">锁定林业资源</string>
