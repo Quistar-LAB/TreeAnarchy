@@ -90,7 +90,9 @@ namespace TreeAnarchy {
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)))
                     });
-                } else if (codes[i].opcode == OpCodes.Ldarg_1 && codes[i + 1].opcode == OpCodes.Ldloc_0 && codes[i - 1].StoresField(AccessTools.Field(typeof(Vector4), nameof(Vector4.z)))) {
+                }
+#if ENABLETREEGROUP
+                else if (codes[i].opcode == OpCodes.Ldarg_1 && codes[i + 1].opcode == OpCodes.Ldloc_0 && codes[i - 1].StoresField(AccessTools.Field(typeof(Vector4), nameof(Vector4.z)))) {
                     codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
@@ -109,6 +111,9 @@ namespace TreeAnarchy {
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderGroupInstance))),
                 new CodeInstruction(OpCodes.Ret)
             });
+#else
+            }
+#endif
             return codes.AsEnumerable();
         }
 

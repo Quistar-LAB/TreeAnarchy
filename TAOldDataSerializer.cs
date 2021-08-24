@@ -86,12 +86,7 @@ ReadData:
                 return false;
             }
         }
-
         private ushort ReadUShort() => ushortStream[position++];
-
-        private int ReadInt() {
-            int num = ushortStream[position++] << 16;
-            return num | (ushortStream[position++] & 0xffff);
-        }
+        private int ReadInt() => (ushortStream[position++] << 16) | (ushortStream[position++] & 0xffff);
     }
 }

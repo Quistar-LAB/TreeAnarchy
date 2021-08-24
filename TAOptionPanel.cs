@@ -16,7 +16,9 @@ namespace TreeAnarchy {
         private const string TreeAnarchyCBName = "TreeAnarchyCB";
         private static UICheckBox LockForestryCB;
         private static UICheckBox TreeSnapCB;
+#if ENABLETREEANARCHY
         private static UICheckBox TreeAnarchyCB;
+#endif
         private static UISlider TreeScaleFactorSlider;
         private UILabel MaxTreeLabel;
 
@@ -267,8 +269,10 @@ namespace TreeAnarchy {
             LockForestryCB.isChecked = isChecked;
         }
 
+#if ENABLETREEANARCHY
         public static void SetTreeAnarchyState(bool isChecked) {
             TreeAnarchyCB.isChecked = isChecked;
         }
+#endif
     }
 }

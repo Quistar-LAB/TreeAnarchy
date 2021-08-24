@@ -1,4 +1,5 @@
-﻿using ColossalFramework;
+﻿#if ENABLETERRAINCONFORM
+using ColossalFramework;
 using MoveIt;
 using System.Linq;
 using UnityEngine;
@@ -62,3 +63,4 @@ namespace TreeAnarchy {
         }
     }
 }
+#endif

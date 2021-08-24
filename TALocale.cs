@@ -1,13 +1,12 @@
 ﻿using ColossalFramework;
 using ColossalFramework.Globalization;
 using ColossalFramework.PlatformServices;
-using System;
 using System.Globalization;
 using System.Xml;
 
 namespace TreeAnarchy {
     internal class TALocale : SingletonLite<TALocale> {
-        private const UInt64 m_thisModID = 2527486462;
+        private const ulong m_thisModID = 2527486462;
         private const string m_defaultLocale = "en";
         private const string m_fileNameTemplate = @"TreeAnarchy.{0}.locale";
         private XmlDocument m_xmlLocale;
@@ -22,8 +21,8 @@ namespace TreeAnarchy {
                 } else {
                     locale = "zh-CN";
                 }
-            } else if(locale == "pt") {
-                if(CultureInfo.InstalledUICulture.Name == "pt-BR") {
+            } else if (locale == "pt") {
+                if (CultureInfo.InstalledUICulture.Name == "pt-BR") {
                     locale = "pt-BR";
                 }
             } else {
@@ -46,13 +45,13 @@ namespace TreeAnarchy {
         }
 
         private void LoadLocale(string culture) {
-            string localeFile = String.Format(m_directory + m_fileNameTemplate, culture);
-            XmlDocument locale = new XmlDocument();
+            string localeFile = string.Format(m_directory + m_fileNameTemplate, culture);
+            XmlDocument locale = new();
             try {
                 locale.Load(localeFile);
             } catch {
                 /* Load default english locale */
-                localeFile = String.Format(m_directory + m_fileNameTemplate, m_defaultLocale);
+                localeFile = string.Format(m_directory + m_fileNameTemplate, m_defaultLocale);
                 locale.Load(localeFile);
             }
             m_xmlLocale = locale;

@@ -46,20 +46,20 @@ namespace TreeAnarchy {
         private static readonly InputKey defaultIncrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Period, false, false, false);
         private static readonly InputKey defaultDecrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Comma, false, false, false);
 
-        private static readonly SavedInputKey m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
-        private static readonly SavedInputKey m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
+        private static readonly SavedInputKey m_treeSnapping = new(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
+        private static readonly SavedInputKey m_lockForestry = new(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
 #if ENABLETREEANARCHY
-        private static readonly SavedInputKey m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
+        private static readonly SavedInputKey m_treeAnarchy = new(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
 #endif
 #if ENABLETREEGROUP
-        private static readonly SavedInputKey m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
-        private static readonly SavedInputKey m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
+        private static readonly SavedInputKey m_groupTrees = new(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
+        private static readonly SavedInputKey m_ungroupTrees = new(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
 #endif
 #if ENABLETERRAINCONFORM
-        private static readonly SavedInputKey m_terrainConformTrees = new SavedInputKey(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
+        private static readonly SavedInputKey m_terrainConformTrees = new(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
 #endif
-        private static readonly SavedInputKey m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
-        private static readonly SavedInputKey m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
+        private static readonly SavedInputKey m_incrTreeVariation = new(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
+        private static readonly SavedInputKey m_decrTreeVariation = new(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
 
         protected void Update() {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
@@ -158,7 +158,7 @@ namespace TreeAnarchy {
         }
 
         private void OnBindingKeyDown(UIComponent comp, UIKeyEventParameter p) {
-            if (m_EditingBinding != null && !IsModifierKey(p.keycode)) {
+            if (m_EditingBinding is not null && !IsModifierKey(p.keycode)) {
                 p.Use();
                 UIView.PopModal();
                 KeyCode keycode = p.keycode;
@@ -174,7 +174,7 @@ namespace TreeAnarchy {
         }
 
         private void OnBindingMouseDown(UIComponent comp, UIMouseEventParameter p) {
-            if (m_EditingBinding == null) {
+            if (m_EditingBinding is null) {
                 p.Use();
                 m_EditingBinding = (SavedInputKey)p.source.objectUserData;
                 UIButton uIButton = p.source as UIButton;

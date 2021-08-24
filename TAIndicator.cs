@@ -14,10 +14,12 @@ namespace TreeAnarchy {
         private const string IndicatorPanelName = "TreeAnarchyIndicatorPanel";
         private UIIndicator m_treeSnapIndicator;
         private UIIndicator m_lockForestryIndicator;
-        private UIIndicator m_treeAnarchyIndicator;
         public static UIIndicator TreeSnapIndicator { get => instance?.m_treeSnapIndicator; }
         public static UIIndicator LockForestryIndicator { get => instance?.m_lockForestryIndicator; }
+#if ENABLETREEANARCHY
+        private UIIndicator m_treeAnarchyIndicator;
         public static UIIndicator TreeAnarchyIndicator { get => instance?.m_treeAnarchyIndicator; }
+#endif
 
         public TAIndicator() {
             instance = this;
@@ -66,6 +68,7 @@ namespace TreeAnarchy {
                 m_treeSnapIndicator.SetState(TAMod.UseTreeSnapping = !TAMod.UseTreeSnapping);
                 TAMod.SaveSettings();
             });
+#if ENABLETREEANARCHY
             m_treeAnarchyIndicator = AddIndicator("TreeAnarchy", TAMod.UseTreeAnarchy, (_, p) => {
                 m_treeAnarchyIndicator.SetState(TAMod.UseTreeAnarchy = !TAMod.UseTreeAnarchy);
                 TAMod.SaveSettings();
@@ -74,8 +77,14 @@ namespace TreeAnarchy {
                 m_lockForestryIndicator.SetState(TAMod.UseLockForestry = !TAMod.UseLockForestry);
                 TAMod.SaveSettings();
             }, m_treeAnarchyIndicator);
-
             size = new Vector2(indicatorWidth * 3, indicatorHeight);
+#else
+            m_lockForestryIndicator = AddIndicator("LockForestry", TAMod.UseLockForestry, (_, p) => {
+                m_lockForestryIndicator.SetState(TAMod.UseLockForestry = !TAMod.UseLockForestry);
+                TAMod.SaveSettings();
+            }, m_treeSnapIndicator);
+            size = new Vector2(indicatorWidth * 2, indicatorHeight);
+#endif
             UIButton uIButton = parent.Find<UIButton>("Heat'o'meter");
             if (uIButton is null) {
                 uIButton = parent.Find<UIButton>("PopulationPanel");
@@ -92,13 +101,15 @@ namespace TreeAnarchy {
             base.OnDisable();
             RemoveUIComponent(m_treeSnapIndicator);
             RemoveUIComponent(m_lockForestryIndicator);
-            RemoveUIComponent(m_treeAnarchyIndicator);
-            Destroy(m_treeAnarchyIndicator.gameObject);
             Destroy(m_treeSnapIndicator.gameObject);
             Destroy(m_lockForestryIndicator.gameObject);
-            m_treeAnarchyIndicator = null;
             m_treeSnapIndicator = null;
             m_lockForestryIndicator = null;
+#if ENABLETREEANARCHY
+            RemoveUIComponent(m_treeAnarchyIndicator);
+            Destroy(m_treeAnarchyIndicator.gameObject);
+            m_treeAnarchyIndicator = null;
+#endif
         }
 
         public UIIndicator AddIndicator(string indicatorName, bool defState, MouseEventHandler callback, UIComponent anchor = null) {
@@ -117,7 +128,7 @@ namespace TreeAnarchy {
         }
 
         private static UITextureAtlas CreateTextureAtlas(string atlasName, string[] spriteNames) {
-            Texture2D texture2D = new Texture2D(spriteMaxSize, spriteMaxSize, TextureFormat.ARGB32, false);
+            Texture2D texture2D = new(spriteMaxSize, spriteMaxSize, TextureFormat.ARGB32, false);
             Texture2D[] array = new Texture2D[spriteNames.Length];
             for (int i = 0; i < spriteNames.Length; i++) {
                 array[i] = LoadTextureFromAssembly(spriteNames[i] + ".png");
@@ -129,7 +140,7 @@ namespace TreeAnarchy {
             uITextureAtlas.material = material;
             uITextureAtlas.name = atlasName;
             for (int j = 0; j < spriteNames.Length; j++) {
-                UITextureAtlas.SpriteInfo item = new UITextureAtlas.SpriteInfo {
+                UITextureAtlas.SpriteInfo item = new() {
                     name = spriteNames[j],
                     texture = array[j],
                     region = array2[j]
@@ -143,7 +154,7 @@ namespace TreeAnarchy {
             UnmanagedMemoryStream s = (UnmanagedMemoryStream)Assembly.GetExecutingAssembly().GetManifestResourceStream("TreeAnarchy.Resources." + filename);
             byte[] array = new byte[s.Length];
             s.Read(array, 0, array.Length);
-            Texture2D texture = new Texture2D(2, 2, TextureFormat.ARGB32, false);
+            Texture2D texture = new(2, 2, TextureFormat.ARGB32, false);
             texture.LoadImage(array);
             texture.Compress(false);
             return texture;

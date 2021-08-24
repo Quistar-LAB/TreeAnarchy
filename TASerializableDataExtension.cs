@@ -268,7 +268,7 @@ namespace TreeAnarchy {
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
-                    if (oldData != null) {
+                    if (oldData is not null) {
                         if (oldData.Length < 2 || oldData.Length % 2 != 0) {
                             TALog("Invalid Old Data, Not Loading Tree Data");
                             return;
@@ -289,7 +289,8 @@ namespace TreeAnarchy {
                         TALog("No extra trees to load");
                         return;
                     }
-                    using var stream = new MemoryStream(data); DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
+                    using MemoryStream stream = new(data);
+                    DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
                 } else {
                     for (int i = DefaultTreeLimit; i < trees.Length; i++) {
                         trees[i].m_flags = 0;
@@ -331,8 +332,7 @@ namespace TreeAnarchy {
 
         private void EraseData(string id) {
             SimulationManager smInstance = Singleton<SimulationManager>.instance;
-            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) {
-            }
+            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
             try {
                 if (smInstance.m_serializableDataStorage.ContainsKey(id)) {
                     smInstance.m_serializableDataStorage.Remove(id);

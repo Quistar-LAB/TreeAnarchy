@@ -1,4 +1,5 @@
-﻿using ColossalFramework;
+﻿#if ENABLETREEGROUP
+using ColossalFramework;
 using ColossalFramework.Math;
 using MoveIt;
 using System;
@@ -36,7 +37,7 @@ namespace TreeAnarchy {
         }
 
         public static void RenderGroupInstance(RenderManager.CameraInfo cameraInfo, uint treeID, Vector3 position, float brightness, Vector4 objectIndex) {
-            if (cameraInfo == null || cameraInfo.CheckRenderDistance(position, RenderManager.LevelOfDetailFactor * 300f)) {
+            if (cameraInfo is null || cameraInfo.CheckRenderDistance(position, RenderManager.LevelOfDetailFactor * 300f)) {
                 TreeManager instance = Singleton<TreeManager>.instance;
                 MaterialPropertyBlock materialBlock = instance.m_materialBlock;
                 materialBlock.Clear();
@@ -96,7 +97,7 @@ namespace TreeAnarchy {
         public TreeInfo CreateTreePrefab(out ushort infoIndex, string name = null) {
             int prefabCount = PrefabCollection<TreeInfo>.PrefabCount();
             TreeInfo infoOrig = default;
-            for(uint i = 0; i < prefabCount; i++) {
+            for (uint i = 0; i < prefabCount; i++) {
                 infoOrig = PrefabCollection<TreeInfo>.GetPrefab(i);
                 if (infoOrig.m_mesh.isReadable) break;
             }
@@ -213,13 +214,13 @@ namespace TreeAnarchy {
 
         private void ReleaseTrees(TreeManager tm, HashSet<Instance> selection) {
             List<Instance> removeList = new List<Instance>();
-            foreach(var selected in selection) {
+            foreach (var selected in selection) {
                 if (selected is MoveableTree && !selected.id.IsEmpty && selected.id.Tree > 0) {
                     tm.ReleaseTree(selected.id.Tree);
                     removeList.Add(selected);
                 }
             }
-            foreach(var removeItem in removeList) {
+            foreach (var removeItem in removeList) {
                 selection.Remove(removeItem);
             }
         }
@@ -246,7 +247,7 @@ namespace TreeAnarchy {
 
         public void GroupTrees() {
             if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) && UIToolOptionPanel.instance.isVisible && MoveIt.Action.selection.Count > 0) {
-                if(CreateGroupedTrees(out uint treeID, MoveIt.Action.selection)) {
+                if (CreateGroupedTrees(out uint treeID, MoveIt.Action.selection)) {
                     MoveIt.Action.selection.Add(new MoveableTree(new InstanceID { Tree = treeID }));
                 }
             }
@@ -289,12 +290,12 @@ namespace TreeAnarchy {
                             }
                         }
                     }
-                    if(removeList.Count > 0) {
-                        for(int i = 0; i < removeList.Count; i++) {
+                    if (removeList.Count > 0) {
+                        for (int i = 0; i < removeList.Count; i++) {
                             MoveIt.Action.selection.Remove(removeList[i]);
                         }
                     }
-                    if(newSelections.Count > 0) {
+                    if (newSelections.Count > 0) {
                         MoveIt.Action.selection.UnionWith(newSelections);
                     }
                 }
@@ -305,3 +306,4 @@ namespace TreeAnarchy {
 
     }
 }
+#endif
