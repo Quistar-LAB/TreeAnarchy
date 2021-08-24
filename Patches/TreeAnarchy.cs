@@ -1,6 +1,6 @@
-﻿using ColossalFramework;
+﻿#if ENABLETREEANARCHY
+using ColossalFramework;
 using HarmonyLib;
-using PropAnarchy.Redirection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +11,19 @@ using System.Threading;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
-        private bool isPTAPatched = false;
+        private Type m_redirectUtil = null;
+        private static MethodInfo m_redirectMethod = null;
+
         private void EnableTreeAnarchyPatches(Harmony harmony) {
-            if (IsPluginExists(593588108, "Prop & Tree Anarchy")) {
-                harmony.Patch(AccessTools.Method(typeof(RedirectionUtil), "RedirectMethods"),
+            if (m_redirectUtil is null && (IsPluginExists(593588108, "Prop & Tree Anarchy") || IsPluginExists(2456344023, "Prop & Tree Anarchy"))) {
+                m_redirectUtil = Assembly.Load("PropAnarchy").GetType("PropAnarchy.Redirection.RedirectionUtil");
+                foreach (var methodInfo in m_redirectUtil.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)) {
+                    if (methodInfo.Name == "RedirectMethod" && methodInfo.GetParameters()[2].ToString().Contains("Dictionary")) {
+                        m_redirectMethod = methodInfo;
+                    }
+                }
+                harmony.Patch(AccessTools.Method(m_redirectUtil, "RedirectMethods"),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(PTARedirectMethodsTranspiler))));
-                isPTAPatched = true;
             }
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCheckPlacementErrorsTranspiler))));
@@ -27,9 +34,9 @@ namespace TreeAnarchy {
         private void DisableTreeAnarchyPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), "CheckOverlap"), HarmonyPatchType.Transpiler, HARMONYID);
-            if (isPTAPatched) {
-                harmony.Unpatch(AccessTools.Method(typeof(RedirectionUtil), "RedirectMethods"), HarmonyPatchType.Transpiler, HARMONYID);
-                isPTAPatched = false;
+            if (m_redirectUtil is not null) {
+                harmony.Unpatch(AccessTools.Method(m_redirectUtil, "RedirectMethods"), HarmonyPatchType.Transpiler, HARMONYID);
+                m_redirectUtil = null;
             }
         }
 
@@ -39,7 +46,7 @@ namespace TreeAnarchy {
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReleaseTreeQueue(uint treeID) => ThreadPool.QueueUserWorkItem(QueuedAction, treeID);
 
-        public static void CustomRedirect(Type targetType, MethodInfo method, Dictionary<MethodInfo, RedirectCallsState> redirects, bool reverse = false) {
+        public static void CustomRedirect(Type targetType, MethodInfo method, object redirects, bool reverse = false) {
             switch (method.Name) {
             case @"set_GrowState":
             case @"CheckOverlap":
@@ -52,7 +59,7 @@ namespace TreeAnarchy {
                 return;
             default:
 runDefault:
-                AccessTools.Method(typeof(RedirectionUtil), "RedirectMethod", new Type[] { typeof(Type), typeof(MethodInfo), typeof(Dictionary<MethodInfo, RedirectCallsState>), typeof(bool) }).Invoke(null, new object[] {
+                m_redirectMethod.Invoke(null, new object[] {
                     targetType,
                     method,
                     redirects,
@@ -64,8 +71,9 @@ runDefault:
 
         /* A patch to the patcher of Prop Tree Anarchy */
         private static IEnumerable<CodeInstruction> PTARedirectMethodsTranspiler(IEnumerable<CodeInstruction> instructions) {
+            Type redirectUtil = Assembly.Load("PropAnarchy").GetType("PropAnarchy.Redirection.RedirectionUtil");
             foreach (var code in instructions) {
-                if (code.Calls(AccessTools.Method(typeof(RedirectionUtil), "RedirectMethod", new Type[] { typeof(Type), typeof(MethodInfo), typeof(Dictionary<MethodInfo, RedirectCallsState>), typeof(bool) }))) {
+                if (code.opcode == OpCodes.Call && code.ToString().Contains("RedirectMethod")) {
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CustomRedirect)));
                 } else yield return code;
             }
@@ -143,3 +151,4 @@ runDefault:
         }
     }
 }
+#endif
