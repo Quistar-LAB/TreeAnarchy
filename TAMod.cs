@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "1.0.0";
+        internal const string m_modVersion = "1.0.2";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Tree Anarchy";
         private const string m_modDesc = "Lets you plant more trees with tree snapping";
@@ -138,8 +138,6 @@ namespace TreeAnarchy {
             if (ShowIndicators && (Singleton<ToolManager>.instance.m_properties.m_mode & ItemClass.Availability.MapEditor) == ItemClass.Availability.None) {
                 UIView.GetAView().FindUIComponent<UIPanel>("InfoPanel").AddUIComponent<TAIndicator>();
             }
-            SingletonLite<TAManager>.instance.CreateTreePrefab(out ushort infoIndex);
-            SingletonLite<TAManager>.instance.m_defaultInfoIndex = infoIndex;
             IsInGame = true;
         }
 
@@ -154,7 +152,7 @@ namespace TreeAnarchy {
                 if (!File.Exists(SettingsFileName)) {
                     SaveSettings();
                 }
-                XmlDocument xmlConfig = new XmlDocument();
+                XmlDocument xmlConfig = new();
                 xmlConfig.Load(SettingsFileName);
                 m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute("TreeEffectOnWind"));
@@ -178,7 +176,7 @@ namespace TreeAnarchy {
         }
 
         internal static void SaveSettings() {
-            XmlDocument xmlConfig = new XmlDocument();
+            XmlDocument xmlConfig = new();
             XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
             _ = root.Attributes.Append(AddElement(xmlConfig, "ScaleFactor", m_ScaleFactor));
             _ = root.Attributes.Append(AddElement(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
@@ -204,13 +202,13 @@ namespace TreeAnarchy {
             return attr;
         }
 
-        private static readonly Stopwatch profiler = new Stopwatch();
+        private static readonly Stopwatch profiler = new();
         private void CreateDebugFile() {
             profiler.Start();
             /* Create Debug Log File */
             string path = Path.Combine(Application.dataPath, m_debugLogFile);
-            using FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-            using StreamWriter sw = new StreamWriter(debugFile);
+            using FileStream debugFile = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+            using StreamWriter sw = new(debugFile);
             sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
             sw.WriteLine(Environment.OSVersion);
             sw.WriteLine($"C# CLR Version {Environment.Version}");
@@ -219,8 +217,8 @@ namespace TreeAnarchy {
         }
 
         private void OutputPluginsList() {
-            using FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None);
-            using StreamWriter sw = new StreamWriter(debugFile);
+            using FileStream debugFile = new(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None);
+            using StreamWriter sw = new(debugFile);
             sw.WriteLine("Mods Installed are:");
             foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
                 sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? "** Enabled **" : "** Disabled **")}");
@@ -230,8 +228,8 @@ namespace TreeAnarchy {
 
         internal static void TALog(string msg) {
             var ticks = profiler.ElapsedTicks;
-            using FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append);
-            using StreamWriter sw = new StreamWriter(debugFile);
+            using FileStream debugFile = new(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append);
+            using StreamWriter sw = new(debugFile);
             sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
         }
     }
