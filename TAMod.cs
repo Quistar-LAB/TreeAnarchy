@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "1.0.2";
+        internal const string m_modVersion = "1.0.4";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Tree Anarchy";
         private const string m_modDesc = "Lets you plant more trees with tree snapping";
@@ -81,7 +81,7 @@ namespace TreeAnarchy {
         internal static bool IsInGame = false;
 
         #region IUserMod
-        string IUserMod.Name => m_modName;
+        string IUserMod.Name => m_modName + " " + m_modVersion;
         string IUserMod.Description => m_modDesc;
 
         public TAMod() {
@@ -138,6 +138,7 @@ namespace TreeAnarchy {
             if (ShowIndicators && (Singleton<ToolManager>.instance.m_properties.m_mode & ItemClass.Availability.MapEditor) == ItemClass.Availability.None) {
                 UIView.GetAView().FindUIComponent<UIPanel>("InfoPanel").AddUIComponent<TAIndicator>();
             }
+            TAOptionPanel.UpdateState(true);
             IsInGame = true;
         }
 
