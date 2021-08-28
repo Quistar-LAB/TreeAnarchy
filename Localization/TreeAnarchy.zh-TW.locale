@@ -1,7 +1,7 @@
-<!DOCTYPE root [
-    <!ELEMENT root ANY>
-    <!ELEMENT string ANY>
-    <!ATTLIST string name ID #REQUIRED>
+<!DOCTYPE resources [
+  <!ELEMENT resources ANY>
+  <!ELEMENT string ANY>
+  <!ATTLIST string name ID #REQUIRED>
 ]>
 <!--
 TreeAnarchy Default Locale Template
