@@ -25,10 +25,7 @@ namespace TreeAnarchy {
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static float CalcTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
-            if (treeInfo is null) return 0;
-            return instance.CalculateCustomScale(treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f, treeID);
-        }
+        public static float CalcTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) => instance.CalculateCustomScale(treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f, treeID);
 
         public static float GetSeedTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
             if (treeInfo is null) return 0;
