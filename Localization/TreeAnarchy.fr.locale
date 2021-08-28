@@ -9,57 +9,57 @@ TreeAnarchy Default Locale Template
 <resources>
   <!-- Misc Trees -->
   <string name="GroupTrees">Grouper les arbres</string>
-  <string name="UngroupTrees">Scinder le groupe d\'arbres</string>
-  <string name="TerrainConformTrees">Planter à l\'altitude du sol</string>
+  <string name="UngroupTrees">Scinder le groupe d'arbres</string>
+  <string name="TerrainConformTrees">Planter à l'altitude du sol</string>
   <!-- Indicator Messages -->
   <string name="EnableIndicator">Afficher les informations en jeu</string>
-  <string name="TreeSnapIsOff">Accrochage d\'arbre désactivé</string>
-  <string name="TreeSnapIsOn">Accrochage d\'arbre est activé</string>
+  <string name="TreeSnapIsOff">Accrochage d'arbre désactivé</string>
+  <string name="TreeSnapIsOn">Accrochage d'arbre est activé</string>
   <string name="LockForestryIsOff">Verrou de ressource forestière désactivé</string>
   <string name="LockForestryIsOn">Verrou de ressource forestière activé</string>
   <string name="TreeAnarchyIsOff">Anarchie des arbres désactivée</string>
   <string name="TreeAnarchyIsOn">Anarchie des arbres activée</string>
   <!-- Tree Anarchy -->
   <string name="TreeAnarchy">Anarchie des arbres</string>
-  <string name="TreeAnarchyDesc">Permet de placer des arbres n\'importe où. Lorsque vous placez des réseaux ou des bâtiments, vous pouvez utiliser le paramètre suivant pour cacher ou supprimer l\'arbre</string>
-  <string name="TreeAnarchyBehaviour">Comportement lors d\'un chevauchement</string>
-  <string name="TreeAnarchyHideTree">Cacher l\'arbre</string>
-  <string name="TreeAnarchyDeleteTree">Supprimer l\'arbre</string>
+  <string name="TreeAnarchyDesc">Permet de placer des arbres n'importe où. Lorsque vous placez des réseaux ou des bâtiments, vous pouvez utiliser le paramètre suivant pour cacher ou supprimer l'arbre</string>
+  <string name="TreeAnarchyBehaviour">Comportement lors d'un chevauchement</string>
+  <string name="TreeAnarchyHideTree">Cacher l'arbre</string>
+  <string name="TreeAnarchyDeleteTree">Supprimer l'arbre</string>
   <!-- Tree Resize -->
-  <string name="IncreaseTreeSize">Agrandir l\'arbre</string>
-  <string name="DecreaseTreeSize">Raccourcir l\'arbre</string>
+  <string name="IncreaseTreeSize">Agrandir l'arbre</string>
+  <string name="DecreaseTreeSize">Raccourcir l'arbre</string>
   <string name="PressAnyKey">Appuyez sur une touche</string>
   <!-- Tab Strips -->
   <string name="MainOptionTab">Réglages principaux</string>
   <string name="TreeAnarchyTab">Anarchie des arbres</string>
   <string name="KeyboardShortcutTab">Raccourcis clavier</string>
-  <string name="KeyBindDescription">Lors du changement des raccourcis claviers, assurez-vous d\'utiliser des touches modifiantes (SHIFT | CONTROL | ALT) pour l\'accrochage de l\'arbre et le verrouillage de la ressource forestière. Les raccourcis d\'augmentation et diminution de la taille de l\'arbre ont été préparés pour ne pas nécessiter ces modificateurs mais assurez-vous, s\'il vous plaît, de choisir un raccourci clavier unique.</string>
+  <string name="KeyBindDescription">Lors du changement des raccourcis claviers, assurez-vous d'utiliser des touches modifiantes (SHIFT | CONTROL | ALT) pour l'accrochage de l'arbre et le verrouillage de la ressource forestière. Les raccourcis d'augmentation et diminution de la taille de l'arbre ont été préparés pour ne pas nécessiter ces modificateurs mais assurez-vous, s'il vous plaît, de choisir un raccourci clavier unique.</string>
   <!-- Main options -->
-  <string name="MaxTreeLimitTitle">Configurer la limite d\'arbre personnalisée</string>
-  <string name="MaxTreeLimit">Nombre maximal d\'arbres :  {0} arbres</string>
-  <string name="WindEffect">Activer l\'effet arborescence sur le vent [La valeur par défaut du jeu original est activée]</string>
-  <string name="WindEffectLabel">Cette option affecte l\'effet de la taille des arbres sur la répartition et la force du vent [activé par défaut].</string>
+  <string name="MaxTreeLimitTitle">Configurer la limite d'arbre personnalisée</string>
+  <string name="MaxTreeLimit">Nombre maximal d'arbres :  {0} arbres</string>
+  <string name="WindEffect">Activer l'effet arborescence sur le vent</string>
+  <string name="WindEffectLabel">Cette option affecte l'effet de la taille des arbres sur la répartition et la force du vent [activé par défaut].</string>
   <string name="RandomTreeRotation">Rotation aléatoire des arbres</string>
   <string name="TreeSwayFactor">Facteur de balancement des arbres</string>
   <string name="LockForestry">Verrouillage de la ressource forestière</string>
   <string name="PersistentLock">Verrou permanent de ressource forestière (conseillé).</string>
-  <string name="SwayLabel">Outil et cosmétique utiles. Le Verrou de ressource forestière empêche les arbres de générer de la ressource forestière et de retirer ainsi la ressource agricole. Sélectionner le Verrou permanent de ressource forestière active le Verrou de ressource forestière à chaque lancement du jeu ; cela permet de ne plus avoir à y penser (et évite d\'effacer de la ressource agricole par étourderie)</string>
+  <string name="SwayLabel">Outil et cosmétique utiles. Le Verrou de ressource forestière empêche les arbres de générer de la ressource forestière et de retirer ainsi la ressource agricole. Sélectionner le Verrou permanent de ressource forestière active le Verrou de ressource forestière à chaque lancement du jeu ; cela permet de ne plus avoir à y penser (et évite d'effacer de la ressource agricole par étourderie)</string>
   <string name="Important">IMPORTANT ! Doit être défini avant de commencer ou charger une partie.
 
-Les paramètres suivants ne sont utilisés que lors du chargement à partir de format de l\'ancien Unlimited Trees Mod</string>
+Les paramètres suivants ne sont utilisés que lors du chargement à partir de format de l'ancien Unlimited Trees Mod</string>
   <string name="ReplaceRemoveDesc">Le comportement par défaut est défini pour conserver les arbres manquants. Si vous sélectionnez Supprimer, les arbres seront supprimés de la partie sauvegardée. Si vous choisissez de remplacer les arbres, alors le premier arbre « vanilla » sera utilisé pour remplacer les arbres manquants</string>
-  <string name="ReplaceRemoveName">Comportement de chargement pour le format de jeu de l\'ancien mod Unlimited Trees</string>
+  <string name="ReplaceRemoveName">Comportement de chargement pour le format de jeu de l'ancien mod Unlimited Trees</string>
   <string name="ReplaceRemoveDropdown0">Garder les arbres manquants</string>
   <string name="ReplaceRemoveDropdown1">Supprimer les arbres manquants</string>
   <string name="ReplaceRemoveDropdown2">Remplacer les arbres manquants</string>
   <!-- Tree Snapping specific -->
   <string name="TreeSnap">Accrocher un arbre</string>
-  <string name="TreeSnapLabel">Cette option permet aux arbres de se déplacer librement et permet aux arbres d\'être accrochés aux bâtiments et aux accessoires</string>
-  <string name="ExperimentalTreeSnap">Utiliser la version expérimentale d\'Accrocher un arbre</string>
-  <string name="ExperimentalTreeSnapLabel">Expérimental : Accrochage d\'arbre est une bidouille du mod MoveIt permettant d\'accrocher des arbres aux bâtiments, réseaux ou décorations. Ça marche bien quand on déplace les arbres mais des décalages peuvent se produire lorsqu\'on clone les arbres. En attendant mieux, vous pouvez désélectionner votre arbre et en sélectionner un autre. Il me faut encore bidouiller au fin fond de MoveIt pour corriger ça</string>
-  <string name="TreeSnapToBuilding">Activer cette option pour permettre aux arbres de s\'accrocher aux bâtiments</string>
-  <string name="TreeSnapToBuildingLabel">L\'accrochage d\'arbres à un sous-bâtiment ne fonctionne pas car le « ray casting » ne reconnaît pas les sous-bâtiments</string>
-  <string name="TreeSnapToNetwork">Activer cette option pour permettre aux arbres de s\'accrocher aux réseaux</string>
-  <string name="TreeSnapToProp">Activer cette option pour permettre aux arbres de s\'accrocher aux accessoires</string>
-  <string name="TreeSnapToPropLabel">L\'accrochage d\'arbres aux props ne fonctionne pas à 100% car certaines décorations n\'ont pas de forme définie pour le « ray casting », par exemple les textures surfaciques</string>
+  <string name="TreeSnapLabel">Cette option permet aux arbres de se déplacer librement et permet aux arbres d'être accrochés aux bâtiments et aux accessoires</string>
+  <string name="ExperimentalTreeSnap">Utiliser la version expérimentale d'Accrocher un arbre</string>
+  <string name="ExperimentalTreeSnapLabel">Expérimental : Accrochage d'arbre est une bidouille du mod MoveIt permettant d'accrocher des arbres aux bâtiments, réseaux ou décorations. Ça marche bien quand on déplace les arbres mais des décalages peuvent se produire lorsqu'on clone les arbres. En attendant mieux, vous pouvez désélectionner votre arbre et en sélectionner un autre. Il me faut encore bidouiller au fin fond de MoveIt pour corriger ça</string>
+  <string name="TreeSnapToBuilding">Activer cette option pour permettre aux arbres de s'accrocher aux bâtiments</string>
+  <string name="TreeSnapToBuildingLabel">L'accrochage d'arbres à un sous-bâtiment ne fonctionne pas car le « ray casting » ne reconnaît pas les sous-bâtiments</string>
+  <string name="TreeSnapToNetwork">Activer cette option pour permettre aux arbres de s'accrocher aux réseaux</string>
+  <string name="TreeSnapToProp">Activer cette option pour permettre aux arbres de s'accrocher aux accessoires</string>
+  <string name="TreeSnapToPropLabel">L'accrochage d'arbres aux props ne fonctionne pas à 100% car certaines décorations n'ont pas de forme définie pour le « ray casting », par exemple les textures surfaciques</string>
 </resources>
