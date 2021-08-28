@@ -1,12 +1,14 @@
 ﻿using ColossalFramework;
 using ColossalFramework.Globalization;
 using ColossalFramework.PlatformServices;
+using System;
 using System.Globalization;
 using System.Xml;
 
 namespace TreeAnarchy {
     internal class TALocale : SingletonLite<TALocale> {
         private const ulong m_thisModID = 2527486462;
+        private const ulong m_betaModID = 2584051448;
         private const string m_defaultLocale = "en";
         private const string m_fileNameTemplate = @"TreeAnarchy.{0}.locale";
         private XmlDocument m_xmlLocale;
@@ -59,11 +61,18 @@ namespace TreeAnarchy {
 
         internal void Init() {
             if (!isInitialized) {
-                foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
-                    if (fileID.AsUInt64 == m_thisModID) {
-                        m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
-                        break;
+                try {
+                    foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
+                        if (fileID.AsUInt64 == m_thisModID || fileID.AsUInt64 == m_betaModID) {
+                            m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
+                            break;
+                        }
                     }
+                    if (m_directory is null) {
+                        m_directory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"/Colossal Order/Cities_Skylines/Addons/Mods/TreeAnarchy/Locale/";
+                    }
+                } catch (Exception e) {
+                    UnityEngine.Debug.LogException(e);
                 }
                 LocaleManager.eventLocaleChanged += OnLocaleChanged;
                 OnLocaleChanged();
