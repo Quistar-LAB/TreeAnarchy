@@ -102,15 +102,15 @@ namespace TreeAnarchy {
             UILabel SwayFactorLabel = SwayPanel.Find<UILabel>("Label");
             SwayFactorLabel.text = locale.GetLocale("TreeSwayFactor");
             SwayFactorLabel.textScale = DefaultFontScale;
-            SwayFactorLabel.width += 50;
+            SwayFactorLabel.width += 80;
             SwayFactorLabel.Disable();
             AddSlider(SwayPanel, 0f, 1f, 0.1f, TreeSwayFactor, (_, val) => {
                 TreeSwayFactor = val;
                 if (IsInGame) TAPatcher.UpdateTreeSway();
                 SaveSettings();
-            }).width += 40;
+            }).width -= 10;
             SwayPanel.AlignTo(TreeRotationCB, UIAlignAnchor.TopRight);
-            SwayPanel.relativePosition = new Vector3(320, 0);
+            SwayPanel.relativePosition = new Vector3(380, 0);
             UICheckBox PersistentLockCB = AddCheckBox(panel, locale.GetLocale("PersistentLock"), PersistentLockForestry, (_, isChecked) => {
                 PersistentLockForestry = isChecked;
                 SaveSettings();
