@@ -10,7 +10,7 @@ namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private const string HARMONYID = @"quistar.treeanarchy.mod";
         private Harmony m_harmony;
-        private Harmony CurrentHarmony {
+        internal Harmony CurrentHarmony {
             get => (m_harmony is null) ? m_harmony = new Harmony(HARMONYID) : m_harmony;
         }
         internal static FieldInfo MoveItUseTreeSnap = null;
@@ -83,9 +83,6 @@ namespace TreeAnarchy {
             EnableTreeLimitPatches(harmony);
             EnableTreeSnappingPatches(harmony);
             EnableTreeVariationPatches(harmony);
-#if ENABLETREEANARCHY
-            EnableTreeAnarchyPatches(harmony);
-#endif
         }
 
         internal void DisableCore() {
@@ -93,14 +90,15 @@ namespace TreeAnarchy {
             DisableTreeLimitPatches(harmony);
             DisableTreeSnappingPatches(harmony);
             DisableTreeVariationPatches(harmony);
-#if ENABLETREEANARCHY
-            DisableTreeAnarchyPatches(harmony);
-#endif
         }
 
         internal void LateEnable() {
             Harmony harmony = CurrentHarmony;
             EnableTreeMovementPatches(harmony);
+#if ENABLETREEANARCHY
+            PatchPTA(harmony);
+            EnableTreeAnarchyPatches(harmony);
+#endif
             if (IsPluginExists(1619685021, "MoveIt") || IsPluginExists(2215771668, "MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
                     PatchMoveItSnapping(harmony);
@@ -112,6 +110,10 @@ namespace TreeAnarchy {
         internal void DisableLatePatch() {
             Harmony harmony = CurrentHarmony;
             DisableTreeMovementPatches(harmony);
+#if ENABLETREEANARCHY
+            UnpatchPTA(harmony);
+            DisableTreeAnarchyPatches(harmony);
+#endif
             if (isMoveItInstalled) {
                 DisableMoveItSnappingPatches(harmony);
             }
