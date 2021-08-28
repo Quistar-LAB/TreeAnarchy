@@ -54,7 +54,7 @@ namespace TreeAnarchy {
             AddTab(tabBar, locale.GetLocale("KeyboardShortcutTab"), 2, true).gameObject.AddComponent<TAKeyBinding>();
         }
 
-        private static void UpdateState(bool isInGame) {
+        public static void UpdateState(bool isInGame) {
             if (isInGame) {
                 TreeScaleFactorSlider.Disable();
                 return;
@@ -126,6 +126,9 @@ namespace TreeAnarchy {
             TreeScaleFactorSlider = AddSlider(ScalePanel, MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (_, val) => {
                 TreeScaleFactor = val;
                 MaxTreeLabel.text = string.Format(SingletonLite<TALocale>.instance.GetLocale("MaxTreeLimit"), MaxTreeLimit);
+                TAPatcher patcher = SingletonLite<TAPatcher>.instance;
+                patcher.RemoveTreeLimitPatches(patcher.CurrentHarmony);
+                patcher.InjectTreeLimit(patcher.CurrentHarmony);
                 SaveSettings();
             });
             ScalePanel.AlignTo(PersistentLockCB, UIAlignAnchor.BottomLeft);
