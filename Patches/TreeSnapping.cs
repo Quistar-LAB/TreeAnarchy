@@ -66,8 +66,10 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             var codes = instructions.ToList();
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance)))) {
+            int len = codes.Count;
+            MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
+            for (int i = 0; i < len; i++) {
+                if (codes[i].Calls(terrainInstance)) {
                     codes.RemoveRange(i, 3);
                     codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_0),
@@ -81,7 +83,7 @@ namespace TreeAnarchy {
             return codes.AsEnumerable();
         }
 
-        private static ToolBase.RaycastService customServices = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+        private static ToolBase.RaycastService customServices = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
         public static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
             if (UseTreeSnapping) {
                 input.m_currentEditObject = false;
@@ -110,9 +112,10 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> TreeToolCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].Calls(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect)))) {
+            int len = codes.Count;
+            MethodInfo placementEffect = AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect));
+            for (int i = 0; i < len; i++) {
+                if (codes[i].Calls(placementEffect)) {
                     codes.InsertRange(i + 1, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_S, 4),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)))
@@ -127,43 +130,41 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions) {
             var LoadFieldUseTreeSnapping = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
             var codes = instructions.ToList();
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].StoresField(AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject))) &&
+            int len = codes.Count;
+            FieldInfo rayInput = AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject));
+            FieldInfo rayOutput = AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject));
+            FieldInfo hitPos = AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_hitPos));
+            FieldInfo fixedHeight = AccessTools.Field(typeof(TreeTool), "m_fixedHeight");
+            for (int i = 0; i < len; i++) {
+                if (codes[i].StoresField(rayInput) &&
                     codes[i - 1].opcode == OpCodes.Ldc_I4_1 &&
                     codes[i - 2].opcode == OpCodes.Ldloca_S) {
                     LocalBuilder raycastInput = codes[i - 2].operand as LocalBuilder;
-                    List<Label> labels = codes[i + 1].labels;
-                    var snippet = new CodeInstruction[] {
+                    List<Label> labels = codes[i + 1].ExtractLabels();
+                    codes.InsertRange(i + 1, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloca_S, raycastInput).WithLabels(labels),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)))
-                    };
-                    codes[i + 1].labels.Clear();
-                    codes.InsertRange(i + 1, snippet);
-                } else if (codes[i].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject)))) {
+                    });
+                } else if (codes[i].LoadsField(rayOutput)) {
                     // Add !UseTreeSnapping in if
                     if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
                         codes.InsertRange(i + 2, new CodeInstruction[] {
                             LoadFieldUseTreeSnapping,
                             new CodeInstruction(OpCodes.Brtrue, label.Value)
                         });
-                    }
-                    // Replace RaycastOutput.m_currentEditObject with !UseTreeSnapping
-                    if (codes[i - 2].LoadsField(AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_hitPos)))) {
+                    } else if (codes[i - 2].LoadsField(hitPos)) { // Replace RaycastOutput.m_currentEditObject with !UseTreeSnapping
                         codes.RemoveRange(i - 1, 2);
                         codes.InsertRange(i - 1, new CodeInstruction[] {
                             LoadFieldUseTreeSnapping,
                             new CodeInstruction(OpCodes.Ldc_I4_0),
                             new CodeInstruction(OpCodes.Ceq)
                         });
-                    }
-                    // Replace LDFLD RaycastOutput.m_currentEditObject
-                    if (codes[i + 1].StoresField(AccessTools.Field(typeof(TreeTool), "m_fixedHeight"))) {
+                    } else if (codes[i + 1].StoresField(fixedHeight)) { // Replace LDFLD RaycastOutput.m_currentEditObject
                         codes[i] = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
                     }
                     break;
                 }
             }
-
             return codes.AsEnumerable();
         }
 
@@ -226,9 +227,8 @@ namespace TreeAnarchy {
         private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
+            Randomizer randomizer = new(treeState.instance.id.Tree);
             float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
-            //float scale = treeInfo.m_minScale + (float)randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
@@ -241,9 +241,8 @@ namespace TreeAnarchy {
         private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
+            Randomizer randomizer = new(treeState.instance.id.Tree);
             float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
-            //float scale = treeInfo.m_minScale + randomizer.Int32(10000u) * (treeInfo.m_maxScale - treeInfo.m_minScale) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
@@ -273,7 +272,6 @@ namespace TreeAnarchy {
             TreeState treeState = instanceState as TreeState;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaHeight;
-            //float terrainHeight = vector.y + Singleton<TerrainManager>.instance.SampleOriginalRawHeightSmooth(vector) - treeState.terrainHeight;
             vector = CalculateTreeVector(vector, deltaHeight, followTerrain);
             __result = null;
             TreeInstance[] buffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
@@ -299,7 +297,7 @@ namespace TreeAnarchy {
             Vector3 origin = input.m_ray.origin;
             Vector3 normalized = input.m_ray.direction.normalized;
             Vector3 vector = input.m_ray.origin + normalized * input.m_length;
-            Segment3 ray = new Segment3(origin, vector);
+            Segment3 ray = new(origin, vector);
             output.m_hitPos = vector;
             output.m_overlayButtonIndex = 0;
             output.m_netNode = 0;
@@ -393,22 +391,22 @@ namespace TreeAnarchy {
             }
 
             objRay = Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(position));
-            ToolBase.RaycastInput input = new ToolBase.RaycastInput(objRay, Camera.main.farClipPlane) {
+            ToolBase.RaycastInput input = new(objRay, Camera.main.farClipPlane) {
                 m_ignoreTerrain = true
             };
             if (UseTreeSnapToBuilding) {
                 input.m_ignoreBuildingFlags = Building.Flags.None;
-                input.m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_buildingService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (UseTreeSnapToNetwork) {
                 input.m_ignoreNodeFlags = NetNode.Flags.None;
                 input.m_ignoreSegmentFlags = NetSegment.Flags.None;
-                input.m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-                input.m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService2 = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (UseTreeSnapToProp) {
                 input.m_ignorePropFlags = PropInstance.Flags.None;
-                input.m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_propService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
                 vector = raycastOutput.m_hitPos;

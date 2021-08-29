@@ -5,6 +5,7 @@ using MoveIt;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
@@ -53,9 +54,10 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             int firstIndex = 0, lastIndex = 0;
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) }))) {
+            int len = codes.Count;
+            ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
+            for (int i = 0; i < len; i++) {
+                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
                     firstIndex = i + 1;
                 } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 4 && lastIndex == 0) {
                     lastIndex = i;
@@ -77,9 +79,10 @@ namespace TreeAnarchy {
             int firstIndex = 0, lastIndex = 0;
             Label isGroupedTree = il.DefineLabel();
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) }))) {
+            int len = codes.Count;
+            ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
+            for (int i = 0; i < len; i++) {
+                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
                     firstIndex = i + 1;
                 } else if (lastIndex == 0 && codes[i].opcode == OpCodes.Stloc_3) {
                     lastIndex = i;
@@ -120,9 +123,10 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
             int firstIndex = 0, lastIndex = 0;
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) }))) {
+            int len = codes.Count;
+            ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
+            for (int i = 0; i < len; i++) {
+                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
                     firstIndex = i + 1;
                 } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 4 && lastIndex == 0) {
                     lastIndex = i;
@@ -143,9 +147,10 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
             int firstIndex = 0, lastIndex = 0;
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) }))) {
+            int len = codes.Count;
+            ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
+            for (int i = 0; i < len; i++) {
+                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
                     firstIndex = i + 1;
                 } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 5 && lastIndex == 0) {
                     lastIndex = i;
@@ -166,9 +171,10 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> MoveableTreeRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
             int firstIndex = 0, lastIndex = 0;
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) }))) {
+            int len = codes.Count;
+            ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
+            for (int i = 0; i < len; i++) {
+                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
                     firstIndex = i + 1;
                 } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 5 && lastIndex == 0) {
                     lastIndex = i;

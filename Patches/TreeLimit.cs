@@ -29,21 +29,20 @@ namespace TreeAnarchy {
         // Patch WeatherManager::CalculateSelfHeight()
         // Affects Tree on Wind Effect, stops tree from slowing wind
         private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = new List<CodeInstruction>(instructions);
-
+            var codes = instructions.ToList();
             Label returnTreeManagerLabel = il.DefineLabel();
             LocalBuilder num2 = null, a = null; // local variables in WeatherManager::CalculateSelfHeight()
-
+            int len = codes.Count - 1;
+            MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
             // extract two important variables
-            for (int i = 0; i < codes.Count - 1; i++) // -1 since we will be checking i + 1
-            {
-                if (codes[i].opcode == OpCodes.Call && codes[i].ToString().Contains("TreeManager")) {
+            for (int i = 0; i < len; i++) { // -1 since we will be checking i + 1
+                if (codes[i].Calls(getTreeInstance)) {
                     // rewind and find num2 and a
                     int k = i - 10; // should be within 10 instructions
                     for (int j = i; j > k; j--) {
                         if (codes[j].opcode == OpCodes.Callvirt) {
-                            num2 = (LocalBuilder)codes[j - 2].operand;
-                            a = (LocalBuilder)codes[j - 1].operand;
+                            num2 = codes[j - 2].operand as LocalBuilder;
+                            a = codes[j - 1].operand as LocalBuilder;
                             break;
                         }
                     }
@@ -90,16 +89,14 @@ namespace TreeAnarchy {
 
         /* For Forestry Lock */
         private static IEnumerable<CodeInstruction> NRMTreesModifiedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = ReplaceLDCI4_MaxTreeLimit(instructions).ToList();
             Label jump = il.DefineLabel();
-
-            codes[0].labels.Add(jump);
+            var codes = ReplaceLDCI4_MaxTreeLimit(instructions).ToList();
+            codes[0].WithLabels(jump);
             codes.InsertRange(0, new CodeInstruction[] {
                 new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseLockForestry))),
                 new CodeInstruction(OpCodes.Brfalse_S, jump),
                 new CodeInstruction(OpCodes.Ret)
             });
-
             return codes.AsEnumerable();
         }
 
@@ -114,9 +111,13 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             bool firstSig = false, secondSig = false, thirdSig = false;
             MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
+            MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
+            MethodInfo getDataVersion = AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version));
+            FieldInfo nextGridTree = AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree));
             var codes = instructions.ToList();
-            for (int i = 0; i < codes.Count; i++) {
-                if (!firstSig && codes[i].opcode == OpCodes.Call && codes[i].operand == AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance))) {
+            int len = codes.Count;
+            for (int i = 0; i < len; i++) {
+                if (!firstSig && codes[i].Calls(getTreeInstance)) {
                     codes.InsertRange(i + 2, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldloc_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)))
@@ -126,8 +127,8 @@ namespace TreeAnarchy {
                     codes.RemoveRange(i, 3);
                     codes.Insert(i, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
                     secondSig = true;
-                } else if (!thirdSig && codes[i].Calls(AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version)))) {
-                    while (++i < codes.Count) {
+                } else if (!thirdSig && codes[i].Calls(getDataVersion)) {
+                    while (++i < len) {
                         if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
                             List<Label> labels = codes[i].labels;
                             CodeInstruction LdLoc_1 = new CodeInstruction(OpCodes.Ldloc_1).WithLabels(codes[i].labels);
@@ -147,8 +148,8 @@ namespace TreeAnarchy {
                             break;
                         }
                     }
-                    for (i += 10; i < codes.Count; i++) {
-                        if (codes[i].StoresField(AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree)))) {
+                    for (i += 10; i < len; i++) {
+                        if (codes[i].StoresField(nextGridTree)) {
                             codes.RemoveRange(i + 1, 5);
                             codes.InsertRange(i + 1, new CodeInstruction[] {
                                 codes[i + 1],
@@ -229,8 +230,8 @@ namespace TreeAnarchy {
             bool secondSig = false;
             Label isOldFormatExit = il.DefineLabel();
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
+            int len = codes.Count;
+            for (int i = 0; i < len; i++) {
                 if (!firstSig && codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 2].opcode == OpCodes.Br) {
                     codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.OldAfterDeserializeHandler))),
@@ -251,17 +252,20 @@ namespace TreeAnarchy {
             bool sigFound = false;
             int firstIndex = -1, lastIndex = -1;
             var codes = instructions.ToList();
-
-            for (int i = 0; i < codes.Count; i++) {
+            int len = codes.Count;
+            FieldInfo burningTrees = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_burningTrees));
+            MethodInfo loadingManagerInstance = AccessTools.PropertyGetter(typeof(Singleton<LoadingManager>), nameof(Singleton<LoadingManager>.instance));
+            for (int i = 0; i < len; i++) {
                 if (codes[i].opcode == OpCodes.Stloc_2 && !sigFound) {
                     int index = i - 3;
                     codes.RemoveRange(index, 3);
                     codes.Insert(index, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
                     sigFound = true;
-                } else if (codes[i].LoadsField(AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_burningTrees))) && firstIndex < 0) {
+                } else if (codes[i].LoadsField(burningTrees) && firstIndex < 0) {
                     firstIndex = i - 1;
-                } else if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Singleton<LoadingManager>), nameof(Singleton<LoadingManager>.instance))) && lastIndex < 0 && sigFound) {
+                } else if (codes[i].Calls(loadingManagerInstance) && lastIndex < 0 && sigFound) {
                     lastIndex = i;
+                    break;
                 }
             }
             codes.RemoveRange(firstIndex, lastIndex - firstIndex);
@@ -305,7 +309,7 @@ namespace TreeAnarchy {
         }
 
         internal void InjectTreeLimit(Harmony harmony) {
-            HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ReplaceLDCI4_MaxTreeLimit)));
+            HarmonyMethod replaceLDCI4 = new(AccessTools.Method(typeof(TAPatcher), nameof(ReplaceLDCI4_MaxTreeLimit)));
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), transpiler: replaceLDCI4);

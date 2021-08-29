@@ -3,6 +3,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -68,7 +69,7 @@ namespace TreeAnarchy {
             for (int i = 0; i < renderedGroups.m_size; i++) {
                 RenderGroup renderGroup = renderedGroups.m_buffer[i];
                 RenderGroup.MeshLayer layer = renderGroup.GetLayer(layerID);
-                if (layer != null) {
+                if (layer is not null) {
                     layer.m_dataDirty = true;
                 }
                 renderGroup.UpdateMeshData();
@@ -81,22 +82,24 @@ namespace TreeAnarchy {
 
 
         private static IEnumerable<CodeInstruction> RenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions) {
-            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].Calls(AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity)))) {
+            List<CodeInstruction> codes = instructions.ToList();
+            int len = codes.Count;
+            MethodInfo qIdentity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
+            MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
+            for (int i = 0; i < len; i++) {
+                if (codes[i].Calls(qIdentity)) {
                     codes[i].operand = AccessTools.Method(typeof(TAPatcher), nameof(GetRandomQuaternion));
                     codes.InsertRange(i, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarga_S, 2),
                         new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)))
                     });
-                }
-                if (codes[i].opcode == OpCodes.Callvirt && codes[i].Calls(AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) }))) {
+                } else if (codes[i].Calls(getWindSpeed)) {
                     codes.RemoveRange(i - 2, 3);
                     codes.InsertRange(i - 2, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_2),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)))
                     });
+                    break;
                 }
             }
             return codes.AsEnumerable();
@@ -104,15 +107,17 @@ namespace TreeAnarchy {
 
         /* TreeInstance::PopulateGroupData */
         private static IEnumerable<CodeInstruction> PopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
-            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-
-            for (int i = 0; i < codes.Count; i++) {
-                if (codes[i].opcode == OpCodes.Callvirt && codes[i].Calls(AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) }))) {
+            List<CodeInstruction> codes = instructions.ToList();
+            int len = codes.Count;
+            MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
+            for (int i = 0; i < len; i++) {
+                if (codes[i].Calls(getWindSpeed)) {
                     codes.RemoveRange(i - 2, 3);
                     codes.InsertRange(i - 2, new CodeInstruction[] {
                         new CodeInstruction(OpCodes.Ldarg_1),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)))
                     });
+                    break;
                 }
             }
             return codes.AsEnumerable();
