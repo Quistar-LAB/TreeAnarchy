@@ -171,13 +171,13 @@ namespace TreeAnarchy {
             TreeAnarchyCB.AlignTo(TreeSnapCB, UIAlignAnchor.BottomLeft);
             TreeAnarchyCB.relativePosition = new Vector3(0, TreeSnapCB.height + TreeSnapDesc.height);
             UILabel TreeAnarchyDesc = AddDescription(panel, "TreeAnarchyDesc", TreeAnarchyCB.label, SmallFontScale, locale.GetLocale("TreeAnarchyDesc"));
-            UIDropDown TreeBehaviourDD = AddDropdown(panel, TreeAnarchyDesc, locale.GetLocale("TreeAnarchyBehaviour"),
+            UIDropDown TreeBehaviourDD = AddDropdown(panel, panel, locale.GetLocale("TreeAnarchyBehaviour"),
                             new string[] { locale.GetLocale("TreeAnarchyHideTree"), locale.GetLocale("TreeAnarchyDeleteTree") },
                             DeleteOnOverlap ? 1 : 0, (_, val) => {
                                 DeleteOnOverlap = val != 0;
                                 SaveSettings();
                             });
-            TreeBehaviourDD.parent.relativePosition = new Vector3(0, TreeAnarchyDesc.height);
+            TreeBehaviourDD.parent.relativePosition = new Vector3(27, TreeSnapCB.height + TreeSnapDesc.height + TreeAnarchyCB.height + TreeAnarchyDesc.height);
 #endif
         }
 
@@ -252,7 +252,7 @@ namespace TreeAnarchy {
             UILabel label = uiPanel.Find<UILabel>("Label");
             label.text = text;
             UIDropDown dropDown = uiPanel.Find<UIDropDown>("Dropdown");
-            dropDown.width = 340;
+            dropDown.width = 380;
             dropDown.items = options;
             dropDown.selectedIndex = defaultSelection;
             dropDown.eventSelectedIndexChanged += callback;
