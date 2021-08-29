@@ -102,7 +102,7 @@ runDefault:
             return codes.AsEnumerable();
         }
 
-        public static bool CheckAnarchyState(ref TreeInstance tree, ref bool flag) {
+        public static bool CheckAnarchyState(ref TreeInstance tree) {
             if (Singleton<LoadingManager>.instance.m_currentlyLoading) {
                 return true;
             } else if (TAMod.UseTreeAnarchy) {
@@ -129,18 +129,16 @@ runDefault:
             Label Exit = il.DefineLabel();
             codes[len - 1].WithLabels(Exit);
             MethodInfo get_growState = AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState));
-            for (int i = 0; i < len; i++) {
-                if (codes[i].opcode == OpCodes.Ldloc_S && (codes[i].operand as LocalBuilder).LocalType == typeof(bool) &&
-                    codes[i + 1].opcode == OpCodes.Brfalse) {
-                    List<Label> labels = codes[i].ExtractLabels();
-                    LocalBuilder flag = codes[i].operand as LocalBuilder;
+            for (int i = 2; i < len; i++) {
+                if (codes[i - 1].opcode == OpCodes.Ldloc_0 && codes[i].opcode == OpCodes.Brtrue && codes[i + 1].opcode == OpCodes.Ret) {
+                    codes.RemoveRange(i, 2);
                     codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarg_0).WithLabels(labels),
-                        new CodeInstruction(OpCodes.Ldloca_S, flag),
+                        new CodeInstruction(OpCodes.Brfalse_S, Exit),
+                        new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CheckAnarchyState))),
-                        new CodeInstruction(OpCodes.Brtrue, Exit)
+                        new CodeInstruction(OpCodes.Brtrue_S, Exit)
                     });
-                    for (i += 5; i < len; i++) {
+                    for (i += 20; i < len; i++) {
                         if (codes[i].opcode == OpCodes.Br && codes[i + 1].opcode == OpCodes.Ldarg_0 &&
                             codes[i + 2].opcode == OpCodes.Call && codes[i + 2].operand == get_growState) {
                             codes.InsertRange(i, new CodeInstruction[] {
@@ -154,9 +152,6 @@ runDefault:
                     }
                     break;
                 }
-            }
-            foreach (var code in codes) {
-                TAMod.TALog($" {code}");
             }
             return codes.AsEnumerable();
         }
