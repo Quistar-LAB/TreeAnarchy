@@ -44,7 +44,7 @@ namespace TreeAnarchy {
                 TreeManager tmInstance = Singleton<TreeManager>.instance;
                 if (maxLimit > MaxTreeLimit) {
                     TreeInstance[] oldBuffer = tmInstance.m_trees.m_buffer;
-                    Array32<TreeInstance> newTreeArray = new Array32<TreeInstance>((uint)maxLimit);
+                    Array32<TreeInstance> newTreeArray = new((uint)maxLimit);
                     float[] newTreeScaleBuffer = new float[maxLimit];
                     newTreeArray.CreateItem(out uint _);
                     newTreeArray.ClearUnused();
@@ -273,10 +273,10 @@ namespace TreeAnarchy {
                             TALog("Invalid Old Data, Not Loading Tree Data");
                             return;
                         }
-                        OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
+                        OldDataSerializer oldSerializer = new(oldData);
                         if (oldSerializer.Deserialize()) {
-                            TALog("Old Format Loaded");
                             OldFormatLoaded = true;
+                            TALog("Old Format Loaded");
                         } else {
                             TALog("Invalid Data Format");
                         }
@@ -321,8 +321,7 @@ namespace TreeAnarchy {
 
         private void SaveData(string id, byte[] data) {
             SimulationManager smInstance = Singleton<SimulationManager>.instance;
-            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) {
-            }
+            while (!Monitor.TryEnter(smInstance.m_serializableDataStorage, SimulationManager.SYNCHRONIZE_TIMEOUT)) { }
             try {
                 smInstance.m_serializableDataStorage[id] = data;
             } finally {
