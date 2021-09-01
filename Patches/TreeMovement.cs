@@ -2,7 +2,6 @@
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -50,7 +49,7 @@ namespace TreeAnarchy {
             return treeQuaternion[index];
         }
 
-        public static float GetWindSpeed(Vector3 pos) {
+        public static float GetWindSpeed(ref Vector3 pos) {
             /* Apparently the lambda expression (a = (a ? > 127 : 127 : a) < 0 ? 0 : a) produces
              * unreliable results.. mono bug? Using local functions instead so they can be inlined
              * which shaved off ~5ms for this routine per 1 million calls */
@@ -80,47 +79,64 @@ namespace TreeAnarchy {
             updateLODTreeSway = true;
         }
 
-
         private static IEnumerable<CodeInstruction> RenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions) {
-            List<CodeInstruction> codes = instructions.ToList();
-            int len = codes.Count;
             MethodInfo qIdentity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
             MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
-            for (int i = 0; i < len; i++) {
-                if (codes[i].Calls(qIdentity)) {
-                    codes[i].operand = AccessTools.Method(typeof(TAPatcher), nameof(GetRandomQuaternion));
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarga_S, 2),
-                        new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)))
-                    });
-                } else if (codes[i].Calls(getWindSpeed)) {
-                    codes.RemoveRange(i - 2, 3);
-                    codes.InsertRange(i - 2, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarg_2),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)))
-                    });
-                    break;
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Call && cur.operand == qIdentity) {
+                    yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetRandomQuaternion)));
+                } else if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
+                            yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
+                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                    }
+                } else {
+                    yield return cur;
                 }
             }
-            return codes.AsEnumerable();
         }
 
         /* TreeInstance::PopulateGroupData */
         private static IEnumerable<CodeInstruction> PopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
-            List<CodeInstruction> codes = instructions.ToList();
-            int len = codes.Count;
             MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
-            for (int i = 0; i < len; i++) {
-                if (codes[i].Calls(getWindSpeed)) {
-                    codes.RemoveRange(i - 2, 3);
-                    codes.InsertRange(i - 2, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarg_1),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)))
-                    });
-                    break;
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
+                            yield return new CodeInstruction(OpCodes.Ldarga_S, 1);
+                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                    }
+                } else {
+                    yield return cur;
                 }
             }
-            return codes.AsEnumerable();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

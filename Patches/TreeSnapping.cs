@@ -4,7 +4,6 @@ using HarmonyLib;
 using MoveIt;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
@@ -65,22 +64,19 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = instructions.ToList();
-            int len = codes.Count;
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
-            for (int i = 0; i < len; i++) {
-                if (codes[i].Calls(terrainInstance)) {
-                    codes.RemoveRange(i, 3);
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarg_0),
-                        new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)))
-                    });
-                    break;
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Call && cur.operand == terrainInstance) {
+                    codes.MoveNext(); codes.MoveNext();
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)));
+                } else {
+                    yield return cur;
                 }
             }
-
-            return codes.AsEnumerable();
         }
 
         private static ToolBase.RaycastService customServices = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
@@ -110,62 +106,84 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> TreeToolCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
-            var codes = instructions.ToList();
-            int len = codes.Count;
+        private static IEnumerable<CodeInstruction> TreeToolCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo placementEffect = AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect));
-            for (int i = 0; i < len; i++) {
-                if (codes[i].Calls(placementEffect)) {
-                    codes.InsertRange(i + 1, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldloc_S, 4),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)))
-                    });
-                    break;
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Call && cur.operand == placementEffect) {
+                    yield return cur;
+                    yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)));
+                } else {
+                    yield return cur;
                 }
             }
-
-            return codes.AsEnumerable();
         }
 
         private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions) {
             var LoadFieldUseTreeSnapping = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
-            var codes = instructions.ToList();
-            int len = codes.Count;
-            FieldInfo rayInput = AccessTools.Field(typeof(ToolBase.RaycastInput), nameof(ToolBase.RaycastInput.m_currentEditObject));
-            FieldInfo rayOutput = AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_currentEditObject));
-            FieldInfo hitPos = AccessTools.Field(typeof(TreeTool.RaycastOutput), nameof(TreeTool.RaycastOutput.m_hitPos));
+            FieldInfo rayOutputObject = AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_currentEditObject));
+            FieldInfo hitPos = AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_hitPos));
+            FieldInfo mouseRay = AccessTools.Field(typeof(TreeTool), "m_mouseRay");
             FieldInfo fixedHeight = AccessTools.Field(typeof(TreeTool), "m_fixedHeight");
-            for (int i = 0; i < len; i++) {
-                if (codes[i].StoresField(rayInput) &&
-                    codes[i - 1].opcode == OpCodes.Ldc_I4_1 &&
-                    codes[i - 2].opcode == OpCodes.Ldloca_S) {
-                    LocalBuilder raycastInput = codes[i - 2].operand as LocalBuilder;
-                    List<Label> labels = codes[i + 1].ExtractLabels();
-                    codes.InsertRange(i + 1, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldloca_S, raycastInput).WithLabels(labels),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)))
-                    });
-                } else if (codes[i].LoadsField(rayOutput)) {
-                    // Add !UseTreeSnapping in if
-                    if (codes[i + 1].opcode == OpCodes.Brtrue && codes[i + 1].Branches(out Label? label)) {
-                        codes.InsertRange(i + 2, new CodeInstruction[] {
-                            LoadFieldUseTreeSnapping,
-                            new CodeInstruction(OpCodes.Brtrue, label.Value)
-                        });
-                    } else if (codes[i - 2].LoadsField(hitPos)) { // Replace RaycastOutput.m_currentEditObject with !UseTreeSnapping
-                        codes.RemoveRange(i - 1, 2);
-                        codes.InsertRange(i - 1, new CodeInstruction[] {
-                            LoadFieldUseTreeSnapping,
-                            new CodeInstruction(OpCodes.Ldc_I4_0),
-                            new CodeInstruction(OpCodes.Ceq)
-                        });
-                    } else if (codes[i + 1].StoresField(fixedHeight)) { // Replace LDFLD RaycastOutput.m_currentEditObject
-                        codes[i] = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Ldfld && next1.operand == mouseRay && codes.MoveNext()) {
+                            CodeInstruction next2 = codes.Current;
+                            LocalBuilder input = cur.operand as LocalBuilder;
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                            yield return next2;
+                            codes.MoveNext();
+                            yield return codes.Current;
+                            codes.MoveNext();
+                            yield return codes.Current;
+                            yield return new CodeInstruction(OpCodes.Ldloca_S, input);
+                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)));
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                        }
+                    } else if (next.opcode == OpCodes.Ldfld && next.operand == rayOutputObject && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Stfld && next1.operand == fixedHeight) {
+                            yield return LoadFieldUseTreeSnapping;
+                            yield return next1;
+                        } else if (next1.opcode == OpCodes.Ldloc_S && (next1.operand as LocalBuilder).LocalIndex == 5) {
+                            yield return cur;
+                            yield return next;
+                            yield return LoadFieldUseTreeSnapping;
+                            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                            yield return new CodeInstruction(OpCodes.Ceq);
+                            yield return new CodeInstruction(OpCodes.Or);
+                            yield return next1;
+                        } else if (next1.opcode == OpCodes.Brtrue) {
+                            yield return cur;
+                            yield return next;
+                            yield return LoadFieldUseTreeSnapping;
+                            yield return new CodeInstruction(OpCodes.Or);
+                            yield return next1;
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
                     }
-                    break;
+                } else {
+                    yield return cur;
                 }
             }
-            return codes.AsEnumerable();
         }
 
         /* If tree snapping is false => 

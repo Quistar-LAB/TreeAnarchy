@@ -3,7 +3,6 @@ using ColossalFramework.IO;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
@@ -12,13 +11,8 @@ using static TreeAnarchy.TAMod;
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
-            bool foundTreeSig = false;
-            MethodInfo get_TreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
             foreach (var code in instructions) {
-                if (code.Calls(get_TreeInstance)) {
-                    foundTreeSig = true;
-                    yield return code;
-                } else if (foundTreeSig && code.Is(OpCodes.Ldc_I4, LastMaxTreeLimit)) {
+                if (code.Is(OpCodes.Ldc_I4, LastMaxTreeLimit)) {
                     yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
                 } else {
                     yield return code;
@@ -26,52 +20,66 @@ namespace TreeAnarchy {
             }
         }
 
+
+
         // Patch WeatherManager::CalculateSelfHeight()
         // Affects Tree on Wind Effect, stops tree from slowing wind
         private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = instructions.ToList();
             Label returnTreeManagerLabel = il.DefineLabel();
-            LocalBuilder num2 = null, a = null; // local variables in WeatherManager::CalculateSelfHeight()
-            int len = codes.Count - 1;
             MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
-            // extract two important variables
-            for (int i = 0; i < len; i++) { // -1 since we will be checking i + 1
-                if (codes[i].Calls(getTreeInstance)) {
-                    // rewind and find num2 and a
-                    int k = i - 10; // should be within 10 instructions
-                    for (int j = i; j > k; j--) {
-                        if (codes[j].opcode == OpCodes.Callvirt) {
-                            num2 = codes[j - 2].operand as LocalBuilder;
-                            a = codes[j - 1].operand as LocalBuilder;
-                            break;
-                        }
-                    }
-                    codes[i].labels.Add(returnTreeManagerLabel);
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        /* The following instructions injects the following snippet into WeatherManager::CalculateSelfHeight()
-                            if (TreeAnarchyConfig.TreeEffectOnWind)   //My Additions to overide tree effects.
-                            {
-                                return (ushort)Mathf.Clamp(num1 + num2 >> 1, 0, 65535);
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    codes.MoveNext();
+                    CodeInstruction inter = codes.Current;
+                    if (next.opcode == OpCodes.Ldloca_S && inter.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Callvirt && codes.MoveNext()) {
+                            CodeInstruction next2 = codes.Current;
+                            if (next2.Is(OpCodes.Call, getTreeInstance)) {
+                                LocalBuilder terrainAvg = cur.operand as LocalBuilder;
+                                LocalBuilder terrainMax = next.operand as LocalBuilder;
+                                yield return cur;
+                                yield return next;
+                                yield return inter;
+                                yield return next1;
+                                yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind)));
+                                yield return new CodeInstruction(OpCodes.Brtrue_S, returnTreeManagerLabel);
+                                yield return new CodeInstruction(OpCodes.Ldloc_S, terrainAvg);
+                                yield return new CodeInstruction(OpCodes.Ldloc_S, terrainMax);
+                                yield return new CodeInstruction(OpCodes.Add);
+                                yield return new CodeInstruction(OpCodes.Ldc_I4_1);
+                                yield return new CodeInstruction(OpCodes.Shr);
+                                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                                yield return new CodeInstruction(OpCodes.Ldc_I4, 65535);
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) }));
+                                yield return new CodeInstruction(OpCodes.Conv_U2);
+                                yield return new CodeInstruction(OpCodes.Ret);
+                                yield return next2.WithLabels(returnTreeManagerLabel);
+                            } else {
+                                yield return cur;
+                                yield return next;
+                                yield return inter;
+                                yield return next1;
+                                yield return next2;
                             }
-                        */
-                        new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind))),
-                        new CodeInstruction(OpCodes.Brfalse_S, returnTreeManagerLabel),
-                        new CodeInstruction(OpCodes.Ldloc_S, num2),
-                        new CodeInstruction(OpCodes.Ldloc_S, a),
-                        new CodeInstruction(OpCodes.Add),
-                        new CodeInstruction(OpCodes.Ldc_I4_1),
-                        new CodeInstruction(OpCodes.Shr),
-                        new CodeInstruction(OpCodes.Ldc_I4_0),
-                        new CodeInstruction(OpCodes.Ldc_I4, 65535),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) })),
-                        new CodeInstruction(OpCodes.Conv_U2),
-                        new CodeInstruction(OpCodes.Ret)
-                    });
-                    break;
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return inter;
+                            yield return next1;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                        yield return inter;
+                    }
+                } else {
+                    yield return cur;
                 }
             }
-
-            return codes.AsEnumerable();
         }
 
         private const int MAX_MAPEDITOR_TREES = 250000;
@@ -90,22 +98,24 @@ namespace TreeAnarchy {
         /* For Forestry Lock */
         private static IEnumerable<CodeInstruction> NRMTreesModifiedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label jump = il.DefineLabel();
-            var codes = ReplaceLDCI4_MaxTreeLimit(instructions).ToList();
-            codes[0].WithLabels(jump);
-            codes.InsertRange(0, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseLockForestry))),
-                new CodeInstruction(OpCodes.Brfalse_S, jump),
-                new CodeInstruction(OpCodes.Ret)
-            });
-            return codes.AsEnumerable();
+            yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseLockForestry)));
+            yield return new CodeInstruction(OpCodes.Brfalse_S, jump);
+            yield return new CodeInstruction(OpCodes.Ret);
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            if (codes.MoveNext()) codes.Current.WithLabels(jump);
+            do {
+                if (codes.Current.Is(OpCodes.Ldc_I4, LastMaxTreeLimit)) {
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, MaxTreeLimit);
+                } else {
+                    yield return codes.Current;
+                }
+            } while (codes.MoveNext());
         }
 
-        private static int treeCount = 0;
         public static void CustomSetPosY(TreeInstance[] trees, int treeID) {
             if ((trees[treeID].m_flags & 32) == 0) {
                 trees[treeID].m_posY = 0;
             }
-            treeCount++;
         }
 
         private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
@@ -114,56 +124,85 @@ namespace TreeAnarchy {
             MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
             MethodInfo getDataVersion = AccessTools.PropertyGetter(typeof(DataSerializer), nameof(DataSerializer.version));
             FieldInfo nextGridTree = AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_nextGridTree));
-            var codes = instructions.ToList();
-            int len = codes.Count;
-            for (int i = 0; i < len; i++) {
-                if (!firstSig && codes[i].Calls(getTreeInstance)) {
-                    codes.InsertRange(i + 2, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)))
-                    });
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (!firstSig && cur.opcode == OpCodes.Call && cur.operand == getTreeInstance) {
                     firstSig = true;
-                } else if (!secondSig && codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Ldlen && codes[i + 2].opcode == OpCodes.Conv_I4 && codes[i + 3].opcode == OpCodes.Stloc_3) {
-                    codes.RemoveRange(i, 3);
-                    codes.Insert(i, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
+                    yield return cur;
+                    codes.MoveNext();
+                    yield return codes.Current;
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)));
+                } else if (firstSig && !secondSig && cur.opcode == OpCodes.Ldloc_1) {
                     secondSig = true;
-                } else if (!thirdSig && codes[i].Calls(getDataVersion)) {
-                    while (++i < len) {
-                        if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Stloc_S && codes[i + 2].opcode == OpCodes.Br) {
-                            List<Label> labels = codes[i].labels;
-                            CodeInstruction LdLoc_1 = new CodeInstruction(OpCodes.Ldloc_1).WithLabels(codes[i].labels);
-                            codes[i] = new CodeInstruction(OpCodes.Ldc_I4_1);
-                            codes.InsertRange(i, new CodeInstruction[] {
-                                LdLoc_1,
-                                new CodeInstruction(OpCodes.Call, integratedDeserialize),
-                                new CodeInstruction(OpCodes.Ldloc_0),
-                                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees))),
-                                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer))),
-                                new CodeInstruction(OpCodes.Stloc_1),
-                                new CodeInstruction(OpCodes.Ldloc_1),
-                                new CodeInstruction(OpCodes.Ldlen),
-                                new CodeInstruction(OpCodes.Conv_I4),
-                                new CodeInstruction(OpCodes.Stloc_3)
-                            });
-                            break;
+                    codes.MoveNext();
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldlen) {
+                        codes.MoveNext();
+                        CodeInstruction next2 = codes.Current;
+                        codes.MoveNext();
+                        CodeInstruction next3 = codes.Current;
+                        if (next2.opcode == OpCodes.Conv_I4 && next3.opcode == OpCodes.Stloc_3) {
+                            yield return new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit);
+                            yield return next3;
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next2;
+                            yield return next3;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                    }
+                } else if (firstSig && secondSig && !thirdSig && cur.Is(OpCodes.Callvirt, getDataVersion)) {
+                    yield return cur;
+                    while (codes.MoveNext()) {
+                        cur = codes.Current;
+                        if (cur.opcode == OpCodes.Ldc_I4_1 && codes.MoveNext()) {
+                            CodeInstruction next = codes.Current;
+                            if (next.opcode == OpCodes.Stloc_S && codes.MoveNext()) {
+                                CodeInstruction next2 = codes.Current;
+                                if (next2.opcode == OpCodes.Br) {
+                                    yield return cur;
+                                    yield return next;
+                                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                                    yield return new CodeInstruction(OpCodes.Call, integratedDeserialize);
+                                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees)));
+                                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer)));
+                                    yield return new CodeInstruction(OpCodes.Stloc_1);
+                                    yield return new CodeInstruction(OpCodes.Ldloc_1);
+                                    yield return new CodeInstruction(OpCodes.Ldlen);
+                                    yield return new CodeInstruction(OpCodes.Conv_I4);
+                                    yield return new CodeInstruction(OpCodes.Stloc_3);
+                                    yield return next2;
+                                } else {
+                                    yield return cur;
+                                    yield return next;
+                                    yield return next2;
+                                }
+                            } else {
+                                yield return cur;
+                                yield return next;
+                            }
+                        } else if (cur.opcode == OpCodes.Stfld && cur.operand == nextGridTree) {
+                            yield return cur;
+                            codes.MoveNext();
+                            yield return codes.Current;
+                            codes.MoveNext();
+                            yield return codes.Current;
+                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CustomSetPosY)));
+                            codes.MoveNext(); codes.MoveNext(); codes.MoveNext();
+                        } else {
+                            yield return cur;
                         }
                     }
-                    for (i += 10; i < len; i++) {
-                        if (codes[i].StoresField(nextGridTree)) {
-                            codes.RemoveRange(i + 1, 5);
-                            codes.InsertRange(i + 1, new CodeInstruction[] {
-                                codes[i + 1],
-                                codes[i + 2],
-                                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CustomSetPosY)))
-                            });
-                            break;
-                        }
-                    }
-                    thirdSig = true;
-                    break;
+                } else {
+                    yield return cur;
                 }
             }
-            return codes.AsEnumerable();
         }
 
         private const int KeepTree = 0;
@@ -226,55 +265,76 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> AfterDeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            bool firstSig = false;
-            bool secondSig = false;
+            bool firstSig = false, secondSig = false;
+            CodeInstruction prev = default, cur = default;
             Label isOldFormatExit = il.DefineLabel();
-            var codes = instructions.ToList();
-            int len = codes.Count;
-            for (int i = 0; i < len; i++) {
-                if (!firstSig && codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 2].opcode == OpCodes.Br) {
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.OldAfterDeserializeHandler))),
-                        new CodeInstruction(OpCodes.Brtrue, isOldFormatExit)
-                    });
+            foreach (var next in instructions) {
+                if (!firstSig && prev?.opcode == OpCodes.Conv_I4 && cur?.opcode == OpCodes.Stloc_2) {
                     firstSig = true;
-                } else if (!secondSig && codes[i].opcode == OpCodes.Ldloc_0 && codes[i + 1].opcode == OpCodes.Ldloc_0) {
-                    codes[i].WithLabels(isOldFormatExit);
+                    yield return prev;
+                    yield return cur;
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.OldAfterDeserializeHandler)));
+                    yield return new CodeInstruction(OpCodes.Brtrue, isOldFormatExit);
+                    prev = cur = null;
+                } else if (firstSig && !secondSig && prev?.opcode == OpCodes.Blt && cur?.opcode == OpCodes.Ldloc_0 && next?.opcode == OpCodes.Ldloc_0) {
                     secondSig = true;
-                    break;
+                    yield return prev;
+                    yield return cur.WithLabels(isOldFormatExit);
+                    prev = cur = null;
+                } else if (prev is not null && cur is not null) {
+                    yield return prev;
+                    yield return cur;
+                    prev = cur = null;
                 }
+                prev = cur;
+                cur = next;
             }
-
-            return codes.AsEnumerable();
+            if (prev is not null) yield return prev;
+            if (cur is not null) yield return cur;
         }
 
         private static IEnumerable<CodeInstruction> SerializeTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool sigFound = false;
-            int firstIndex = -1, lastIndex = -1;
-            var codes = instructions.ToList();
-            int len = codes.Count;
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
             FieldInfo burningTrees = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_burningTrees));
             MethodInfo loadingManagerInstance = AccessTools.PropertyGetter(typeof(Singleton<LoadingManager>), nameof(Singleton<LoadingManager>.instance));
-            for (int i = 0; i < len; i++) {
-                if (codes[i].opcode == OpCodes.Stloc_2 && !sigFound) {
-                    int index = i - 3;
-                    codes.RemoveRange(index, 3);
-                    codes.Insert(index, new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit));
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (!sigFound && cur.opcode == OpCodes.Ldloc_1 && codes.MoveNext()) {
                     sigFound = true;
-                } else if (codes[i].LoadsField(burningTrees) && firstIndex < 0) {
-                    firstIndex = i - 1;
-                } else if (codes[i].Calls(loadingManagerInstance) && lastIndex < 0 && sigFound) {
-                    lastIndex = i;
-                    break;
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldlen && codes.MoveNext()) {
+                        yield return new CodeInstruction(OpCodes.Ldc_I4, DefaultTreeLimit);
+                    }
+                } else if (sigFound && cur.opcode == OpCodes.Ldarg_1 && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldloc_0 && codes.MoveNext()) {
+                        CodeInstruction next2 = codes.Current;
+                        if (next2.opcode == OpCodes.Ldfld && next2.operand == burningTrees && codes.MoveNext()) {
+                            yield return cur;
+                            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                            codes.MoveNext();
+                            yield return codes.Current;
+                            while (codes.MoveNext()) {
+                                cur = codes.Current;
+                                if (cur.opcode == OpCodes.Call && cur.operand == loadingManagerInstance) {
+                                    yield return cur;
+                                    break;
+                                }
+                            }
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next2;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                    }
+                } else {
+                    yield return cur;
                 }
             }
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(DataSerializer), nameof(DataSerializer.WriteUInt24)))
-            });
-
-            return codes.AsEnumerable();
         }
 
         private static IEnumerable<CodeInstruction> AwakeTranspiler(IEnumerable<CodeInstruction> instructions) {
@@ -289,23 +349,21 @@ namespace TreeAnarchy {
 
         public static int BeginRenderSkipCount = 0;
         private static IEnumerable<CodeInstruction> BeginRenderingImplTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
             Label CountExpired = il.DefineLabel();
-            var codes = instructions.ToList();
-
-            codes[0].WithLabels(CountExpired);
-            codes.InsertRange(0, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount))),
-                new CodeInstruction(OpCodes.Dup),
-                new CodeInstruction(OpCodes.Ldc_I4_1),
-                new CodeInstruction(OpCodes.Add),
-                new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount))),
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(BeginSkipFrameCount))),
-                new CodeInstruction(OpCodes.Rem),
-                new CodeInstruction(OpCodes.Brfalse_S, CountExpired),
-                new CodeInstruction(OpCodes.Ret),
-            });
-
-            return codes.AsEnumerable();
+            yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount)));
+            yield return new CodeInstruction(OpCodes.Dup);
+            yield return new CodeInstruction(OpCodes.Ldc_I4_1);
+            yield return new CodeInstruction(OpCodes.Add);
+            yield return new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(TAPatcher), nameof(BeginRenderSkipCount)));
+            yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(BeginSkipFrameCount)));
+            yield return new CodeInstruction(OpCodes.Rem);
+            yield return new CodeInstruction(OpCodes.Brfalse_S, CountExpired);
+            yield return new CodeInstruction(OpCodes.Ret);
+            if (codes.MoveNext()) codes.Current.WithLabels(CountExpired);
+            do {
+                yield return codes.Current;
+            } while (codes.MoveNext());
         }
 
         internal void InjectTreeLimit(Harmony harmony) {

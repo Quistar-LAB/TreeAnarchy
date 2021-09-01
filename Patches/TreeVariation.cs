@@ -4,7 +4,6 @@ using HarmonyLib;
 using MoveIt;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
@@ -52,144 +51,146 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
-            int firstIndex = 0, lastIndex = 0;
-            var codes = instructions.ToList();
-            int len = codes.Count;
+            bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            for (int i = 0; i < len; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
-                    firstIndex = i + 1;
-                } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 4 && lastIndex == 0) {
-                    lastIndex = i;
-                    break;
+            foreach (var code in instructions) {
+                if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
+                    skip = true;
+                    yield return code;
+                    yield return new CodeInstruction(OpCodes.Ldloca_S, 3);
+                    yield return new CodeInstruction(OpCodes.Ldarg_1);
+                    yield return new CodeInstruction(OpCodes.Ldloc_1);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
+                } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 4) {
+                    skip = false;
+                    yield return code;
+                } else if (!skip) {
+                    yield return code;
                 }
             }
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloca_S, 3),
-                new CodeInstruction(OpCodes.Ldarg_1),
-                new CodeInstruction(OpCodes.Ldloc_1),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)))
-            });
-
-            return codes;
         }
 
         private static IEnumerable<CodeInstruction> TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int firstIndex = 0, lastIndex = 0;
+#if ENABLETREEGROUP
             Label isGroupedTree = il.DefineLabel();
-            var codes = instructions.ToList();
-            int len = codes.Count;
+#endif
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            for (int i = 0; i < len; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
-                    firstIndex = i + 1;
-                } else if (lastIndex == 0 && codes[i].opcode == OpCodes.Stloc_3) {
-                    lastIndex = i;
-                    codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-                    codes.InsertRange(firstIndex, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldloca_S, 2),
-                        new CodeInstruction(OpCodes.Ldarg_2),
-                        new CodeInstruction(OpCodes.Ldloc_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)))
-                    });
+            FieldInfo vector4z = AccessTools.Field(typeof(Vector4), nameof(Vector4.z));
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            while (codes.MoveNext()) {
+                CodeInstruction cur = codes.Current;
+                if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
+                    yield return cur;
+                    yield return new CodeInstruction(OpCodes.Ldloca_S, 2);
+                    yield return new CodeInstruction(OpCodes.Ldarg_2);
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
+                    while (codes.MoveNext()) {
+                        cur = codes.Current;
+                        if (cur.opcode == OpCodes.Stloc_3) {
+                            yield return cur;
+                            break;
+                        }
+                    }
                 }
 #if ENABLETREEGROUP
-                else if (codes[i].opcode == OpCodes.Ldarg_1 && codes[i + 1].opcode == OpCodes.Ldloc_0 && codes[i - 1].StoresField(AccessTools.Field(typeof(Vector4), nameof(Vector4.z)))) {
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Ldarg_0),
-                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))),
-                        new CodeInstruction(OpCodes.Ldc_I4_8),
-                        new CodeInstruction(OpCodes.And),
-                        new CodeInstruction(OpCodes.Brtrue_S, isGroupedTree)
-                    });
+                else if (cur.StoresField(vector4z) && codes.MoveNext()) {
+                    CodeInstruction next = codes.Current;
+                    if (next.opcode == OpCodes.Ldarg_1 && codes.MoveNext()) {
+                        CodeInstruction next1 = codes.Current;
+                        if (next1.opcode == OpCodes.Ldloc_0) {
+                            yield return cur;
+                            yield return new CodeInstruction(OpCodes.Ldarg_0);
+                            yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)));
+                            yield return new CodeInstruction(OpCodes.Ldc_I4_8);
+                            yield return new CodeInstruction(OpCodes.And);
+                            yield return new CodeInstruction(OpCodes.Brtrue_S, isGroupedTree);
+                            yield return next;
+                            yield return next1;
+                        } else {
+                            yield return cur;
+                            yield return next;
+                            yield return next1;
+                        }
+                    } else {
+                        yield return cur;
+                        yield return next;
+                    }
+                }
+#endif
+                else {
+                    yield return cur;
                 }
             }
-            codes.AddRange(new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldarg_1).WithLabels(isGroupedTree),
-                new CodeInstruction(OpCodes.Ldarg_2),
-                new CodeInstruction(OpCodes.Ldloc_1),
-                new CodeInstruction(OpCodes.Ldloc_S, 4),
-                new CodeInstruction(OpCodes.Ldloc_S, 5),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderGroupInstance))),
-                new CodeInstruction(OpCodes.Ret)
-            });
-#else
-            }
+#if ENABLETREEGROUP
+            yield return new CodeInstruction(OpCodes.Ldarg_1).WithLabels(isGroupedTree);
+            yield return new CodeInstruction(OpCodes.Ldarg_2);
+            yield return new CodeInstruction(OpCodes.Ldloc_1);
+            yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
+            yield return new CodeInstruction(OpCodes.Ldloc_S, 5);
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderGroupInstance)));
+            yield return new CodeInstruction(OpCodes.Ret);
 #endif
-            return codes.AsEnumerable();
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
-            int firstIndex = 0, lastIndex = 0;
-            var codes = instructions.ToList();
-            int len = codes.Count;
+            bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            for (int i = 0; i < len; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
-                    firstIndex = i + 1;
-                } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 4 && lastIndex == 0) {
-                    lastIndex = i;
-                    break;
+            foreach (var code in instructions) {
+                if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
+                    skip = true;
+                    yield return code;
+                    yield return new CodeInstruction(OpCodes.Ldloca_S, 3);
+                    yield return new CodeInstruction(OpCodes.Ldloc_2);
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
+                } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 4) {
+                    skip = false;
+                    yield return code;
+                } else if (!skip) {
+                    yield return code;
                 }
             }
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloca_S, 3),
-                new CodeInstruction(OpCodes.Ldloc_2),
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)))
-            });
-
-            return codes;
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
-            int firstIndex = 0, lastIndex = 0;
-            var codes = instructions.ToList();
-            int len = codes.Count;
+            bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            for (int i = 0; i < len; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
-                    firstIndex = i + 1;
-                } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 5 && lastIndex == 0) {
-                    lastIndex = i;
-                    break;
+            foreach (var code in instructions) {
+                if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
+                    skip = true;
+                    yield return code;
+                    yield return new CodeInstruction(OpCodes.Ldloca_S, 4);
+                    yield return new CodeInstruction(OpCodes.Ldloc_3);
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
+                } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 5) {
+                    skip = false;
+                    yield return code;
+                } else if (!skip) {
+                    yield return code;
                 }
             }
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloca_S, 4),
-                new CodeInstruction(OpCodes.Ldloc_3),
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)))
-            });
-
-            return codes;
         }
 
         private static IEnumerable<CodeInstruction> MoveableTreeRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
-            int firstIndex = 0, lastIndex = 0;
-            var codes = instructions.ToList();
-            int len = codes.Count;
+            bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            for (int i = 0; i < len; i++) {
-                if (firstIndex == 0 && codes[i].opcode == OpCodes.Call && codes[i].OperandIs(randomizer)) {
-                    firstIndex = i + 1;
-                } else if (codes[i].opcode == OpCodes.Stloc_S && (codes[i].operand as LocalBuilder).LocalIndex == 5 && lastIndex == 0) {
-                    lastIndex = i;
-                    break;
+            foreach (var code in instructions) {
+                if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
+                    skip = true;
+                    yield return code;
+                    yield return new CodeInstruction(OpCodes.Ldloca_S, 4);
+                    yield return new CodeInstruction(OpCodes.Ldloc_0);
+                    yield return new CodeInstruction(OpCodes.Ldloc_2);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
+                } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 5) {
+                    skip = false;
+                    yield return code;
+                } else if (!skip) {
+                    yield return code;
                 }
             }
-            codes.RemoveRange(firstIndex, lastIndex - firstIndex);
-            codes.InsertRange(firstIndex, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldloca_S, 4),
-                new CodeInstruction(OpCodes.Ldloc_0),
-                new CodeInstruction(OpCodes.Ldloc_2),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)))
-            });
-
-            return codes;
         }
     }
 }

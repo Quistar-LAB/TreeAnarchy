@@ -90,16 +90,16 @@ runDefault:
 
         private static IEnumerable<CodeInstruction> TreeToolCheckPlacementErrorsTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label TreeAnarchyDisabled = il.DefineLabel();
-            var codes = instructions.ToList();
-            codes[0].WithLabels(TreeAnarchyDisabled);
-            codes.InsertRange(0, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeAnarchy))),
-                new CodeInstruction(OpCodes.Brfalse_S, TreeAnarchyDisabled),
-                new CodeInstruction(OpCodes.Ldc_I4_0),
-                new CodeInstruction(OpCodes.Conv_I8),
-                new CodeInstruction(OpCodes.Ret)
-            });
-            return codes.AsEnumerable();
+            yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeAnarchy)));
+            yield return new CodeInstruction(OpCodes.Brfalse_S, TreeAnarchyDisabled);
+            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+            yield return new CodeInstruction(OpCodes.Conv_I8);
+            yield return new CodeInstruction(OpCodes.Ret);
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            if (codes.MoveNext()) codes.Current.WithLabels(TreeAnarchyDisabled);
+            do {
+                yield return codes.Current;
+            } while (codes.MoveNext());
         }
 
         public static bool CheckAnarchyState(ref TreeInstance tree) {
@@ -120,40 +120,38 @@ runDefault:
             return false;
         }
 
-        /* If Anarchy is off, then allow to hide or delete tree
-         * If Anarchy is on, then don't do anything
-         */
         private static IEnumerable<CodeInstruction> TreeInstanceCheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = new List<CodeInstruction>(instructions);
-            int len = codes.Count;
+            bool sigFound = false;
+            CodeInstruction prevPrev = default, prev = default;
             Label Exit = il.DefineLabel();
-            codes[len - 1].WithLabels(Exit);
             MethodInfo get_growState = AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.GrowState));
-            for (int i = 2; i < len; i++) {
-                if (codes[i - 1].opcode == OpCodes.Ldloc_0 && codes[i].opcode == OpCodes.Brtrue && codes[i + 1].opcode == OpCodes.Ret) {
-                    codes.RemoveRange(i, 2);
-                    codes.InsertRange(i, new CodeInstruction[] {
-                        new CodeInstruction(OpCodes.Brfalse_S, Exit),
-                        new CodeInstruction(OpCodes.Ldarg_0),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CheckAnarchyState))),
-                        new CodeInstruction(OpCodes.Brtrue_S, Exit)
-                    });
-                    for (i += 20; i < len; i++) {
-                        if (codes[i].opcode == OpCodes.Br && codes[i + 1].opcode == OpCodes.Ldarg_0 &&
-                            codes[i + 2].opcode == OpCodes.Call && codes[i + 2].operand == get_growState) {
-                            codes.InsertRange(i, new CodeInstruction[] {
-                                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.DeleteOnOverlap))),
-                                new CodeInstruction(OpCodes.Brfalse_S, Exit),
-                                new CodeInstruction(OpCodes.Ldarg_1),
-                                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ReleaseTreeQueue)))
-                            });
-                            break;
-                        }
-                    }
-                    break;
+            foreach (var code in instructions) {
+                if (!sigFound && prevPrev?.opcode == OpCodes.Ldloc_0 && prev?.opcode == OpCodes.Brtrue && code.opcode == OpCodes.Ret) {
+                    sigFound = true;
+                    yield return prevPrev;
+                    yield return new CodeInstruction(OpCodes.Brfalse_S, Exit);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CheckAnarchyState)));
+                    yield return new CodeInstruction(OpCodes.Brtrue_S, Exit);
+                    prev = (prevPrev = null);
+                } else if (sigFound && prevPrev?.opcode == OpCodes.Br && prev?.opcode == OpCodes.Ldarg_0 && code.opcode == OpCodes.Call && code.operand == get_growState) {
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.DeleteOnOverlap)));
+                    yield return new CodeInstruction(OpCodes.Brfalse_S, Exit);
+                    yield return new CodeInstruction(OpCodes.Ldarg_1);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ReleaseTreeQueue)));
+                    yield return prevPrev;
+                    yield return prev;
+                    prev = (prevPrev = null);
+                } else if (prevPrev is not null && prev is not null) {
+                    yield return prevPrev;
+                    yield return prev;
+                    prev = (prevPrev = null);
                 }
+                prevPrev = prev;
+                prev = code;
             }
-            return codes.AsEnumerable();
+            if (prevPrev is not null) yield return prevPrev;
+            if (prev is not null) yield return prev;
         }
 
         public static bool GetAnarchyState(int val) {
@@ -163,15 +161,15 @@ runDefault:
 
         private static IEnumerable<CodeInstruction> TreeInstanceSetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label valueNotZero = il.DefineLabel();
-            var codes = instructions.ToList();
-            codes[0].WithLabels(valueNotZero);
-            codes.InsertRange(0, new CodeInstruction[] {
-                new CodeInstruction(OpCodes.Ldarg_1),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetAnarchyState))),
-                new CodeInstruction(OpCodes.Brfalse_S, valueNotZero),
-                new CodeInstruction(OpCodes.Ret)
-            });
-            return codes.AsEnumerable(); ;
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetAnarchyState)));
+            yield return new CodeInstruction(OpCodes.Brfalse_S, valueNotZero);
+            yield return new CodeInstruction(OpCodes.Ret);
+            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
+            if (codes.MoveNext()) codes.Current.WithLabels(valueNotZero);
+            do {
+                yield return codes.Current;
+            } while (codes.MoveNext());
         }
     }
 }
