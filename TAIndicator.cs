@@ -65,22 +65,30 @@ namespace TreeAnarchy {
             name = IndicatorPanelName;
 
             m_treeSnapIndicator = AddIndicator("TreeSnap", TAMod.UseTreeSnapping, (_, p) => {
-                m_treeSnapIndicator.SetState(TAMod.UseTreeSnapping = !TAMod.UseTreeSnapping);
+                bool state = TAMod.UseTreeSnapping = !TAMod.UseTreeSnapping;
+                m_treeSnapIndicator.SetState(state);
+                TAOptionPanel.SetTreeSnapState(state);
                 TAMod.SaveSettings();
             });
 #if ENABLETREEANARCHY
             m_treeAnarchyIndicator = AddIndicator("TreeAnarchy", TAMod.UseTreeAnarchy, (_, p) => {
-                m_treeAnarchyIndicator.SetState(TAMod.UseTreeAnarchy = !TAMod.UseTreeAnarchy);
+                bool state = TAMod.UseTreeAnarchy = !TAMod.UseTreeAnarchy;
+                m_treeAnarchyIndicator.SetState(state);
+                TAOptionPanel.SetTreeAnarchyState(state);
                 TAMod.SaveSettings();
             }, m_treeSnapIndicator);
             m_lockForestryIndicator = AddIndicator("LockForestry", TAMod.UseLockForestry, (_, p) => {
-                m_lockForestryIndicator.SetState(TAMod.UseLockForestry = !TAMod.UseLockForestry);
+                bool state = TAMod.UseLockForestry = !TAMod.UseLockForestry;
+                m_lockForestryIndicator.SetState(state);
+                TAOptionPanel.SetLockForestryState(state);
                 TAMod.SaveSettings();
             }, m_treeAnarchyIndicator);
             size = new Vector2(indicatorWidth * 3, indicatorHeight);
 #else
             m_lockForestryIndicator = AddIndicator("LockForestry", TAMod.UseLockForestry, (_, p) => {
-                m_lockForestryIndicator.SetState(TAMod.UseLockForestry = !TAMod.UseLockForestry);
+                bool state = (TAMod.UseLockForestry = !TAMod.UseLockForestry);
+                m_lockForestryIndicator.SetState(state);
+                TAOptionPanel.SetLockForestryState(state);
                 TAMod.SaveSettings();
             }, m_treeSnapIndicator);
             size = new Vector2(indicatorWidth * 2, indicatorHeight);
