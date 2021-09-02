@@ -20,61 +20,65 @@ namespace TreeAnarchy {
             }
         }
 
-
-
         // Patch WeatherManager::CalculateSelfHeight()
         // Affects Tree on Wind Effect, stops tree from slowing wind
         private static IEnumerable<CodeInstruction> CalculateSelfHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            bool sigFound = false;
             Label returnTreeManagerLabel = il.DefineLabel();
             MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
             using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
             while (codes.MoveNext()) {
                 CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                if (!sigFound && cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
                     CodeInstruction next = codes.Current;
-                    codes.MoveNext();
-                    CodeInstruction inter = codes.Current;
-                    if (next.opcode == OpCodes.Ldloca_S && inter.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                    if(next.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
                         CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Callvirt && codes.MoveNext()) {
+                        if (next1.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
                             CodeInstruction next2 = codes.Current;
-                            if (next2.Is(OpCodes.Call, getTreeInstance)) {
-                                LocalBuilder terrainAvg = cur.operand as LocalBuilder;
-                                LocalBuilder terrainMax = next.operand as LocalBuilder;
-                                yield return cur;
-                                yield return next;
-                                yield return inter;
-                                yield return next1;
-                                yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind)));
-                                yield return new CodeInstruction(OpCodes.Brtrue_S, returnTreeManagerLabel);
-                                yield return new CodeInstruction(OpCodes.Ldloc_S, terrainAvg);
-                                yield return new CodeInstruction(OpCodes.Ldloc_S, terrainMax);
-                                yield return new CodeInstruction(OpCodes.Add);
-                                yield return new CodeInstruction(OpCodes.Ldc_I4_1);
-                                yield return new CodeInstruction(OpCodes.Shr);
-                                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
-                                yield return new CodeInstruction(OpCodes.Ldc_I4, 65535);
-                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) }));
-                                yield return new CodeInstruction(OpCodes.Conv_U2);
-                                yield return new CodeInstruction(OpCodes.Ret);
-                                yield return next2.WithLabels(returnTreeManagerLabel);
+                            if (next2.opcode == OpCodes.Callvirt && codes.MoveNext()) {
+                                CodeInstruction next3 = codes.Current;
+                                if (next3.Is(OpCodes.Call, getTreeInstance)) {
+                                    sigFound = true;
+                                    LocalBuilder terrainAvg = next.operand as LocalBuilder;
+                                    LocalBuilder terrainMax = next1.operand as LocalBuilder;
+                                    yield return cur;
+                                    yield return next;
+                                    yield return next1;
+                                    yield return next2;
+                                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind)));
+                                    yield return new CodeInstruction(OpCodes.Brtrue_S, returnTreeManagerLabel);
+                                    yield return new CodeInstruction(OpCodes.Ldloc_S, terrainAvg);
+                                    yield return new CodeInstruction(OpCodes.Ldloc_S, terrainMax);
+                                    yield return new CodeInstruction(OpCodes.Add);
+                                    yield return new CodeInstruction(OpCodes.Ldc_I4_1);
+                                    yield return new CodeInstruction(OpCodes.Shr);
+                                    yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                                    yield return new CodeInstruction(OpCodes.Ldc_I4, 65535);
+                                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Mathf), "Clamp", new Type[] { typeof(int), typeof(int), typeof(int) }));
+                                    yield return new CodeInstruction(OpCodes.Conv_U2);
+                                    yield return new CodeInstruction(OpCodes.Ret);
+                                    yield return next3.WithLabels(returnTreeManagerLabel);
+                                } else {
+                                    yield return cur;
+                                    yield return next;
+                                    yield return next1;
+                                    yield return next2;
+                                    yield return next3;
+                                }
                             } else {
                                 yield return cur;
                                 yield return next;
-                                yield return inter;
                                 yield return next1;
                                 yield return next2;
                             }
                         } else {
                             yield return cur;
                             yield return next;
-                            yield return inter;
                             yield return next1;
                         }
                     } else {
                         yield return cur;
                         yield return next;
-                        yield return inter;
                     }
                 } else {
                     yield return cur;
@@ -118,7 +122,7 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+        private static IEnumerable<CodeInstruction> DeserializeTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool firstSig = false, secondSig = false, thirdSig = false;
             MethodInfo integratedDeserialize = AccessTools.Method(typeof(TASerializableDataExtension), nameof(TASerializableDataExtension.IntegratedDeserialize));
             MethodInfo getTreeInstance = AccessTools.PropertyGetter(typeof(Singleton<TreeManager>), nameof(Singleton<TreeManager>.instance));
@@ -130,10 +134,11 @@ namespace TreeAnarchy {
                 if (!firstSig && cur.opcode == OpCodes.Call && cur.operand == getTreeInstance) {
                     firstSig = true;
                     yield return cur;
-                    codes.MoveNext();
-                    yield return codes.Current;
-                    yield return new CodeInstruction(OpCodes.Ldloc_0);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)));
+                    if(codes.MoveNext()) {
+                        yield return codes.Current;
+                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EnsureCapacity)));
+                    }
                 } else if (firstSig && !secondSig && cur.opcode == OpCodes.Ldloc_1) {
                     secondSig = true;
                     codes.MoveNext();
