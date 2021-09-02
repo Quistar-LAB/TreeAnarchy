@@ -66,6 +66,9 @@ namespace TreeAnarchy {
 
             m_treeSnapIndicator = AddIndicator("TreeSnap", TAMod.UseTreeSnapping, (_, p) => {
                 bool state = TAMod.UseTreeSnapping = !TAMod.UseTreeSnapping;
+                if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                    TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
+                }
                 m_treeSnapIndicator.SetState(state);
                 TAOptionPanel.SetTreeSnapState(state);
                 TAMod.SaveSettings();

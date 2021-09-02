@@ -149,6 +149,9 @@ namespace TreeAnarchy {
             TALocale locale = SingletonLite<TALocale>.instance;
             TreeSnapCB = AddCheckBox(panel, locale.GetLocale("TreeSnap"), UseTreeSnapping, (_, isChecked) => {
                 UseTreeSnapping = isChecked;
+                if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                    TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
+                }
                 TAPatcher.MoveItUseTreeSnap?.SetValue(null, isChecked);
                 TAIndicator.TreeSnapIndicator?.SetState(isChecked);
                 SaveSettings();
