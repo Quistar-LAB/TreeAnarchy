@@ -1,7 +1,6 @@
 ﻿#if ENABLETERRAINCONFORM
 using ColossalFramework;
 using MoveIt;
-using System.Linq;
 using UnityEngine;
 
 namespace TreeAnarchy {
@@ -15,7 +14,7 @@ namespace TreeAnarchy {
         private static int ID_SurfaceMapping = Shader.PropertyToID("_SurfaceMapping");
 
         internal void SetTCBuffer(int maxSize) {
-            if(!(m_TCMaterial is null) && m_TCMaterial.Length != maxSize) {
+            if (!(m_TCMaterial is null) && m_TCMaterial.Length != maxSize) {
                 m_TCMaterial = new Material[maxSize];
             } else {
                 m_TCMaterial = new Material[maxSize];
@@ -39,7 +38,8 @@ namespace TreeAnarchy {
                     materialBlock.SetVector(ID_SurfaceMapping, surfaceMapping);
                     materialBlock.SetVector(instance.ID_ObjectIndex, objectIndex);
                     instance.m_drawCallData.m_defaultCalls++;
-                    Graphics.DrawMesh(info.m_mesh, matrix, m_TCMaterial[treeID], info.m_prefabDataLayer, null, 0, materialBlock);
+                    info.m_material.shader = defTCShader;
+                    Graphics.DrawMesh(info.m_mesh, matrix, info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
                 } else {
                     position.y += info.m_generatedInfo.m_center.y * (scale - 1f);
                     Color color = info.m_defaultColor * brightness;
@@ -59,10 +59,10 @@ namespace TreeAnarchy {
         public void TerrainConformTrees() {
             if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) && UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
                 TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                foreach(var selected in Action.selection) {
+                foreach (var selected in Action.selection) {
                     uint treeID = selected.id.Tree;
-                    if(selected is MoveableTree && !selected.id.IsEmpty && treeID > 0) {
-                        if((trees[treeID].m_flags & TerrainConformFlag) == 0) {
+                    if (selected is MoveableTree && !selected.id.IsEmpty && treeID > 0) {
+                        if ((trees[treeID].m_flags & TerrainConformFlag) == 0) {
                             Material origMat = trees[treeID].Info.m_material;
                             Material material = new Material(origMat) {
                                 shader = defTCShader,

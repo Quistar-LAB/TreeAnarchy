@@ -208,7 +208,7 @@ namespace TreeAnarchy {
             profiler.Start();
             /* Create Debug Log File */
             string path = Path.Combine(Application.dataPath, m_debugLogFile);
-            using (FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None)) 
+            using (FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
             using (StreamWriter sw = new StreamWriter(debugFile)) {
                 sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
                 sw.WriteLine(Environment.OSVersion);

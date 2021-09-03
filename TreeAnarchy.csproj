@@ -27,7 +27,7 @@
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;ENABLETREEANARCHY ENABLETERRAINCONFORM</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -123,6 +123,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Localization\TreeAnarchy.fr.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

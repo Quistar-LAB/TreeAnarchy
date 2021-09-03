@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ColossalFramework;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace TreeAnarchy {
     public partial class TAManager {
@@ -11,10 +6,10 @@ namespace TreeAnarchy {
             TreeInfo origPrefab = default;
             int prefabCount = PrefabCollection<TreeInfo>.PrefabCount();
 
-            for(uint i = 0; i < prefabCount; i++) {
+            for (uint i = 0; i < prefabCount; i++) {
                 origPrefab = PrefabCollection<TreeInfo>.GetPrefab(i);
                 MeshFilter filter = origPrefab.GetComponent<MeshFilter>();
-                if(filter.sharedMesh.isReadable) {
+                if (filter.sharedMesh.isReadable) {
                     break;
                 }
             }

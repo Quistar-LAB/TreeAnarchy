@@ -97,7 +97,7 @@ namespace TreeAnarchy {
                                 break;
                             }
                         }
-                    } else if(cur.opcode == OpCodes.Stloc_S && codes.MoveNext()) {
+                    } else if (cur.opcode == OpCodes.Stloc_S && codes.MoveNext()) {
                         var next = codes.Current;
                         if (next.LoadsField(AccessTools.Field(typeof(RenderManager), nameof(RenderManager.DefaultColorLocation))) && codes.MoveNext()) {
                             var next1 = codes.Current;
