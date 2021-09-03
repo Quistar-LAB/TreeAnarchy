@@ -48,7 +48,7 @@ namespace TreeAnarchy {
 
         private void LoadLocale(string culture) {
             string localeFile = string.Format(m_directory + m_fileNameTemplate, culture);
-            XmlDocument locale = new();
+            XmlDocument locale = new XmlDocument();
             try {
                 locale.Load(localeFile);
             } catch {

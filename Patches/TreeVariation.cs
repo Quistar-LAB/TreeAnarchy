@@ -70,67 +70,94 @@ namespace TreeAnarchy {
             }
         }
 
+        /* This patch handles installing functions for Tree Grouping and Tree Terrain Conforming */
         private static IEnumerable<CodeInstruction> TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-#if ENABLETREEGROUP
-            Label isGroupedTree = il.DefineLabel();
+#if ENABLETERRAINCONFORM
+            Label notTCTree = il.DefineLabel();
 #endif
+#if ENABLETREEGROUP
+            Label notGroupedTree = il.DefineLabel();
+#endif
+            LocalBuilder brightness = default, defaultColorLocation = default;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             FieldInfo vector4z = AccessTools.Field(typeof(Vector4), nameof(Vector4.z));
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
-                    yield return cur;
-                    yield return new CodeInstruction(OpCodes.Ldloca_S, 2);
-                    yield return new CodeInstruction(OpCodes.Ldarg_2);
-                    yield return new CodeInstruction(OpCodes.Ldloc_0);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
-                    while (codes.MoveNext()) {
-                        cur = codes.Current;
-                        if (cur.opcode == OpCodes.Stloc_3) {
-                            yield return cur;
-                            break;
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldloca_S, 2);
+                        yield return new CodeInstruction(OpCodes.Ldarg_2);
+                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
+                        while (codes.MoveNext()) {
+                            cur = codes.Current;
+                            if (cur.opcode == OpCodes.Stloc_3) {
+                                yield return cur;
+                                break;
+                            }
                         }
-                    }
-                }
-#if ENABLETREEGROUP
-                else if (cur.StoresField(vector4z) && codes.MoveNext()) {
-                    CodeInstruction next = codes.Current;
-                    if (next.opcode == OpCodes.Ldarg_1 && codes.MoveNext()) {
-                        CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Ldloc_0) {
+                    } else if(cur.opcode == OpCodes.Stloc_S && codes.MoveNext()) {
+                        var next = codes.Current;
+                        if (next.LoadsField(AccessTools.Field(typeof(RenderManager), nameof(RenderManager.DefaultColorLocation))) && codes.MoveNext()) {
+                            var next1 = codes.Current;
+                            brightness = cur.operand as LocalBuilder;
+                            defaultColorLocation = next1.operand as LocalBuilder;
                             yield return cur;
-                            yield return new CodeInstruction(OpCodes.Ldarg_0);
-                            yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)));
-                            yield return new CodeInstruction(OpCodes.Ldc_I4_8);
-                            yield return new CodeInstruction(OpCodes.And);
-                            yield return new CodeInstruction(OpCodes.Brtrue_S, isGroupedTree);
                             yield return next;
                             yield return next1;
                         } else {
                             yield return cur;
                             yield return next;
-                            yield return next1;
                         }
+                    } else if (cur.StoresField(vector4z) && codes.MoveNext()) {
+                        yield return cur;
+#if ENABLETREEGROUP
+                        yield return new CodeInstruction(OpCodes.Ldarg_0);
+                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)));
+                        yield return new CodeInstruction(OpCodes.Ldc_I4_8);
+                        yield return new CodeInstruction(OpCodes.And);
+                        yield return new CodeInstruction(OpCodes.Brfalse_S, notGroupedTree);
+                        yield return new CodeInstruction(OpCodes.Ldarg_1);
+                        yield return new CodeInstruction(OpCodes.Ldarg_2);
+                        yield return new CodeInstruction(OpCodes.Ldloc_1);
+                        yield return new CodeInstruction(OpCodes.Ldloc_S, brightness);
+                        yield return new CodeInstruction(OpCodes.Ldloc_S, defaultColorLocation);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderGroupInstance)));
+                        yield return new CodeInstruction(OpCodes.Ret);
+#endif
+#if ENABLETERRAINCONFORM
+#if ENABLETREEGROUP
+                        yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(notGroupedTree);
+#else
+                        yield return new CodeInstruction(OpCodes.Ldarg_0);
+#endif
+                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)));
+                        yield return new CodeInstruction(OpCodes.Ldc_I4, (int)TAManager.TerrainConformFlag);
+                        yield return new CodeInstruction(OpCodes.And);
+                        yield return new CodeInstruction(OpCodes.Brfalse_S, notTCTree);
+                        yield return new CodeInstruction(OpCodes.Ldarg_1);
+                        yield return new CodeInstruction(OpCodes.Ldarg_2);
+                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                        yield return new CodeInstruction(OpCodes.Ldloc_1);
+                        yield return new CodeInstruction(OpCodes.Ldloc_3);
+                        yield return new CodeInstruction(OpCodes.Ldloc_S, brightness);
+                        yield return new CodeInstruction(OpCodes.Ldloc_S, defaultColorLocation);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderTCInstance)));
+                        yield return new CodeInstruction(OpCodes.Ret);
+                        yield return codes.Current.WithLabels(notTCTree);
+#else
+#if ENABLETREEGROUP
+                        yield return codes.Current.WithLabels(notGroupedTree);
+#else
+                        yield return codes.Current;
+#endif
+#endif
                     } else {
                         yield return cur;
-                        yield return next;
                     }
                 }
-#endif
-                else {
-                    yield return cur;
-                }
             }
-#if ENABLETREEGROUP
-            yield return new CodeInstruction(OpCodes.Ldarg_1).WithLabels(isGroupedTree);
-            yield return new CodeInstruction(OpCodes.Ldarg_2);
-            yield return new CodeInstruction(OpCodes.Ldloc_1);
-            yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
-            yield return new CodeInstruction(OpCodes.Ldloc_S, 5);
-            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.RenderGroupInstance)));
-            yield return new CodeInstruction(OpCodes.Ret);
-#endif
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {

@@ -68,7 +68,7 @@ namespace TreeAnarchy {
             for (int i = 0; i < renderedGroups.m_size; i++) {
                 RenderGroup renderGroup = renderedGroups.m_buffer[i];
                 RenderGroup.MeshLayer layer = renderGroup.GetLayer(layerID);
-                if (layer is not null) {
+                if (!(layer is null)) {
                     layer.m_dataDirty = true;
                 }
                 renderGroup.UpdateMeshData();
@@ -82,31 +82,32 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> RenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo qIdentity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
             MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Call && cur.operand == qIdentity) {
-                    yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)));
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetRandomQuaternion)));
-                } else if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
-                    CodeInstruction next = codes.Current;
-                    if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
-                        CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
-                            yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
-                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Call && cur.operand == qIdentity) {
+                        yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.sqrMagnitude)));
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetRandomQuaternion)));
+                    } else if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
+                        CodeInstruction next = codes.Current;
+                        if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
+                            CodeInstruction next1 = codes.Current;
+                            if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
+                                yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+                            } else {
+                                yield return cur;
+                                yield return next;
+                                yield return next1;
+                            }
                         } else {
                             yield return cur;
                             yield return next;
-                            yield return next1;
                         }
                     } else {
                         yield return cur;
-                        yield return next;
                     }
-                } else {
-                    yield return cur;
                 }
             }
         }
@@ -114,27 +115,28 @@ namespace TreeAnarchy {
         /* TreeInstance::PopulateGroupData */
         private static IEnumerable<CodeInstruction> PopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo getWindSpeed = AccessTools.Method(typeof(WeatherManager), nameof(WeatherManager.GetWindSpeed), new Type[] { typeof(Vector3) });
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
-                    CodeInstruction next = codes.Current;
-                    if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
-                        CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
-                            yield return new CodeInstruction(OpCodes.Ldarga_S, 1);
-                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Call && codes.MoveNext()) {
+                        CodeInstruction next = codes.Current;
+                        if (next.opcode == OpCodes.Ldarg_2 && codes.MoveNext()) {
+                            CodeInstruction next1 = codes.Current;
+                            if (next1.opcode == OpCodes.Callvirt && next1.operand == getWindSpeed) {
+                                yield return new CodeInstruction(OpCodes.Ldarga_S, 1);
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetWindSpeed)));
+                            } else {
+                                yield return cur;
+                                yield return next;
+                                yield return next1;
+                            }
                         } else {
                             yield return cur;
                             yield return next;
-                            yield return next1;
                         }
                     } else {
                         yield return cur;
-                        yield return next;
                     }
-                } else {
-                    yield return cur;
                 }
             }
         }

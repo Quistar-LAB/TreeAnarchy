@@ -65,21 +65,22 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Call && cur.operand == terrainInstance) {
-                    codes.MoveNext(); codes.MoveNext();
-                    yield return new CodeInstruction(OpCodes.Ldarg_0);
-                    yield return new CodeInstruction(OpCodes.Ldloc_0);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)));
-                } else {
-                    yield return cur;
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Call && cur.operand == terrainInstance) {
+                        codes.MoveNext(); codes.MoveNext();
+                        yield return new CodeInstruction(OpCodes.Ldarg_0);
+                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)));
+                    } else {
+                        yield return cur;
+                    }
                 }
             }
         }
 
-        private static ToolBase.RaycastService customServices = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+        private static ToolBase.RaycastService customServices = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
         public static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
             if (UseTreeSnapping) {
                 input.m_currentEditObject = false;
@@ -108,15 +109,16 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> TreeToolCreateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo placementEffect = AccessTools.Method(typeof(TreeTool), nameof(TreeTool.DispatchPlacementEffect));
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Call && cur.operand == placementEffect) {
-                    yield return cur;
-                    yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)));
-                } else {
-                    yield return cur;
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Call && cur.operand == placementEffect) {
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(CalcFixedHeight)));
+                    } else {
+                        yield return cur;
+                    }
                 }
             }
         }
@@ -127,61 +129,62 @@ namespace TreeAnarchy {
             FieldInfo hitPos = AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_hitPos));
             FieldInfo mouseRay = AccessTools.Field(typeof(TreeTool), "m_mouseRay");
             FieldInfo fixedHeight = AccessTools.Field(typeof(TreeTool), "m_fixedHeight");
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            while (codes.MoveNext()) {
-                CodeInstruction cur = codes.Current;
-                if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
-                    CodeInstruction next = codes.Current;
-                    if (next.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
-                        CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Ldfld && next1.operand == mouseRay && codes.MoveNext()) {
-                            CodeInstruction next2 = codes.Current;
-                            LocalBuilder input = cur.operand as LocalBuilder;
-                            yield return cur;
-                            yield return next;
-                            yield return next1;
-                            yield return next2;
-                            codes.MoveNext();
-                            yield return codes.Current;
-                            codes.MoveNext();
-                            yield return codes.Current;
-                            yield return new CodeInstruction(OpCodes.Ldloca_S, input);
-                            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)));
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    CodeInstruction cur = codes.Current;
+                    if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
+                        CodeInstruction next = codes.Current;
+                        if (next.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
+                            CodeInstruction next1 = codes.Current;
+                            if (next1.opcode == OpCodes.Ldfld && next1.operand == mouseRay && codes.MoveNext()) {
+                                CodeInstruction next2 = codes.Current;
+                                LocalBuilder input = cur.operand as LocalBuilder;
+                                yield return cur;
+                                yield return next;
+                                yield return next1;
+                                yield return next2;
+                                codes.MoveNext();
+                                yield return codes.Current;
+                                codes.MoveNext();
+                                yield return codes.Current;
+                                yield return new CodeInstruction(OpCodes.Ldloca_S, input);
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)));
+                            } else {
+                                yield return cur;
+                                yield return next;
+                                yield return next1;
+                            }
+                        } else if (next.opcode == OpCodes.Ldfld && next.operand == rayOutputObject && codes.MoveNext()) {
+                            CodeInstruction next1 = codes.Current;
+                            if (next1.opcode == OpCodes.Stfld && next1.operand == fixedHeight) {
+                                yield return LoadFieldUseTreeSnapping;
+                                yield return next1;
+                            } else if (next1.opcode == OpCodes.Ldloc_S && (next1.operand as LocalBuilder).LocalIndex == 5) {
+                                yield return cur;
+                                yield return next;
+                                yield return LoadFieldUseTreeSnapping;
+                                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                                yield return new CodeInstruction(OpCodes.Ceq);
+                                yield return new CodeInstruction(OpCodes.Or);
+                                yield return next1;
+                            } else if (next1.opcode == OpCodes.Brtrue) {
+                                yield return cur;
+                                yield return next;
+                                yield return LoadFieldUseTreeSnapping;
+                                yield return new CodeInstruction(OpCodes.Or);
+                                yield return next1;
+                            } else {
+                                yield return cur;
+                                yield return next;
+                                yield return next1;
+                            }
                         } else {
                             yield return cur;
                             yield return next;
-                            yield return next1;
-                        }
-                    } else if (next.opcode == OpCodes.Ldfld && next.operand == rayOutputObject && codes.MoveNext()) {
-                        CodeInstruction next1 = codes.Current;
-                        if (next1.opcode == OpCodes.Stfld && next1.operand == fixedHeight) {
-                            yield return LoadFieldUseTreeSnapping;
-                            yield return next1;
-                        } else if (next1.opcode == OpCodes.Ldloc_S && (next1.operand as LocalBuilder).LocalIndex == 5) {
-                            yield return cur;
-                            yield return next;
-                            yield return LoadFieldUseTreeSnapping;
-                            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
-                            yield return new CodeInstruction(OpCodes.Ceq);
-                            yield return new CodeInstruction(OpCodes.Or);
-                            yield return next1;
-                        } else if (next1.opcode == OpCodes.Brtrue) {
-                            yield return cur;
-                            yield return next;
-                            yield return LoadFieldUseTreeSnapping;
-                            yield return new CodeInstruction(OpCodes.Or);
-                            yield return next1;
-                        } else {
-                            yield return cur;
-                            yield return next;
-                            yield return next1;
                         }
                     } else {
                         yield return cur;
-                        yield return next;
                     }
-                } else {
-                    yield return cur;
                 }
             }
         }
@@ -245,7 +248,7 @@ namespace TreeAnarchy {
         private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new(treeState.instance.id.Tree);
+            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
             float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
             float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
@@ -259,7 +262,7 @@ namespace TreeAnarchy {
         private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new(treeState.instance.id.Tree);
+            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
             float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
@@ -315,7 +318,7 @@ namespace TreeAnarchy {
             Vector3 origin = input.m_ray.origin;
             Vector3 normalized = input.m_ray.direction.normalized;
             Vector3 vector = input.m_ray.origin + normalized * input.m_length;
-            Segment3 ray = new(origin, vector);
+            Segment3 ray = new Segment3(origin, vector);
             output.m_hitPos = vector;
             output.m_overlayButtonIndex = 0;
             output.m_netNode = 0;
@@ -409,22 +412,22 @@ namespace TreeAnarchy {
             }
 
             objRay = Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(position));
-            ToolBase.RaycastInput input = new(objRay, Camera.main.farClipPlane) {
+            ToolBase.RaycastInput input = new ToolBase.RaycastInput(objRay, Camera.main.farClipPlane) {
                 m_ignoreTerrain = true
             };
             if (UseTreeSnapToBuilding) {
                 input.m_ignoreBuildingFlags = Building.Flags.None;
-                input.m_buildingService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_buildingService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (UseTreeSnapToNetwork) {
                 input.m_ignoreNodeFlags = NetNode.Flags.None;
                 input.m_ignoreSegmentFlags = NetSegment.Flags.None;
-                input.m_netService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
-                input.m_netService2 = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_netService2 = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (UseTreeSnapToProp) {
                 input.m_ignorePropFlags = PropInstance.Flags.None;
-                input.m_propService = new(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
+                input.m_propService = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
             }
             if (RayCast(input, out ToolBase.RaycastOutput raycastOutput)) {
                 vector = raycastOutput.m_hitPos;

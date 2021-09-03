@@ -44,7 +44,7 @@ namespace TreeAnarchy {
                 TreeManager tmInstance = Singleton<TreeManager>.instance;
                 if (maxLimit > MaxTreeLimit) {
                     TreeInstance[] oldBuffer = tmInstance.m_trees.m_buffer;
-                    Array32<TreeInstance> newTreeArray = new((uint)maxLimit);
+                    Array32<TreeInstance> newTreeArray = new Array32<TreeInstance>((uint)maxLimit);
                     float[] newTreeScaleBuffer = new float[maxLimit];
                     newTreeArray.CreateItem(out uint _);
                     newTreeArray.ClearUnused();
@@ -268,12 +268,12 @@ namespace TreeAnarchy {
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
                     byte[] oldData = Singleton<SimulationManager>.instance.m_serializableDataStorage[OldTreeUnlimiterKey];
-                    if (oldData is not null) {
+                    if (!(oldData is null)) {
                         if (oldData.Length < 2 || oldData.Length % 2 != 0) {
                             TALog("Invalid Old Data, Not Loading Tree Data");
                             return;
                         }
-                        OldDataSerializer oldSerializer = new(oldData);
+                        OldDataSerializer oldSerializer = new OldDataSerializer(oldData);
                         if (oldSerializer.Deserialize()) {
                             OldFormatLoaded = true;
                             TALog("Old Format Loaded");
@@ -289,8 +289,9 @@ namespace TreeAnarchy {
                         TALog("No extra trees to load");
                         return;
                     }
-                    using MemoryStream stream = new(data);
-                    DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
+                    using (MemoryStream stream = new MemoryStream(data)) {
+                        DataSerializer.Deserialize<Data>(stream, DataSerializer.Mode.Memory);
+                    }
                 } else {
                     for (int i = DefaultTreeLimit; i < trees.Length; i++) {
                         trees[i].m_flags = 0;

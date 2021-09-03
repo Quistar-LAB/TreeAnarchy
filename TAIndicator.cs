@@ -139,7 +139,7 @@ namespace TreeAnarchy {
         }
 
         private static UITextureAtlas CreateTextureAtlas(string atlasName, string[] spriteNames) {
-            Texture2D texture2D = new(spriteMaxSize, spriteMaxSize, TextureFormat.ARGB32, false);
+            Texture2D texture2D = new Texture2D(spriteMaxSize, spriteMaxSize, TextureFormat.ARGB32, false);
             Texture2D[] array = new Texture2D[spriteNames.Length];
             for (int i = 0; i < spriteNames.Length; i++) {
                 array[i] = LoadTextureFromAssembly(spriteNames[i] + ".png");
@@ -151,7 +151,7 @@ namespace TreeAnarchy {
             uITextureAtlas.material = material;
             uITextureAtlas.name = atlasName;
             for (int j = 0; j < spriteNames.Length; j++) {
-                UITextureAtlas.SpriteInfo item = new() {
+                UITextureAtlas.SpriteInfo item = new UITextureAtlas.SpriteInfo() {
                     name = spriteNames[j],
                     texture = array[j],
                     region = array2[j]
@@ -165,7 +165,7 @@ namespace TreeAnarchy {
             UnmanagedMemoryStream s = (UnmanagedMemoryStream)Assembly.GetExecutingAssembly().GetManifestResourceStream("TreeAnarchy.Resources." + filename);
             byte[] array = new byte[s.Length];
             s.Read(array, 0, array.Length);
-            Texture2D texture = new(2, 2, TextureFormat.ARGB32, false);
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.ARGB32, false);
             texture.LoadImage(array);
             texture.Compress(false);
             return texture;

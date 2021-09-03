@@ -28,7 +28,7 @@ namespace TreeAnarchy {
         }
 
         private void UnpatchPTA(Harmony harmony) {
-            if (m_redirectUtil is not null) {
+            if (!(m_redirectUtil is null)) {
                 harmony.Unpatch(AccessTools.Method(m_redirectUtil, "RedirectMethods"), HarmonyPatchType.Transpiler, HARMONYID);
                 m_redirectUtil = null;
             }
@@ -95,11 +95,12 @@ runDefault:
             yield return new CodeInstruction(OpCodes.Ldc_I4_0);
             yield return new CodeInstruction(OpCodes.Conv_I8);
             yield return new CodeInstruction(OpCodes.Ret);
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            if (codes.MoveNext()) codes.Current.WithLabels(TreeAnarchyDisabled);
-            do {
-                yield return codes.Current;
-            } while (codes.MoveNext());
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                if (codes.MoveNext()) codes.Current.WithLabels(TreeAnarchyDisabled);
+                do {
+                    yield return codes.Current;
+                } while (codes.MoveNext());
+            }
         }
 
         public static bool CheckAnarchyState(ref TreeInstance tree) {
@@ -107,7 +108,7 @@ runDefault:
                 return true;
             } else if (TAMod.UseTreeAnarchy) {
                 ToolBase currentTool = ToolsModifierControl.GetCurrentTool<ToolBase>();
-                if (currentTool is not NetTool && currentTool is not BuildingTool && currentTool is not BulldozeTool) {
+                if (!(currentTool is NetTool) && !(currentTool is BuildingTool) && !(currentTool is BulldozeTool)) {
                     if (tree.GrowState == 0) {
                         tree.GrowState = 1;
                         DistrictManager district = Singleton<DistrictManager>.instance;
@@ -142,7 +143,7 @@ runDefault:
                     yield return prevPrev;
                     yield return prev;
                     prev = (prevPrev = null);
-                } else if (prevPrev is not null && prev is not null) {
+                } else if (!(prevPrev is null) && !(prev is null)) {
                     yield return prevPrev;
                     yield return prev;
                     prev = (prevPrev = null);
@@ -150,8 +151,8 @@ runDefault:
                 prevPrev = prev;
                 prev = code;
             }
-            if (prevPrev is not null) yield return prevPrev;
-            if (prev is not null) yield return prev;
+            if (!(prevPrev is null)) yield return prevPrev;
+            if (!(prev is null)) yield return prev;
         }
 
         public static bool GetAnarchyState(int val) {
@@ -165,11 +166,12 @@ runDefault:
             yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetAnarchyState)));
             yield return new CodeInstruction(OpCodes.Brfalse_S, valueNotZero);
             yield return new CodeInstruction(OpCodes.Ret);
-            using IEnumerator<CodeInstruction> codes = instructions.GetEnumerator();
-            if (codes.MoveNext()) codes.Current.WithLabels(valueNotZero);
-            do {
-                yield return codes.Current;
-            } while (codes.MoveNext());
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                if (codes.MoveNext()) codes.Current.WithLabels(valueNotZero);
+                do {
+                    yield return codes.Current;
+                } while (codes.MoveNext());
+            }
         }
     }
 }

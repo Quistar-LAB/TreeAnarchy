@@ -153,7 +153,7 @@ namespace TreeAnarchy {
                 if (!File.Exists(SettingsFileName)) {
                     SaveSettings();
                 }
-                XmlDocument xmlConfig = new();
+                XmlDocument xmlConfig = new XmlDocument();
                 xmlConfig.Load(SettingsFileName);
                 m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute("TreeEffectOnWind"));
@@ -177,7 +177,7 @@ namespace TreeAnarchy {
         }
 
         internal static void SaveSettings() {
-            XmlDocument xmlConfig = new();
+            XmlDocument xmlConfig = new XmlDocument();
             XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
             _ = root.Attributes.Append(AddElement(xmlConfig, "ScaleFactor", m_ScaleFactor));
             _ = root.Attributes.Append(AddElement(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
@@ -203,35 +203,38 @@ namespace TreeAnarchy {
             return attr;
         }
 
-        private static readonly Stopwatch profiler = new();
+        private static readonly Stopwatch profiler = new Stopwatch();
         private void CreateDebugFile() {
             profiler.Start();
             /* Create Debug Log File */
             string path = Path.Combine(Application.dataPath, m_debugLogFile);
-            using FileStream debugFile = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-            using StreamWriter sw = new(debugFile);
-            sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
-            sw.WriteLine(Environment.OSVersion);
-            sw.WriteLine($"C# CLR Version {Environment.Version}");
-            sw.WriteLine($"Unity Version {Application.unityVersion}");
-            sw.WriteLine("-------------------------------------");
+            using (FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None)) 
+            using (StreamWriter sw = new StreamWriter(debugFile)) {
+                sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
+                sw.WriteLine(Environment.OSVersion);
+                sw.WriteLine($"C# CLR Version {Environment.Version}");
+                sw.WriteLine($"Unity Version {Application.unityVersion}");
+                sw.WriteLine("-------------------------------------");
+            }
         }
 
         private void OutputPluginsList() {
-            using FileStream debugFile = new(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None);
-            using StreamWriter sw = new(debugFile);
-            sw.WriteLine("Mods Installed are:");
-            foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
-                sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? "** Enabled **" : "** Disabled **")}");
+            using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None))
+            using (StreamWriter sw = new StreamWriter(debugFile)) {
+                sw.WriteLine("Mods Installed are:");
+                foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+                    sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? "** Enabled **" : "** Disabled **")}");
+                }
+                sw.WriteLine("-------------------------------------");
             }
-            sw.WriteLine("-------------------------------------");
         }
 
         internal static void TALog(string msg) {
             var ticks = profiler.ElapsedTicks;
-            using FileStream debugFile = new(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append);
-            using StreamWriter sw = new(debugFile);
-            sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
+            using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append))
+            using (StreamWriter sw = new StreamWriter(debugFile)) {
+                sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
+            }
         }
     }
 }
