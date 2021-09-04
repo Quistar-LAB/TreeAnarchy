@@ -172,9 +172,7 @@ namespace TreeAnarchy {
                                 if (next.opcode == OpCodes.Stloc_S && codes.MoveNext()) {
                                     CodeInstruction next2 = codes.Current;
                                     if (next2.opcode == OpCodes.Br) {
-                                        yield return cur;
-                                        yield return next;
-                                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                                        yield return new CodeInstruction(OpCodes.Ldloc_1).WithLabels(cur.ExtractLabels());
                                         yield return new CodeInstruction(OpCodes.Call, integratedDeserialize);
                                         yield return new CodeInstruction(OpCodes.Ldloc_0);
                                         yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees)));
@@ -184,6 +182,8 @@ namespace TreeAnarchy {
                                         yield return new CodeInstruction(OpCodes.Ldlen);
                                         yield return new CodeInstruction(OpCodes.Conv_I4);
                                         yield return new CodeInstruction(OpCodes.Stloc_3);
+                                        yield return cur;
+                                        yield return next;
                                         yield return next2;
                                     } else {
                                         yield return cur;
