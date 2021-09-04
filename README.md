@@ -3,7 +3,7 @@
 <a href="LICENSE">
 	<img src="https://img.shields.io/badge/license-MIT-green" />
 </a>
-<br>
+
 #### Requires: Harmony 2.0.x ported over to Cities Skylines by [Bofomer](https://github.com/boformer) -- [Github](https://github.com/boformer/CitiesHarmony)<br>Requires: MoveIt by [Quboid](https://github.com/Quboid) -- [Github](https://github.com/Quboid/CS-MoveIt)
 TreeAnarchy is a reboot of the original Unlimited Trees Mod with focus on performance and added functionality of tree random rotation and tree snapping.
 
