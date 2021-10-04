@@ -51,6 +51,14 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __TreeInstancePopulateGroupDataTranspiler(instructions);
+            foreach(var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             foreach (var code in instructions) {
@@ -70,8 +78,15 @@ namespace TreeAnarchy {
             }
         }
 
-        /* This patch handles installing functions for Tree Grouping and Tree Terrain Conforming */
         private static IEnumerable<CodeInstruction> TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            var codes = __TreeInstanceRenderInstanceTranspiler(instructions, il);
+            foreach(var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
 #if ENABLETERRAINCONFORM
             Label notTCTree = il.DefineLabel();
 #endif
@@ -161,6 +176,14 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __TreeToolRenderGeometryTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             foreach (var code in instructions) {
@@ -180,22 +203,45 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions) {
-            bool skip = false;
+        private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
+            var codes = __TreeToolRenderOverlayTranspiler(instructions, method);
+            foreach(var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
+            bool skipFirst = false;
+            int randomizerLocalIndex = 4;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
-            foreach (var code in instructions) {
-                if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
-                    skip = true;
-                    yield return code;
-                    yield return new CodeInstruction(OpCodes.Ldloca_S, 4);
-                    yield return new CodeInstruction(OpCodes.Ldloc_3);
-                    yield return new CodeInstruction(OpCodes.Ldloc_0);
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
-                } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 5) {
-                    skip = false;
-                    yield return code;
-                } else if (!skip) {
-                    yield return code;
+            var variables = method.GetMethodBody().LocalVariables;
+            foreach(var variable in variables) {
+                if(!skipFirst && variable.LocalType == typeof(Randomizer)) {
+                    skipFirst = true;
+                } else if(skipFirst && variable.LocalType == typeof(Randomizer)) {
+                    randomizerLocalIndex = variable.LocalIndex;
+                }
+            }
+            using(IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while(codes.MoveNext()) {
+                    var cur = codes.Current;
+                    if(cur.opcode == OpCodes.Call && cur.operand == randomizer) {
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldloca_S, randomizerLocalIndex);
+                        yield return new CodeInstruction(OpCodes.Ldloc_3);
+                        yield return new CodeInstruction(OpCodes.Ldloc_0);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
+                        while (codes.MoveNext()) {
+                            cur = codes.Current;
+                            if(cur.opcode == OpCodes.Stloc_S) {
+                                yield return cur;
+                                break;
+                            }
+                        }
+                    } else {
+                        yield return cur;
+                    }
                 }
             }
         }

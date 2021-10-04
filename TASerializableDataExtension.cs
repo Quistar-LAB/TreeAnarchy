@@ -303,9 +303,6 @@ namespace TreeAnarchy {
         }
 
         public void OnSaveData() {
-#if DEBUGPROFILE
-            TALog("Saving Data --- Begin");
-#endif
             try {
                 byte[] data;
                 if (OldFormatLoaded) EraseData(OldTreeUnlimiterKey);

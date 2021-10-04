@@ -63,7 +63,11 @@ namespace TreeAnarchy {
             if (!isInitialized) {
                 try {
                     foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
-                        if (fileID.AsUInt64 == m_thisModID || fileID.AsUInt64 == m_betaModID) {
+                        if (fileID.AsUInt64 == m_thisModID) {
+                            m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
+                            break;
+                        }
+                        if (fileID.AsUInt64 == m_betaModID) {
                             m_directory = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
                             break;
                         }
