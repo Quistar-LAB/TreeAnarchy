@@ -1,0 +1,65 @@
+<!DOCTYPE resources [
+  <!ELEMENT resources ANY>
+  <!ELEMENT string ANY>
+  <!ATTLIST string name ID #REQUIRED>
+]>
+<!--
+TreeAnarchy Default Locale Template
+-->
+<resources>
+  <!-- Misc Trees -->
+  <string name="GroupTrees">Группа деревьев</string>
+  <string name="UngroupTrees">Разделить группу деревьев</string>
+  <string name="TerrainConformTrees">Размещать деревья в соответствии с ландшафтом</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator"> Включить игровые индикаторы</string>
+  <string name="TreeSnapIsOff">Привязка деревьев ВЫКЛ</string>
+  <string name="TreeSnapIsOn">Привязка деревьев ВКЛ</string>
+  <string name="LockForestryIsOff">Блокировка областей леса ВЫКЛ</string>
+  <string name="LockForestryIsOn">Блокировка областей леса ВКЛ</string>
+  <string name="TreeAnarchyIsOff">Анархия деревьев ВЫКЛ</string>
+  <string name="TreeAnarchyIsOn">Анархия деревьев ВКЛ</string>
+  <!-- Tree Anarchy -->
+  <string name="TreeAnarchy">Анархия деревьев</string>
+  <string name="TreeAnarchyDesc">Позволяет размещать деревья в любом месте. При размещении дорог или зданий вы можете использовать следующую настройку, чтобы скрыть или удалить дерево</string>
+  <string name="TreeAnarchyBehaviour">Поведение при столкновении</string>
+  <string name="TreeAnarchyHideTree">Скрыть дерево</string>
+  <string name="TreeAnarchyDeleteTree">Удалить дерево</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">Увеличить размер дерева</string>
+  <string name="DecreaseTreeSize">Уменьшить размер дерева</string>
+  <string name="PressAnyKey">Нажмите любую клавишу</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">Основные параметры</string>
+  <string name="TreeAnarchyTab">Анархия деревьев</string>
+  <string name="KeyboardShortcutTab">Привязка клавиш</string>
+  <string name="KeyBindDescription">При привязке горячих клавиш обязательно используйте модификаторы (SHIFT | CONTROL | ALT) для Привязки деревьев и Блокировки областей леса. Для горячих клавиш увеличения и уменьшения размера дерева это специально обработано, поэтому вам не нужно использовать модификаторы, но убедитесь, что вы выбрали уникальную горячую клавишу.</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">Настроить пользовательский лимит деревьев</string>
+  <string name="MaxTreeLimit">Максимальный лимит деревьев:  {0} деревьев</string>
+  <string name="WindEffect">Включить влияние дерева на ветер</string>
+  <string name="WindEffectLabel">Этот параметр влияет на нормальное поведение игры в зависимости от высоты деревьев и ослабляет ветер на карте. В стандартной игре активирован</string>
+  <string name="RandomTreeRotation">Случайное вращение дерева</string>
+  <string name="TreeSwayFactor">Раскачивание деревьев на ветру</string>
+  <string name="LockForestry">Блокировка областей леса</string>
+  <string name="PersistentLock">Постоянная блокировка лесных областей</string>
+  <string name="SwayLabel">Полезные eyecandy и инструменты. Блокировка лесных областей не позволяет деревьям создавать лесные ресурсы и удалять плодородные земли. Включение постоянной блокировки приведёт к включению режима блокировки при каждом запуске игры. Это делается для того, чтобы пользователи не забывали включать Блокировку леса при входе в игру и уничтожении плодородных земель на карте</string>
+  <string name="Important">Важно! Должен быть установлен перед запуском/загрузкой игры
+ 
+Следующие настройки используются только при загрузке из формата Old Unlimited Trees</string>
+  <string name="ReplaceRemoveDesc">Поведение по умолчанию настроено на сохранение отсутствующих деревьев. Если вы выберете удалить, то деревья будут удалены из сохраненной игры. Если вы решите заменить деревья, то для замены отсутствующих деревьев будет использовано первое ванильное дерево</string>
+  <string name="ReplaceRemoveName">Поведение при загрузке для стар. формата игры с неограничен. деревьями</string>
+  <string name="ReplaceRemoveDropdown0">Сохранить недостающие деревья</string>
+  <string name="ReplaceRemoveDropdown1">Удалить недостающие деревья</string>
+  <string name="ReplaceRemoveDropdown2">Заменить недостающие деревья</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">Привязка деревьев</string>
+  <string name="TreeSnapLabel">Эта опция позволяет деревьям свободно перемещаться и позволяет привязывать деревья к зданиям и объектам</string>
+  <string name="ExperimentalTreeSnap">Использовать экспериментальную привязку деревьев</string>
+  <string name="ExperimentalTreeSnapLabel">Экспериментальная привязка дерева - это функция в моде MoveIt, позволяющая привязать дерево к зданиям, дорогам, реквизитам. Привязка к дереву отлично работает при перемещении деревьев, но при клонировании будут происходить смещения после размещения клона. Чтобы решить эту проблему, отмените выбор дерева и повторно выберите любое дерево для сброса положения. Сейчас я работаю во внутренней структуре MoveIt в свободное время, чтобы получить лучший результат</string>
+  <string name="TreeSnapToBuilding">Включите эту опцию, чтобы деревья могли привязываться к зданиям</string>
+  <string name="TreeSnapToBuildingLabel">Привязка дерева к sub-building(дополнительным зданиям) не работает из-за того, что ray casting не распознают sub-buildings</string>
+  <string name="TreeSnapToNetwork">Включите эту опцию, чтобы деревья привязывались к дорогам</string>
+  <string name="TreeSnapToProp">Включите эту опцию, чтобы разрешить деревьям привязываться к реквизитам</string>
+  <string name="TreeSnapToPropLabel">Привязка дерева к реквизитам не работает на 100% из-за того, что некоторые реквизиты не имеют определённой формы для ray casting. Например Ploppable Surfaces</string>
+</resources>
