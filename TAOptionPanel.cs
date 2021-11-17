@@ -6,7 +6,7 @@ using static TreeAnarchy.TAMod;
 namespace TreeAnarchy {
     public class TAOptionPanel : UIPanel {
         private const string m_optionPanelName = "TreeAnarchyOptionPanel";
-        private const float MaxScaleFactor = 8.0f;
+        private const float MaxScaleFactor = 20.0f;
         private const float MinScaleFactor = 1.5f;
         public const float DefaultFontScale = 0.95f;
         public const float SmallFontScale = 0.85f;
@@ -77,7 +77,7 @@ namespace TreeAnarchy {
             WindEffectCB.AlignTo(indicatorCB, UIAlignAnchor.BottomLeft);
             WindEffectCB.relativePosition += new Vector3(0, indicatorCB.height);
             UILabel WindEffectLabel = AddDescription(panel, "WindEffectLabel", WindEffectCB.label, SmallFontScale, locale.GetLocale("WindEffectLabel"));
-
+#if FALSE
             UICheckBox TreeRotationCB = AddCheckBox(panel, locale.GetLocale("RandomTreeRotation"), RandomTreeRotation, (_, isChecked) => {
                 RandomTreeRotation = isChecked;
                 if (RandomTreeRotation) RandomTreeRotationFactor = 1000;
@@ -87,13 +87,14 @@ namespace TreeAnarchy {
             TreeRotationCB.AlignTo(WindEffectCB, UIAlignAnchor.BottomLeft);
             TreeRotationCB.relativePosition = new Vector3(0, WindEffectCB.height + WindEffectLabel.height);
             TreeRotationCB.width = 300;
+#endif
             LockForestryCB = AddCheckBox(panel, locale.GetLocale("LockForestry"), UseLockForestry, (_, isChecked) => {
                 UseLockForestry = isChecked;
                 TAIndicator.LockForestryIndicator?.SetState(isChecked);
                 SaveSettings();
             });
-            LockForestryCB.AlignTo(TreeRotationCB, UIAlignAnchor.BottomLeft);
-            LockForestryCB.relativePosition = new Vector3(0, TreeRotationCB.height);
+            LockForestryCB.AlignTo(WindEffectCB, UIAlignAnchor.BottomLeft);
+            LockForestryCB.relativePosition = new Vector3(0, WindEffectCB.height + WindEffectLabel.height);
             LockForestryCB.cachedName = LockForestryCBName;
             LockForestryCB.name = LockForestryCBName;
             LockForestryCB.width = 300;
@@ -106,10 +107,10 @@ namespace TreeAnarchy {
             SwayFactorLabel.Disable();
             AddSlider(SwayPanel, 0f, 1f, 0.1f, TreeSwayFactor, (_, val) => {
                 TreeSwayFactor = val;
-                if (IsInGame) TAPatcher.UpdateTreeSway();
+                if (IsInGame) TAManager.UpdateTreeSway();
                 SaveSettings();
             }).width -= 10;
-            SwayPanel.AlignTo(TreeRotationCB, UIAlignAnchor.TopRight);
+            SwayPanel.AlignTo(LockForestryCB, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(380, 0);
             UICheckBox PersistentLockCB = AddCheckBox(panel, locale.GetLocale("PersistentLock"), PersistentLockForestry, (_, isChecked) => {
                 PersistentLockForestry = isChecked;
