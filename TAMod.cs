@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "1.0.6";
+        internal const string m_modVersion = "1.0.9";
         internal const string m_assemblyVersion = m_modVersion + ".*";
         private const string m_modName = "Tree Anarchy";
         private const string m_modDesc = "Lets you plant more trees with tree snapping";
@@ -103,7 +103,7 @@ namespace TreeAnarchy {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
             if (PersistentLockForestry) UseLockForestry = true;
-            SingletonLite<TAManager>.instance.SetScaleBuffer(MaxTreeLimit);
+            TAManager.SetScaleBuffer(MaxTreeLimit);
             HarmonyHelper.DoOnHarmonyReady(() => SingletonLite<TAPatcher>.instance.EnableCore());
         }
 
@@ -123,6 +123,8 @@ namespace TreeAnarchy {
         #region ILoadingExtension
         void ILoadingExtension.OnCreated(ILoading loading) {
             OutputPluginsList();
+            TAManager.Initialize();
+            TAManager.InitializeSwayManager();
             if (HarmonyHelper.IsHarmonyInstalled) {
                 SingletonLite<TAPatcher>.instance.LateEnable();
             }
