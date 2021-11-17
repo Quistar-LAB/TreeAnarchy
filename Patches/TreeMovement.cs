@@ -1,12 +1,5 @@
 ﻿using ColossalFramework;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using UnityEngine;
-using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {

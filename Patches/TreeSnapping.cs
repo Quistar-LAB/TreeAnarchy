@@ -115,7 +115,7 @@ namespace TreeAnarchy {
             Type EMLRaycastOutputType = Type.GetType("EManagersLib.EToolBase+RaycastOutput");
             FieldInfo rayOutputObjectEML = AccessTools.Field(EMLRaycastOutputType, "m_currentEditObject");
             using (var codes = instructions.GetEnumerator()) {
-                while(codes.MoveNext()) {
+                while (codes.MoveNext()) {
                     var cur = codes.Current;
                     if (cachedRayInputIndex < 0 && cur.opcode == OpCodes.Ldloca_S && cur.operand is LocalBuilder l1) {
                         cachedRayInputIndex = l1.LocalIndex;
@@ -138,8 +138,8 @@ namespace TreeAnarchy {
                         yield return new CodeInstruction(OpCodes.Or);
                     } else if (cur.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
                         var next = codes.Current;
-                        if(next.opcode == OpCodes.Ldloca_S && next.operand is LocalBuilder l3 && (l3.LocalType == typeof(ToolBase.RaycastOutput) || l3.LocalType == EMLRaycastOutputType)) {
-                            if(++sigFoundCount == 3) {
+                        if (next.opcode == OpCodes.Ldloca_S && next.operand is LocalBuilder l3 && (l3.LocalType == typeof(ToolBase.RaycastOutput) || l3.LocalType == EMLRaycastOutputType)) {
+                            if (++sigFoundCount == 3) {
                                 yield return cur;
                                 yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
                                 yield return new CodeInstruction(OpCodes.Brtrue_S, TreeSnapEnabled);
@@ -148,7 +148,7 @@ namespace TreeAnarchy {
                                 yield return codes.Current;
                                 yield return new CodeInstruction(OpCodes.Br_S, TreeSnapDisabled);
                                 yield return new CodeInstruction(OpCodes.Ldloca_S, l3.LocalIndex).WithLabels(TreeSnapEnabled);
-                                if(l3.LocalType == typeof(ToolBase.RaycastOutput)) {
+                                if (l3.LocalType == typeof(ToolBase.RaycastOutput)) {
                                     yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_hitPos)));
                                 } else {
                                     yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(EMLRaycastOutputType, "m_hitPos"));
@@ -170,7 +170,7 @@ namespace TreeAnarchy {
                 }
             }
         }
-        
+
         /* If tree snapping is false => 
          * check if tree has fixedheight flag, if not then follow the terrain
          * 

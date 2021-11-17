@@ -1,14 +1,13 @@
-﻿using System;
+﻿using ColossalFramework;
+using ColossalFramework.Math;
+using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using ColossalFramework;
-using UnityEngine;
-using HarmonyLib;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-using ColossalFramework.Math;
+using UnityEngine;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
@@ -101,8 +100,8 @@ namespace TreeAnarchy {
             bool IsStloc(ref OpCode opcode) => opcode == OpCodes.Stloc || opcode == OpCodes.Stloc_0 || opcode == OpCodes.Stloc_1 || opcode == OpCodes.Stloc_2 || opcode == OpCodes.Stloc_3 || opcode == OpCodes.Stloc_S;
             bool IsLdloc(ref OpCode opcode) => opcode == OpCodes.Ldloc || opcode == OpCodes.Ldloc_0 || opcode == OpCodes.Ldloc_1 || opcode == OpCodes.Ldloc_2 || opcode == OpCodes.Ldloc_3 || opcode == OpCodes.Ldloc_S;
             FieldInfo minBrightness = AccessTools.Field(typeof(TreeInfo), nameof(TreeInfo.m_minBrightness));
-            using(var codes = instructions.GetEnumerator()) {
-                while(codes.MoveNext()) {
+            using (var codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
                     var cur = codes.Current;
                     if (cur.opcode == OpCodes.Ldloca_S && (cur.operand is LocalBuilder local) && local.LocalType == typeof(Randomizer) && codes.MoveNext()) {
                         List<Label> labels = cur.labels;
@@ -114,12 +113,12 @@ namespace TreeAnarchy {
                         yield return storedLDarg.WithLabels(labels);
                         yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
                         yield return cur;
-                        if(replaceBrightnessToo && codes.MoveNext()) {
+                        if (replaceBrightnessToo && codes.MoveNext()) {
                             cur = codes.Current;
-                            if(IsLdloc(ref cur.opcode) && codes.MoveNext()) {
+                            if (IsLdloc(ref cur.opcode) && codes.MoveNext()) {
                                 var next = codes.Current;
-                                if(next.opcode == OpCodes.Ldfld && next.operand == minBrightness) {
-                                    while(codes.MoveNext()) {
+                                if (next.opcode == OpCodes.Ldfld && next.operand == minBrightness) {
+                                    while (codes.MoveNext()) {
                                         next = codes.Current;
                                         if (IsStloc(ref next.opcode)) break;
                                     }
@@ -180,7 +179,7 @@ namespace TreeAnarchy {
             yield return new CodeInstruction(OpCodes.Brfalse_S, valueNotZero);
             yield return new CodeInstruction(OpCodes.Ret);
             foreach (var code in ReplaceMath(instructions)) {
-                if(counter == 0) {
+                if (counter == 0) {
                     yield return code.WithLabels(valueNotZero);
                 } else {
                     yield return code;
@@ -195,7 +194,7 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             bool firstBeqFound = false;
-            foreach(var code in ReplaceMath(instructions)) {
+            foreach (var code in ReplaceMath(instructions)) {
                 if (!skip && code.opcode == OpCodes.Ldc_I4_3) {
                     yield return new CodeInstruction(OpCodes.Ldc_I4_S, 0x23);
                 } else if (!skip && !firstBeqFound && code.opcode == OpCodes.Beq) {
@@ -229,7 +228,7 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
             MethodInfo sampleDetailHeight = AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) });
-            foreach(var code in ReplaceMath(instructions)) {
+            foreach (var code in ReplaceMath(instructions)) {
                 if (code.opcode == OpCodes.Call && code.operand == terrainInstance) {
                     yield return new CodeInstruction(OpCodes.Ldarga_S, 0);
                 } else if (code.opcode == OpCodes.Callvirt && code.operand == sampleDetailHeight) {
@@ -266,10 +265,10 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> InstallCheckAnarchyInCheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             bool firstSig = false;
             Label infoIsNULL = il.DefineLabel();
-            using(var codes = instructions.GetEnumerator()) {
-                while(codes.MoveNext()) {
+            using (var codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
                     var cur = codes.Current;
-                    if(!firstSig && cur.opcode == OpCodes.Brtrue && codes.MoveNext()) {
+                    if (!firstSig && cur.opcode == OpCodes.Brtrue && codes.MoveNext()) {
                         firstSig = true;
                         yield return new CodeInstruction(OpCodes.Brfalse_S, infoIsNULL);
                         yield return new CodeInstruction(OpCodes.Ldarga_S, 0);
@@ -301,7 +300,7 @@ namespace TreeAnarchy {
         /// </summary>
         private static IEnumerable<CodeInstruction> PopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo getHidden = AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.Hidden));
-            foreach(var code in ReplaceScaleCalculator(instructions, true)) {
+            foreach (var code in ReplaceScaleCalculator(instructions, true)) {
                 if (code.opcode == OpCodes.Stloc_0 || code.opcode == OpCodes.Ldloc_0) {
                     // skip it
                 } else if (code.opcode == OpCodes.Call && code.operand == getHidden) {
@@ -322,8 +321,8 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
             MethodInfo identity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
-            foreach(var code in ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions))) {
-                if(code.opcode == OpCodes.Call && code.operand == identity) {
+            foreach (var code in ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions))) {
+                if (code.opcode == OpCodes.Call && code.operand == identity) {
                     yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_treeQuaternions)));
                     yield return new CodeInstruction(OpCodes.Ldarg_2);
                     yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.x)));
@@ -352,7 +351,7 @@ namespace TreeAnarchy {
             bool setlodMax = false;
             CodeInstruction storedCode = default;
             ConstructorInfo newVector3 = AccessTools.Constructor(typeof(Vector3), new Type[] { typeof(float), typeof(float), typeof(float) });
-            foreach(var code in ReplaceMath(instructions)) {
+            foreach (var code in ReplaceMath(instructions)) {
                 if (code.opcode == OpCodes.Ldelema && code.operand == typeof(Vector4)) {
                     // skip code
                 } else if (code.opcode == OpCodes.Stobj && code.operand == typeof(Vector4)) {
@@ -386,7 +385,7 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
-            foreach(var code in instructions) {
+            foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Beq) {
                     yield return new CodeInstruction(OpCodes.Bne_Un_S, labels[0]);
                 } else if (code.opcode == OpCodes.Brfalse) {
@@ -402,12 +401,12 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
-            foreach(var code in instructions) {
-                if(code.opcode == OpCodes.Brtrue) {
+            foreach (var code in instructions) {
+                if (code.opcode == OpCodes.Brtrue) {
                     code.opcode = OpCodes.Brfalse;
                     code.operand = labels[0];
                     yield return code;
-                } else if(code.opcode == OpCodes.Ret && code.labels.Count == 0) {
+                } else if (code.opcode == OpCodes.Ret && code.labels.Count == 0) {
                 } else {
                     if (code.opcode != OpCodes.Ret && code.labels.Count > 0) code.labels.Clear();
                     yield return code;

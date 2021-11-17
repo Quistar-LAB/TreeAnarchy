@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
@@ -26,7 +24,7 @@ namespace TreeAnarchy {
                     harmony.Patch(AccessTools.Method(m_redirectUtil, "RedirectMethods"),
                         transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(PTARedirectMethodsTranspiler))));
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 TAMod.TALog("Found Prop & Tree Anarchy, but failed to patch it. Happily continuing and ignoring this error\n" + e.ToString());
             }
         }

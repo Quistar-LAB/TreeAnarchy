@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using UnityEngine;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
