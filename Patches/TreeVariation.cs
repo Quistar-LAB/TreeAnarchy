@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using UnityEngine;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
@@ -152,7 +153,7 @@ namespace TreeAnarchy {
                 }
             }
         }
-#endif
+
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
             var codes = __TreeToolRenderGeometryTranspiler(instructions);
             foreach (var code in codes) {
