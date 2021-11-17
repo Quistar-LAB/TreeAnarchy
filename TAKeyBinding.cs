@@ -71,19 +71,19 @@ namespace TreeAnarchy {
                     }
                     TAOptionPanel.SetTreeSnapState(state);
                     TAIndicator.TreeSnapIndicator.SetState(state);
-                    SaveSettings();
+                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
                 } else if (m_lockForestry.IsPressed(e)) {
                     bool state = UseLockForestry = !UseLockForestry;
                     TAOptionPanel.SetLockForestryState(state);
                     TAIndicator.LockForestryIndicator.SetState(state);
-                    SaveSettings();
+                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
                 }
 #if ENABLETREEANARCHY
                 else if (m_treeAnarchy.IsPressed(e)) {
                     bool state = UseTreeAnarchy = !UseTreeAnarchy;
                     TAOptionPanel.SetTreeAnarchyState(state);
                     TAIndicator.TreeAnarchyIndicator.SetState(state);
-                    SaveSettings();
+                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
                 }
 #endif
 #if ENABLETREEGROUP
@@ -99,9 +99,9 @@ namespace TreeAnarchy {
                 }
 #endif
                 else if (IsCustomPressed(m_incrTreeVariation, e)) {
-                    SingletonLite<TAManager>.instance.IncrementTreeSize();
+                    Singleton<SimulationManager>.instance.AddAction(() => TAManager.IncrementTreeSize());
                 } else if (IsCustomPressed(m_decrTreeVariation, e)) {
-                    SingletonLite<TAManager>.instance.DecrementTreeSize();
+                    Singleton<SimulationManager>.instance.AddAction(() => TAManager.DecrementTreeSize());
                 }
             }
         }

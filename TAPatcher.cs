@@ -80,6 +80,8 @@ namespace TreeAnarchy {
 
         internal void EnableCore() {
             Harmony harmony = CurrentHarmony;
+            EnableTreeInstancePatch(harmony);
+            EnableTreeManagerPatch(harmony);
             EnableTreeLimitPatches(harmony);
             EnableTreeSnappingPatches(harmony);
             EnableTreeVariationPatches(harmony);
@@ -87,6 +89,8 @@ namespace TreeAnarchy {
 
         internal void DisableCore() {
             Harmony harmony = CurrentHarmony;
+            DisableTreeInstancePatch(harmony);
+            DisableTreeManagerPatch(harmony);
             DisableTreeLimitPatches(harmony);
             DisableTreeSnappingPatches(harmony);
             DisableTreeVariationPatches(harmony);

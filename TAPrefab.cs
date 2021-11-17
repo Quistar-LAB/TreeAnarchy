@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 
 namespace TreeAnarchy {
-    public partial class TAManager {
-        public TreeInfo CreatePrefab() {
+    public static partial class TAManager {
+        public static TreeInfo CreatePrefab() {
             TreeInfo origPrefab = default;
             int prefabCount = PrefabCollection<TreeInfo>.PrefabCount();
 
@@ -27,7 +27,7 @@ namespace TreeAnarchy {
             return newPrefab;
         }
 
-        public TreeInfo ClonePrefab(TreeInfo origPrefab) {
+        public static TreeInfo ClonePrefab(TreeInfo origPrefab) {
             GameObject go = UnityEngine.Object.Instantiate(origPrefab.gameObject);
             go.GetComponent<PrefabInfo>().m_isCustomContent = true;
             TreeInfo clone = go.GetComponent<TreeInfo>();
