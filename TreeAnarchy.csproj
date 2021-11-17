@@ -30,7 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
@@ -67,13 +67,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TAManager.cs" />
+    <Compile Include="TAMovementManager.cs" />
+    <Compile Include="EMath.cs" />
+    <Compile Include="Patches\TreeInstance.cs" />
+    <Compile Include="Patches\TreeManager.cs" />
+    <Compile Include="Patches\TreeAnarchy.cs" />
     <Compile Include="TAPrefab.cs" />
     <Compile Include="TAGroupManager.cs" />
     <Compile Include="TATerrainConformManager.cs" />
     <Compile Include="TAScaleManager.cs" />
     <Compile Include="TAIndicator.cs" />
     <Compile Include="TAOptionPanel.cs" />
-    <Compile Include="Patches\TreeAnarchy.cs" />
     <Compile Include="TALocale.cs" />
     <Compile Include="TAKeyBinding.cs" />
     <Compile Include="Patches\TreeVariation.cs" />
@@ -126,6 +131,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="LICENSE" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Localization\TreeAnarchy.ru.locale" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
