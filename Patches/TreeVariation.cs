@@ -13,12 +13,6 @@ namespace TreeAnarchy {
         private void EnableTreeVariationPatches(Harmony harmony) {
             //                harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CreateTree)),
             //                    postfix: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.CreateTreePostfix))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance), new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeInstanceRenderInstanceTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
-                new Type[] { typeof(uint), typeof(int), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(), typeof(Vector3), typeof(RenderGroup.MeshData),
-                            typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeInstancePopulateGroupDataTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderGeometryTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
@@ -26,12 +20,6 @@ namespace TreeAnarchy {
         }
 
         private void DisableTreeVariationPatches(Harmony harmony) {
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance), new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
-                HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
-                new Type[] { typeof(uint), typeof(int), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(), typeof(Vector3), typeof(RenderGroup.MeshData),
-                            typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
-                HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
                 HarmonyPatchType.Transpiler, HARMONYID);
@@ -47,18 +35,10 @@ namespace TreeAnarchy {
         }
 
         public static void CreateTreePostfix(uint tree) {
-            SingletonLite<TAManager>.instance.m_treeScales[tree] = 0;
+            TAManager.m_treeScales[tree] = 0;
         }
 
         private static IEnumerable<CodeInstruction> TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __TreeInstancePopulateGroupDataTranspiler(instructions);
-            foreach(var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             foreach (var code in instructions) {
@@ -78,6 +58,7 @@ namespace TreeAnarchy {
             }
         }
 
+        /* This patch handles installing functions for Tree Grouping and Tree Terrain Conforming */
         private static IEnumerable<CodeInstruction> TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             var codes = __TreeInstanceRenderInstanceTranspiler(instructions, il);
             foreach(var code in codes) {
@@ -101,9 +82,7 @@ namespace TreeAnarchy {
                     CodeInstruction cur = codes.Current;
                     if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
                         yield return cur;
-                        yield return new CodeInstruction(OpCodes.Ldloca_S, 2);
                         yield return new CodeInstruction(OpCodes.Ldarg_2);
-                        yield return new CodeInstruction(OpCodes.Ldloc_0);
                         yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
                         while (codes.MoveNext()) {
                             cur = codes.Current;
@@ -174,7 +153,7 @@ namespace TreeAnarchy {
                 }
             }
         }
-
+#endif
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
             var codes = __TreeToolRenderGeometryTranspiler(instructions);
             foreach (var code in codes) {
@@ -253,9 +232,7 @@ namespace TreeAnarchy {
                 if (!skip && code.opcode == OpCodes.Call && code.operand == randomizer) {
                     skip = true;
                     yield return code;
-                    yield return new CodeInstruction(OpCodes.Ldloca_S, 4);
                     yield return new CodeInstruction(OpCodes.Ldloc_0);
-                    yield return new CodeInstruction(OpCodes.Ldloc_2);
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
                 } else if (skip && code.opcode == OpCodes.Stloc_S && (code.operand as LocalBuilder).LocalIndex == 5) {
                     skip = false;

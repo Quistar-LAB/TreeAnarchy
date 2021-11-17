@@ -15,8 +15,8 @@ namespace TreeAnarchy {
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
         private void EnableTreeSnappingPatches(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(CalculateTreeTranspiler))));
+            //harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
+            //    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepPrefix))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
@@ -37,7 +37,7 @@ namespace TreeAnarchy {
         }
 
         private void DisableTreeSnappingPatches(Harmony harmony) {
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Prefix, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"), HarmonyPatchType.Transpiler, HARMONYID);
         }
@@ -50,34 +50,6 @@ namespace TreeAnarchy {
                 new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
                 typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
                 HarmonyPatchType.Prefix, HARMONYID);
-        }
-
-        public static float SampleSnapDetailHeight(ref TreeInstance tree, Vector3 position) {
-            float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
-            if (UseTreeSnapping) {
-                if (position.y < (terrainHeight - errorMargin) || position.y > terrainHeight + errorMargin) {
-                    return position.y;
-                }
-            }
-            tree.m_flags &= FixedHeightMask;
-            return terrainHeight;
-        }
-
-        private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
-            MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
-            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    CodeInstruction cur = codes.Current;
-                    if (cur.opcode == OpCodes.Call && cur.operand == terrainInstance) {
-                        codes.MoveNext(); codes.MoveNext();
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldloc_0);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(SampleSnapDetailHeight)));
-                    } else {
-                        yield return cur;
-                    }
-                }
-            }
         }
 
         private static ToolBase.RaycastService customServices = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
@@ -123,60 +95,70 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var LoadFieldUseTreeSnapping = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(UseTreeSnapping)));
+        public static bool GetFixedHeight(Vector3 position) {
+            float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
+            float positionY = position.y;
+            if (positionY > terrainHeight + errorMargin || positionY < terrainHeight - errorMargin) {
+                return true;
+            }
+            return false;
+        }
+
+        private static IEnumerable<CodeInstruction> TreeToolSimulationStepTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            int cachedRayInputIndex = -1;
+            int outputOccuranceCount = 0;
+            int sigFoundCount = 0;
+            Label TreeSnapEnabled = il.DefineLabel();
+            Label TreeSnapDisabled = il.DefineLabel();
+            ConstructorInfo inputConstructor = AccessTools.Constructor(typeof(ToolBase.RaycastInput), new Type[] { typeof(Ray), typeof(float) });
             FieldInfo rayOutputObject = AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_currentEditObject));
-            FieldInfo hitPos = AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_hitPos));
-            FieldInfo mouseRay = AccessTools.Field(typeof(TreeTool), "m_mouseRay");
-            FieldInfo fixedHeight = AccessTools.Field(typeof(TreeTool), "m_fixedHeight");
-            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    CodeInstruction cur = codes.Current;
-                    if (cur.opcode == OpCodes.Ldloca_S && codes.MoveNext()) {
-                        CodeInstruction next = codes.Current;
-                        if (next.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
-                            CodeInstruction next1 = codes.Current;
-                            if (next1.opcode == OpCodes.Ldfld && next1.operand == mouseRay && codes.MoveNext()) {
-                                CodeInstruction next2 = codes.Current;
-                                LocalBuilder input = cur.operand as LocalBuilder;
+            Type EMLRaycastOutputType = Type.GetType("EManagersLib.EToolBase+RaycastOutput");
+            FieldInfo rayOutputObjectEML = AccessTools.Field(EMLRaycastOutputType, "m_currentEditObject");
+            using (var codes = instructions.GetEnumerator()) {
+                while(codes.MoveNext()) {
+                    var cur = codes.Current;
+                    if (cachedRayInputIndex < 0 && cur.opcode == OpCodes.Ldloca_S && cur.operand is LocalBuilder l1) {
+                        cachedRayInputIndex = l1.LocalIndex;
+                        yield return cur;
+                    } else if (cachedRayInputIndex >= 0 && cur.opcode == OpCodes.Call && cur.operand == inputConstructor) {
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldloca_S, cachedRayInputIndex);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.ConfigureRaycastInput)));
+                    } else if (outputOccuranceCount == 0 && cur.opcode == OpCodes.Ldfld && (cur.operand == rayOutputObject || cur.operand == rayOutputObjectEML)) {
+                        outputOccuranceCount++;
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                        yield return new CodeInstruction(OpCodes.Or);
+                    } else if (outputOccuranceCount == 1 && cur.opcode == OpCodes.Ldfld && (cur.operand == rayOutputObject || cur.operand == rayOutputObjectEML)) {
+                        outputOccuranceCount++;
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                        yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                        yield return new CodeInstruction(OpCodes.Ceq);
+                        yield return new CodeInstruction(OpCodes.Or);
+                    } else if (cur.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
+                        var next = codes.Current;
+                        if(next.opcode == OpCodes.Ldloca_S && next.operand is LocalBuilder l3 && (l3.LocalType == typeof(ToolBase.RaycastOutput) || l3.LocalType == EMLRaycastOutputType)) {
+                            if(++sigFoundCount == 3) {
                                 yield return cur;
+                                yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                                yield return new CodeInstruction(OpCodes.Brtrue_S, TreeSnapEnabled);
                                 yield return next;
-                                yield return next1;
-                                yield return next2;
                                 codes.MoveNext();
                                 yield return codes.Current;
+                                yield return new CodeInstruction(OpCodes.Br_S, TreeSnapDisabled);
+                                yield return new CodeInstruction(OpCodes.Ldloca_S, l3.LocalIndex).WithLabels(TreeSnapEnabled);
+                                if(l3.LocalType == typeof(ToolBase.RaycastOutput)) {
+                                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ToolBase.RaycastOutput), nameof(ToolBase.RaycastOutput.m_hitPos)));
+                                } else {
+                                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(EMLRaycastOutputType, "m_hitPos"));
+                                }
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.GetFixedHeight)));
                                 codes.MoveNext();
-                                yield return codes.Current;
-                                yield return new CodeInstruction(OpCodes.Ldloca_S, input);
-                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(ConfigureRaycastInput)));
+                                yield return codes.Current.WithLabels(TreeSnapDisabled);
                             } else {
                                 yield return cur;
                                 yield return next;
-                                yield return next1;
-                            }
-                        } else if (next.opcode == OpCodes.Ldfld && next.operand == rayOutputObject && codes.MoveNext()) {
-                            CodeInstruction next1 = codes.Current;
-                            if (next1.opcode == OpCodes.Stfld && next1.operand == fixedHeight) {
-                                yield return LoadFieldUseTreeSnapping;
-                                yield return next1;
-                            } else if (next1.opcode == OpCodes.Ldloc_S && (next1.operand as LocalBuilder).LocalIndex == 5) {
-                                yield return cur;
-                                yield return next;
-                                yield return LoadFieldUseTreeSnapping;
-                                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
-                                yield return new CodeInstruction(OpCodes.Ceq);
-                                yield return new CodeInstruction(OpCodes.Or);
-                                yield return next1;
-                            } else if (next1.opcode == OpCodes.Brtrue) {
-                                yield return cur;
-                                yield return next;
-                                yield return LoadFieldUseTreeSnapping;
-                                yield return new CodeInstruction(OpCodes.Or);
-                                yield return next1;
-                            } else {
-                                yield return cur;
-                                yield return next;
-                                yield return next1;
                             }
                         } else {
                             yield return cur;
@@ -188,7 +170,7 @@ namespace TreeAnarchy {
                 }
             }
         }
-
+        
         /* If tree snapping is false => 
          * check if tree has fixedheight flag, if not then follow the terrain
          * 
@@ -248,9 +230,8 @@ namespace TreeAnarchy {
         private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
-            float brightness = treeInfo.m_minBrightness + (float)randomizer.Int32(10000u) * (treeInfo.m_maxBrightness - treeInfo.m_minBrightness) * 0.0001f;
+            float scale = TAManager.CalcTreeScale(treeState.instance.id.Tree);
+            float brightness = TAManager.m_brightness[treeState.instance.id.Tree];
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
@@ -262,8 +243,7 @@ namespace TreeAnarchy {
         private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            Randomizer randomizer = new Randomizer(treeState.instance.id.Tree);
-            float scale = TAManager.CalcTreeScale(ref randomizer, treeState.instance.id.Tree, treeInfo);
+            float scale = TAManager.CalcTreeScale(treeState.instance.id.Tree);
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
