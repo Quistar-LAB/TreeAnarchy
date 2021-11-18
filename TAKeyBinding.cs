@@ -99,9 +99,9 @@ namespace TreeAnarchy {
                 }
 #endif
                 else if (IsCustomPressed(m_incrTreeVariation, e)) {
-                    Singleton<SimulationManager>.instance.AddAction(() => TAManager.IncrementTreeSize());
+                    TAManager.IncrementTreeSize();
                 } else if (IsCustomPressed(m_decrTreeVariation, e)) {
-                    Singleton<SimulationManager>.instance.AddAction(() => TAManager.DecrementTreeSize());
+                    TAManager.DecrementTreeSize();
                 }
             }
         }
