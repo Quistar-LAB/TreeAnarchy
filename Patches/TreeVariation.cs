@@ -11,8 +11,6 @@ using UnityEngine;
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private void EnableTreeVariationPatches(Harmony harmony) {
-            //                harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CreateTree)),
-            //                    postfix: new HarmonyMethod(AccessTools.Method(typeof(TreeVariation), nameof(TreeVariation.CreateTreePostfix))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderGeometryTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
@@ -60,14 +58,6 @@ namespace TreeAnarchy {
 
         /* This patch handles installing functions for Tree Grouping and Tree Terrain Conforming */
         private static IEnumerable<CodeInstruction> TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = __TreeInstanceRenderInstanceTranspiler(instructions, il);
-            foreach(var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __TreeInstanceRenderInstanceTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
 #if ENABLETERRAINCONFORM
             Label notTCTree = il.DefineLabel();
 #endif
@@ -155,14 +145,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __TreeToolRenderGeometryTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __TreeToolRenderGeometryTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             foreach (var code in instructions) {
@@ -183,14 +165,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
-            var codes = __TreeToolRenderOverlayTranspiler(instructions, method);
-            foreach(var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
             bool skipFirst = false;
             int randomizerLocalIndex = 4;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
