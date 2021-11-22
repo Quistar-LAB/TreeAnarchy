@@ -7,6 +7,12 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">Baiki LOD Pokok - Tahap Perincian:</string>
+  <string name="TreeLODLow">Rendah</string>
+  <string name="TreeLODMedium">Sederhana</string>
+  <string name="TreeLODHigh">Tinggi</string>
+  <string name="TreeLODUltraHigh">Ultra Tinggi</string>
   <!-- Misc Trees -->
   <string name="GroupTrees">Mengelompokkan Pokok</string>
   <string name="UngroupTrees">Jangan Mengelompokkan Pokok</string>

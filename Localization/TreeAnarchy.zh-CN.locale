@@ -7,6 +7,12 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">树木解析度</string>
+  <string name="TreeLODLow">低解析</string>
+  <string name="TreeLODMedium">中解析</string>
+  <string name="TreeLODHigh">高解析</string>
+  <string name="TreeLODUltraHigh">超高解析</string>
   <!-- Misc Trees -->
   <string name="GroupTrees">树木合并</string>
   <string name="UngroupTrees">取消树木合并</string>

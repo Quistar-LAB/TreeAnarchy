@@ -7,6 +7,12 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">Tree LOD Fix - Level of Detail:</string>
+  <string name="TreeLODLow">낮음</string>
+  <string name="TreeLODMedium">보통</string>
+  <string name="TreeLODHigh">높음</string>
+  <string name="TreeLODUltraHigh">매우 높음</string>
   <!-- Misc Trees -->
   <string name="GroupTrees">Group Trees</string>
   <string name="UngroupTrees">Ungroup Trees</string>

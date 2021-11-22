@@ -7,6 +7,12 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">Детализация деревьев - Уровень детализации:</string>
+  <string name="TreeLODLow">Низкий</string>
+  <string name="TreeLODMedium">Средний</string>
+  <string name="TreeLODHigh">Высокий</string>
+  <string name="TreeLODUltraHigh">Очень высокий</string>
   <!-- Misc Trees -->
   <string name="GroupTrees">Группа деревьев</string>
   <string name="UngroupTrees">Разделить группу деревьев</string>

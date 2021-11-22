@@ -7,6 +7,12 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">Correction du LOD des Arbres - Niveau de détail:</string>
+  <string name="TreeLODLow">Bas</string>
+  <string name="TreeLODMedium">Moyen</string>
+  <string name="TreeLODHigh">Élevé</string>
+  <string name="TreeLODUltraHigh">Très élevé</string>
   <!-- Misc Trees -->
   <string name="GroupTrees">Grouper les arbres</string>
   <string name="UngroupTrees">Scinder le groupe d'arbres</string>
