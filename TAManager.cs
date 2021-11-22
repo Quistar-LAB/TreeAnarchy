@@ -19,11 +19,12 @@ namespace TreeAnarchy {
                 manager.m_updatedTrees = new ulong[TAMod.MaxTreeUpdateLimit];
                 Array.Clear(manager.m_trees.m_buffer, 0, manager.m_trees.m_buffer.Length);
                 manager.m_trees.CreateItem(out uint _);
-                TAManager.SetScaleBuffer(TAMod.MaxTreeLimit);
+                SetScaleBuffer(TAMod.MaxTreeLimit);
 #if ENABLETERRAINCOFNORM
                 SingletonLite<TAManager>.instance.SetTCBuffer(MaxTreeLimit);
 #endif
             }
+            manager.SetResolution(TAMod.TreeLODSelectedResolution);
         }
     }
 }

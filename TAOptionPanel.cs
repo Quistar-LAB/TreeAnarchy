@@ -2,6 +2,8 @@
 using ColossalFramework.UI;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
+using UI;
+using System.Threading;
 
 namespace TreeAnarchy {
     public class TAOptionPanel : UIPanel {
@@ -14,11 +16,10 @@ namespace TreeAnarchy {
         private const string LockForestryCBName = "LockForestryCB";
         private const string TreeSnapCBName = "TreeSnapCB";
         private const string TreeAnarchyCBName = "TreeAnarchyCB";
+        private const string TreeLODFixCBName = "TreeLODFixCB";
         private static UICheckBox LockForestryCB;
         private static UICheckBox TreeSnapCB;
-#if ENABLETREEANARCHY
         private static UICheckBox TreeAnarchyCB;
-#endif
         private static UISlider TreeScaleFactorSlider;
         private UILabel MaxTreeLabel;
 
@@ -40,18 +41,18 @@ namespace TreeAnarchy {
 
             TALocale locale = SingletonLite<TALocale>.instance;
 
-            UIPanel mainPanel = AddTab(tabBar, locale.GetLocale("MainOptionTab"), 0, true);
+            UIPanel mainPanel = AddTab(tabBar, locale.GetLocale(@"MainOptionTab"), 0, true);
             mainPanel.autoLayout = false;
             mainPanel.autoSize = false;
             ShowStandardOptions(mainPanel);
             UpdateState(IsInGame);
 
-            UIPanel treeAnarchyPanel = AddTab(tabBar, locale.GetLocale("TreeAnarchyTab"), 1, true);
+            UIPanel treeAnarchyPanel = AddTab(tabBar, locale.GetLocale(@"TreeAnarchyTab"), 1, true);
             treeAnarchyPanel.autoLayout = false;
             treeAnarchyPanel.autoSize = false;
             ShowTreeAnarchyOptions(treeAnarchyPanel);
 
-            AddTab(tabBar, locale.GetLocale("KeyboardShortcutTab"), 2, true).gameObject.AddComponent<TAKeyBinding>();
+            AddTab(tabBar, locale.GetLocale(@"KeyboardShortcutTab"), 2, true).gameObject.AddComponent<TAKeyBinding>();
         }
 
         public static void UpdateState(bool isInGame) {
@@ -66,32 +67,21 @@ namespace TreeAnarchy {
             TALocale locale = SingletonLite<TALocale>.instance;
             UICheckBox indicatorCB = AddCheckBox(panel, locale.GetLocale("EnableIndicator"), ShowIndicators, (_, isChecked) => {
                 ShowIndicators = isChecked;
-                SaveSettings();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             indicatorCB.AlignTo(panel, UIAlignAnchor.TopLeft);
             indicatorCB.relativePosition = new Vector3(2, 5);
             UICheckBox WindEffectCB = AddCheckBox(panel, locale.GetLocale("WindEffect"), TreeEffectOnWind, (_, isChecked) => {
                 TreeEffectOnWind = isChecked;
-                SaveSettings();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             WindEffectCB.AlignTo(indicatorCB, UIAlignAnchor.BottomLeft);
             WindEffectCB.relativePosition += new Vector3(0, indicatorCB.height);
             UILabel WindEffectLabel = AddDescription(panel, "WindEffectLabel", WindEffectCB.label, SmallFontScale, locale.GetLocale("WindEffectLabel"));
-#if FALSE
-            UICheckBox TreeRotationCB = AddCheckBox(panel, locale.GetLocale("RandomTreeRotation"), RandomTreeRotation, (_, isChecked) => {
-                RandomTreeRotation = isChecked;
-                if (RandomTreeRotation) RandomTreeRotationFactor = 1000;
-                else RandomTreeRotationFactor = 0;
-                SaveSettings();
-            });
-            TreeRotationCB.AlignTo(WindEffectCB, UIAlignAnchor.BottomLeft);
-            TreeRotationCB.relativePosition = new Vector3(0, WindEffectCB.height + WindEffectLabel.height);
-            TreeRotationCB.width = 300;
-#endif
             LockForestryCB = AddCheckBox(panel, locale.GetLocale("LockForestry"), UseLockForestry, (_, isChecked) => {
                 UseLockForestry = isChecked;
-                TAIndicator.LockForestryIndicator?.SetState(isChecked);
-                SaveSettings();
+                UIIndicator.LockForestryIndicator?.SetState(isChecked);
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             LockForestryCB.AlignTo(WindEffectCB, UIAlignAnchor.BottomLeft);
             LockForestryCB.relativePosition = new Vector3(0, WindEffectCB.height + WindEffectLabel.height);
@@ -108,13 +98,13 @@ namespace TreeAnarchy {
             AddSlider(SwayPanel, 0f, 1f, 0.1f, TreeSwayFactor, (_, val) => {
                 TreeSwayFactor = val;
                 if (IsInGame) TAManager.UpdateTreeSway();
-                SaveSettings();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             }).width -= 10;
             SwayPanel.AlignTo(LockForestryCB, UIAlignAnchor.TopRight);
             SwayPanel.relativePosition = new Vector3(380, 0);
             UICheckBox PersistentLockCB = AddCheckBox(panel, locale.GetLocale("PersistentLock"), PersistentLockForestry, (_, isChecked) => {
                 PersistentLockForestry = isChecked;
-                SaveSettings();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             PersistentLockCB.AlignTo(LockForestryCB, UIAlignAnchor.BottomLeft);
             PersistentLockCB.relativePosition = new Vector3(0, LockForestryCB.height);
@@ -127,10 +117,7 @@ namespace TreeAnarchy {
             TreeScaleFactorSlider = AddSlider(ScalePanel, MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (_, val) => {
                 TreeScaleFactor = val;
                 MaxTreeLabel.text = string.Format(SingletonLite<TALocale>.instance.GetLocale("MaxTreeLimit"), MaxTreeLimit);
-                TAPatcher patcher = SingletonLite<TAPatcher>.instance;
-                patcher.RemoveTreeLimitPatches(patcher.CurrentHarmony);
-                patcher.InjectTreeLimit(patcher.CurrentHarmony);
-                SaveSettings();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             ScalePanel.AlignTo(PersistentLockCB, UIAlignAnchor.BottomLeft);
             ScalePanel.relativePosition = new Vector3(0, PersistentLockCB.height + SwayLabel.height + 15);
@@ -140,7 +127,7 @@ namespace TreeAnarchy {
                 new string[] { locale.GetLocale("ReplaceRemoveDropdown0"), locale.GetLocale("ReplaceRemoveDropdown1"), locale.GetLocale("ReplaceRemoveDropdown2") },
                 0, (c, selectIndex) => {
                     RemoveReplaceOrKeep = selectIndex;
-                    SaveSettings();
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
                 });
             UILabel RRDLabel = AddDescription(panel, "RRDLabel", RemoveReplaceDropDown, SmallFontScale, locale.GetLocale("ReplaceRemoveDesc"));
             RRDLabel.relativePosition = new Vector3(1, 45);
@@ -154,19 +141,18 @@ namespace TreeAnarchy {
                     TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
                 }
                 TAPatcher.MoveItUseTreeSnap?.SetValue(null, isChecked);
-                TAIndicator.TreeSnapIndicator?.SetState(isChecked);
-                SaveSettings();
+                UIIndicator.SnapIndicator?.SetState(isChecked);
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             TreeSnapCB.cachedName = TreeSnapCBName;
             TreeSnapCB.name = TreeSnapCBName;
             TreeSnapCB.AlignTo(panel, UIAlignAnchor.TopLeft);
             TreeSnapCB.relativePosition = new Vector3(2, 5);
             UILabel TreeSnapDesc = AddDescription(panel, "TreeSnapDesc", TreeSnapCB.label, SmallFontScale, locale.GetLocale("TreeSnapLabel"));
-#if ENABLETREEANARCHY
             TreeAnarchyCB = AddCheckBox(panel, locale.GetLocale("TreeAnarchy"), UseTreeAnarchy, (_, isChecked) => {
                 UseTreeAnarchy = isChecked;
-                TAIndicator.TreeAnarchyIndicator?.SetState(isChecked);
-                SaveSettings();
+                UIIndicator.AnarchyIndicator?.SetState(isChecked);
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             TreeAnarchyCB.cachedName = TreeAnarchyCBName;
             TreeAnarchyCB.name = TreeAnarchyCBName;
@@ -177,10 +163,40 @@ namespace TreeAnarchy {
                             new string[] { locale.GetLocale("TreeAnarchyHideTree"), locale.GetLocale("TreeAnarchyDeleteTree") },
                             DeleteOnOverlap ? 1 : 0, (_, val) => {
                                 DeleteOnOverlap = val != 0;
-                                SaveSettings();
+                                ThreadPool.QueueUserWorkItem(SaveSettings);
                             });
             TreeBehaviourDD.parent.relativePosition = new Vector3(27, TreeSnapCB.height + TreeSnapDesc.height + TreeAnarchyCB.height + TreeAnarchyDesc.height);
-#endif
+            UIDropDown TreeLODFixDD = AddDropdown(panel, panel, null,
+                            new string[] { locale.GetLocale("TreeLODLow"), locale.GetLocale("TreeLODMedium"), locale.GetLocale("TreeLODHigh"), locale.GetLocale("TreeLODUltraHigh") },
+                            (int)TreeLODSelectedResolution, (_, val) => {
+                                TreeLODSelectedResolution = (TAManager.TreeLODResolution)val;
+                                if (IsInGame) {
+                                    Singleton<TreeManager>.instance.SetResolution((TAManager.TreeLODResolution)val);
+                                }
+                                ThreadPool.QueueUserWorkItem(SaveSettings);
+                            });
+            TreeLODFixDD.disabledColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            TreeLODFixDD.disabledTextColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            TreeLODFixDD.autoListWidth = true;
+            TreeLODFixDD.width = 200f;
+            TreeLODFixDD.textScale = 0.95f;
+            TreeLODFixDD.height = 28;
+            TreeLODFixDD.itemHeight = 22;
+            string treeLODFixName = locale.GetLocale("TreeLODFix");
+            UICheckBox TreeLodFixCB = AddCheckBox(panel, treeLODFixName, UseTreeLODFix, (_, isChecked) => {
+                UseTreeLODFix = isChecked;
+                if (isChecked) TreeLODFixDD.Enable();
+                else TreeLODFixDD.Disable();
+                ThreadPool.QueueUserWorkItem(SaveSettings);
+            });
+            TreeLodFixCB.cachedName = TreeLODFixCBName;
+            TreeLodFixCB.name = TreeLODFixCBName;
+            TreeLodFixCB.AlignTo(TreeAnarchyCB, UIAlignAnchor.BottomLeft);
+            UILabel label = TreeLodFixCB.Find<UILabel>("Label");
+            UIFontRenderer renderer = label.ObtainRenderer();
+            Vector2 size = renderer.MeasureString(treeLODFixName);
+            TreeLodFixCB.relativePosition = new Vector3(0, TreeAnarchyCB.height + TreeAnarchyDesc.height + TreeBehaviourDD.parent.height);
+            TreeLODFixDD.parent.relativePosition = new Vector3(35 + size.x, TreeSnapCB.height + TreeSnapDesc.height + TreeAnarchyCB.height + TreeAnarchyDesc.height + TreeBehaviourDD.parent.height + 3);
         }
 
         private static UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
@@ -252,7 +268,11 @@ namespace TreeAnarchy {
             UIPanel uiPanel = panel.AttachUIComponent(UITemplateManager.GetAsGameObject("OptionsDropdownTemplate")) as UIPanel;
             uiPanel.AlignTo(alignTo, UIAlignAnchor.BottomLeft);
             UILabel label = uiPanel.Find<UILabel>("Label");
-            label.text = text;
+            if (text.IsNullOrWhiteSpace()) {
+                label.Hide();
+            } else {
+                label.text = text;
+            }
             UIDropDown dropDown = uiPanel.Find<UIDropDown>("Dropdown");
             dropDown.width = 380;
             dropDown.items = options;
@@ -274,10 +294,8 @@ namespace TreeAnarchy {
             LockForestryCB.isChecked = isChecked;
         }
 
-#if ENABLETREEANARCHY
         public static void SetTreeAnarchyState(bool isChecked) {
             TreeAnarchyCB.isChecked = isChecked;
         }
-#endif
     }
 }

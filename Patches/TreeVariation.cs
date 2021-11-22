@@ -169,17 +169,17 @@ namespace TreeAnarchy {
             int randomizerLocalIndex = 4;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             var variables = method.GetMethodBody().LocalVariables;
-            foreach(var variable in variables) {
-                if(!skipFirst && variable.LocalType == typeof(Randomizer)) {
+            foreach (var variable in variables) {
+                if (!skipFirst && variable.LocalType == typeof(Randomizer)) {
                     skipFirst = true;
-                } else if(skipFirst && variable.LocalType == typeof(Randomizer)) {
+                } else if (skipFirst && variable.LocalType == typeof(Randomizer)) {
                     randomizerLocalIndex = variable.LocalIndex;
                 }
             }
-            using(IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
-                while(codes.MoveNext()) {
+            using (IEnumerator<CodeInstruction> codes = instructions.GetEnumerator()) {
+                while (codes.MoveNext()) {
                     var cur = codes.Current;
-                    if(cur.opcode == OpCodes.Call && cur.operand == randomizer) {
+                    if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
                         yield return cur;
                         yield return new CodeInstruction(OpCodes.Ldloca_S, randomizerLocalIndex);
                         yield return new CodeInstruction(OpCodes.Ldloc_3);
@@ -187,7 +187,7 @@ namespace TreeAnarchy {
                         yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
                         while (codes.MoveNext()) {
                             cur = codes.Current;
-                            if(cur.opcode == OpCodes.Stloc_S) {
+                            if (cur.opcode == OpCodes.Stloc_S) {
                                 yield return cur;
                                 break;
                             }

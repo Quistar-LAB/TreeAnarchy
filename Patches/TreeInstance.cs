@@ -80,11 +80,11 @@ namespace TreeAnarchy {
                     code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp));
                     yield return code;
                 } else if (code.opcode == OpCodes.Call && code.operand == getBlack) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.ColorBlack)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.ColorBlack))).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Call && code.operand == getVector4Zero) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.Vector4Zero)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.Vector4Zero))).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Call && code.operand == getMatrixIdentity) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.MatrixIdentity)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.MatrixIdentity))).WithLabels(code.labels);
                 } else {
                     yield return code;
                 }
@@ -122,7 +122,7 @@ namespace TreeAnarchy {
                                         next = codes.Current;
                                         if (IsStloc(ref next.opcode)) break;
                                     }
-                                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_brightness)));
+                                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_brightness))).WithLabels(cur.labels);
                                     yield return storedLDarg;
                                     yield return new CodeInstruction(OpCodes.Ldelem_R4);
                                     yield return next;
@@ -150,7 +150,7 @@ namespace TreeAnarchy {
                     sigFound = true;
                 } else if (sigFound && code.opcode == OpCodes.Callvirt && code.operand == getWindSpeed) {
                     sigFound = false;
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetWindSpeed)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetWindSpeed))).WithLabels(code.labels);
                 } else {
                     yield return code;
                 }
@@ -169,8 +169,15 @@ namespace TreeAnarchy {
         /// <returns>Returns true if set</returns>
         public static bool GetAnarchyState(int growState) => TAMod.UseTreeAnarchy && growState == 0;
 #endif
-
         private static IEnumerable<CodeInstruction> SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            var codes = __SetGrowStateTranspiler(instructions, il);
+            foreach(var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
 #if ENABLETREEANARCHY
             Label valueNotZero = il.DefineLabel();
             int counter = 0;
@@ -192,11 +199,18 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __AfterTerrainUpdatedTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             bool firstBeqFound = false;
             foreach (var code in ReplaceMath(instructions)) {
                 if (!skip && code.opcode == OpCodes.Ldc_I4_3) {
-                    yield return new CodeInstruction(OpCodes.Ldc_I4_S, 0x23);
+                    yield return new CodeInstruction(OpCodes.Ldc_I4_S, 0x23).WithLabels(code.labels);
                 } else if (!skip && !firstBeqFound && code.opcode == OpCodes.Beq) {
                     firstBeqFound = true;
                     skip = true;
@@ -226,13 +240,20 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __CalculateTreeTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
             MethodInfo sampleDetailHeight = AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) });
             foreach (var code in ReplaceMath(instructions)) {
                 if (code.opcode == OpCodes.Call && code.operand == terrainInstance) {
-                    yield return new CodeInstruction(OpCodes.Ldarga_S, 0);
+                    yield return new CodeInstruction(OpCodes.Ldarga_S, 0).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Callvirt && code.operand == sampleDetailHeight) {
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SampleSnapDetailHeight)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SampleSnapDetailHeight))).WithLabels(code.labels);
                 } else {
                     yield return code;
                 }
@@ -243,7 +264,8 @@ namespace TreeAnarchy {
         public static bool CheckAnarchyState(ref TreeInstance tree) {
             if (Singleton<LoadingManager>.instance.m_currentlyLoading) {
                 return true;
-            } else if (TAMod.UseTreeAnarchy) {
+            }
+            if (TAMod.UseTreeAnarchy) {
                 ToolBase currentTool = ToolsModifierControl.GetCurrentTool<ToolBase>();
                 if (!(currentTool is NetTool) && !(currentTool is BuildingTool) && !(currentTool is BulldozeTool)) {
                     if (tree.GrowState == 0) {
@@ -264,18 +286,17 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> InstallCheckAnarchyInCheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             bool firstSig = false;
-            Label infoIsNULL = il.DefineLabel();
+            Label exit = il.DefineLabel();
+            instructions.Last().WithLabels(exit);
             using (var codes = instructions.GetEnumerator()) {
                 while (codes.MoveNext()) {
                     var cur = codes.Current;
                     if (!firstSig && cur.opcode == OpCodes.Brtrue && codes.MoveNext()) {
                         firstSig = true;
-                        yield return new CodeInstruction(OpCodes.Brfalse_S, infoIsNULL);
-                        yield return new CodeInstruction(OpCodes.Ldarga_S, 0);
+                        yield return new CodeInstruction(OpCodes.Brfalse, exit);
+                        yield return new CodeInstruction(OpCodes.Ldarg_0);
                         yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CheckAnarchyState)));
-                        cur.opcode = OpCodes.Brfalse_S;
-                        yield return cur;
-                        yield return codes.Current.WithLabels(infoIsNULL);
+                        yield return new CodeInstruction(OpCodes.Brtrue, exit);
                     } else {
                         yield return cur;
                     }
@@ -283,16 +304,51 @@ namespace TreeAnarchy {
             }
         }
 #endif
-
         private static IEnumerable<CodeInstruction> CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-#if ENABLETREEANARCHY
-            return ReplaceScaleCalculator(InstallCheckAnarchyInCheckOverlapTranspiler(instructions, il));
-#else
-            return ReplaceScaleCalculator(instructions);
-#endif
+            var codes = __CheckOverlapTranspiler(instructions, il);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
         }
 
-        private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
+        private static IEnumerable<CodeInstruction> __CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+            Label exit = il.DefineLabel();
+            bool firstSigFound = false;
+            IEnumerable<CodeInstruction> codes_intermediate;
+            FieldInfo treeCount = AccessTools.Field(typeof(DistrictPark), nameof(DistrictPark.m_treeCount));
+#if ENABLETREEANARCHY
+            codes_intermediate = ReplaceScaleCalculator(InstallCheckAnarchyInCheckOverlapTranspiler(instructions, il));
+#else
+            codes_intermediate = ReplaceScaleCalculator(instructions);
+#endif
+            codes_intermediate.Last().WithLabels(exit);
+            using (var codes = codes_intermediate.GetEnumerator()) {
+                while (codes.MoveNext()) {
+                    var cur = codes.Current;
+                    if (!firstSigFound && cur.opcode == OpCodes.Stfld && cur.operand == treeCount) {
+                        firstSigFound = true;
+                        yield return cur;
+                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.DeleteOnOverlap)));
+                        yield return new CodeInstruction(OpCodes.Brfalse_S, exit);
+                        yield return new CodeInstruction(OpCodes.Ldarg_1);
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.ReleaseTreeQueue)));
+                    } else {
+                        yield return cur;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __OverlapQuadTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
 
         /// <summary>
         /// Tree movement (tree sway) is also coded in this method
@@ -304,7 +360,7 @@ namespace TreeAnarchy {
                 if (code.opcode == OpCodes.Stloc_0 || code.opcode == OpCodes.Ldloc_0) {
                     // skip it
                 } else if (code.opcode == OpCodes.Call && code.operand == getHidden) {
-                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags)));
+                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))).WithLabels(code.labels);
                     yield return new CodeInstruction(OpCodes.Ldc_I4_4);
                     yield return new CodeInstruction(OpCodes.And);
                 } else {
@@ -313,17 +369,47 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions));
+        private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __OverlapQuadTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
+            ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions));
 
-        private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
+        private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __RayCastTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
 
-        private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
+        private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) {
+            var codes = __RenderInstanceTransplier(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
 
         private static IEnumerable<CodeInstruction> RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
+            var codes = __RenderInstanceStaticTransplier(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
             MethodInfo identity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
             foreach (var code in ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions))) {
                 if (code.opcode == OpCodes.Call && code.operand == identity) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_treeQuaternions)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_treeQuaternions))).WithLabels(code.labels);
                     yield return new CodeInstruction(OpCodes.Ldarg_2);
                     yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Vector3), nameof(Vector3.x)));
                     yield return new CodeInstruction(OpCodes.Dup);
@@ -344,6 +430,13 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __RenderLODTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) {
             const float lodMin = 100000f;
             const float lodMax = -lodMin;
             bool set100 = false;
@@ -361,12 +454,12 @@ namespace TreeAnarchy {
                     set100 = true;
                 } else if (set100 && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
                     set100 = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLod100)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLod100))).WithLabels(code.labels);
                 } else if (code.LoadsConstant(lodMin)) {
                     setlodMin = true;
                 } else if (setlodMin && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
                     setlodMin = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMin)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMin))).WithLabels(code.labels);
                 } else if (code.LoadsConstant(lodMax)) {
                     storedCode = code;
                     setlodMax = true;
@@ -376,7 +469,7 @@ namespace TreeAnarchy {
                     yield return code;
                 } else if (setlodMax && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
                     setlodMax = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMax)));
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMax))).WithLabels(code.labels);
                 } else {
                     yield return code;
                 }
@@ -384,6 +477,13 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __TerrainUpdatedTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+        private static IEnumerable<CodeInstruction> __TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Beq) {
@@ -400,6 +500,14 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
+            var codes = __TerrainUpdatedVectorTranspiler(instructions);
+            foreach (var code in codes) {
+                TAMod.TALog(code.ToString());
+            }
+            return codes;
+        }
+
+        private static IEnumerable<CodeInstruction> __TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Brtrue) {

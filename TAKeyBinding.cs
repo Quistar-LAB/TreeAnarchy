@@ -2,6 +2,8 @@
 using ColossalFramework.UI;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
+using UI;
+using System.Threading;
 
 namespace TreeAnarchy {
     internal class TAKeyBinding : UICustomControl {
@@ -12,10 +14,8 @@ namespace TreeAnarchy {
         private static readonly string toggleTreeSnapping = "toggleTreeSnapping";
         [RebindableKey("TreeAnarchy")]
         private static readonly string toggleLockForestry = "toggleLockForestry";
-#if ENABLETREEANARCHY
         [RebindableKey("TreeAnarchy")]
         private static readonly string toggleTreeAnarchy = "toggleTreeAnarchy";
-#endif
 #if ENABLETREEGROUP
         [RebindableKey("TreeAnarchy")]
         private static readonly string groupTrees = "groupTrees";
@@ -48,9 +48,7 @@ namespace TreeAnarchy {
 
         private static readonly SavedInputKey m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
         private static readonly SavedInputKey m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
-#if ENABLETREEANARCHY
         private static readonly SavedInputKey m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
-#endif
 #if ENABLETREEGROUP
         private static readonly SavedInputKey m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
         private static readonly SavedInputKey m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
@@ -70,22 +68,19 @@ namespace TreeAnarchy {
                         TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                     }
                     TAOptionPanel.SetTreeSnapState(state);
-                    TAIndicator.TreeSnapIndicator.SetState(state);
-                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
+                    UIIndicator.SnapIndicator?.SetState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
                 } else if (m_lockForestry.IsPressed(e)) {
                     bool state = UseLockForestry = !UseLockForestry;
                     TAOptionPanel.SetLockForestryState(state);
-                    TAIndicator.LockForestryIndicator.SetState(state);
-                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
-                }
-#if ENABLETREEANARCHY
-                else if (m_treeAnarchy.IsPressed(e)) {
+                    UIIndicator.LockForestryIndicator?.SetState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                } else if (m_treeAnarchy.IsPressed(e)) {
                     bool state = UseTreeAnarchy = !UseTreeAnarchy;
                     TAOptionPanel.SetTreeAnarchyState(state);
-                    TAIndicator.TreeAnarchyIndicator.SetState(state);
-                    Singleton<SimulationManager>.instance.AddAction(() => SaveSettings());
+                    UIIndicator.AnarchyIndicator?.SetState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
                 }
-#endif
 #if ENABLETREEGROUP
                 else if (m_groupTrees.IsPressed(e)) {
                     SingletonLite<TAManager>.instance.GroupTrees();
@@ -116,9 +111,7 @@ namespace TreeAnarchy {
             desc.text = SingletonLite<TALocale>.instance.GetLocale("KeyBindDescription");
             AddKeymapping("TreeSnap", m_treeSnapping);
             AddKeymapping("LockForestry", m_lockForestry);
-#if ENABLETREEANARCHY
             AddKeymapping("TreeAnarchy", m_treeAnarchy);
-#endif
 #if ENABLETERRAINCONFORM
             AddKeymapping("TerrainConformTrees", m_terrainConformTrees);
 #endif

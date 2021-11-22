@@ -61,12 +61,16 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.XML" />
+    <Reference Include="UIIndicator">
+      <HintPath>C:\Users\Quistar\AppData\Local\Colossal Order\Cities_Skylines\Addons\Mods\EManagersLib\UIIndicator.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>H:\SteamLibrary\steamapps\common\Cities_Skylines\Cities_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TALODFixManager.cs" />
     <Compile Include="TAManager.cs" />
     <Compile Include="TAMovementManager.cs" />
     <Compile Include="EMath.cs" />
@@ -77,7 +81,6 @@
     <Compile Include="TAGroupManager.cs" />
     <Compile Include="TATerrainConformManager.cs" />
     <Compile Include="TAScaleManager.cs" />
-    <Compile Include="TAIndicator.cs" />
     <Compile Include="TAOptionPanel.cs" />
     <Compile Include="TALocale.cs" />
     <Compile Include="TAKeyBinding.cs" />

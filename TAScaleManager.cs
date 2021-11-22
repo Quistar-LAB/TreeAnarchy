@@ -1,6 +1,6 @@
-﻿using ColossalFramework.Math;
+﻿using ColossalFramework;
+using ColossalFramework.Math;
 using MoveIt;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace TreeAnarchy {
@@ -27,7 +27,6 @@ namespace TreeAnarchy {
             return val + treeScales[treeID];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static float CalcTreeScale(uint treeID) => CalculateCustomScale(m_defScales[treeID], treeID);
 
         public static float GetSeedTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
@@ -43,9 +42,11 @@ namespace TreeAnarchy {
                 m_treeScales[treeID] += scaleStep;
             } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
+                TreeManager tmInstance = Singleton<TreeManager>.instance;
                 foreach (Instance instance in Action.selection) {
                     if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
                         m_treeScales[instance.id.Tree] += scaleStep;
+                        tmInstance.UpdateTree(instance.id.Tree);
                     }
                 }
             }
@@ -58,9 +59,11 @@ namespace TreeAnarchy {
                 m_treeScales[treeID] -= scaleStep;
             } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
+                TreeManager tmInstance = Singleton<TreeManager>.instance;
                 foreach (Instance instance in Action.selection) {
                     if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
                         m_treeScales[instance.id.Tree] -= scaleStep;
+                        tmInstance.UpdateTree(instance.id.Tree);
                     }
                 }
             }

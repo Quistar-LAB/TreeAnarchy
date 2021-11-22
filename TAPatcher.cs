@@ -30,7 +30,8 @@ namespace TreeAnarchy {
             new ModInfo(1637106958, "Lock Forestry"),
             new ModInfo(556784825, "Random Tree Rotation"),
             new ModInfo(1388613752, "Tree Movement Control"),
-            new ModInfo(842981708, "Random Tree Rotation for Natural Disasters")
+            new ModInfo(842981708, "Random Tree Rotation for Natural Disasters"),
+            new ModInfo(1349895184, "Tree LOD Fix")
         };
 
         internal static bool IsPluginExists(ulong id, string name) {
@@ -65,13 +66,13 @@ namespace TreeAnarchy {
             foreach (var mod in PlatformService.workshop.GetSubscribedItems()) {
                 for (int i = 0; i < IncompatibleMods.Length; i++) {
                     if (mod.AsUInt64 == IncompatibleMods[i].fileID) {
-                        errorMsg += $"[{IncompatibleMods[i].name}] detected\n";
+                        errorMsg += $"[{IncompatibleMods[i].name}] detected. Tree Anarchy already includes the same functionality\n";
                         TAMod.TALog($"Incompatible mod: [{IncompatibleMods[i].name}] detected");
                     }
                 }
             }
             if (errorMsg.Length > 0) {
-                UIView.ForwardException(new Exception("Tree Anarchy detected incompatible mods, please remove the following mentioned mods", new Exception("\n" + errorMsg)));
+                UIView.ForwardException(new Exception("Tree Anarchy detected incompatible mods, please remove the following mentioned mods as the same functionality is already built into this mod", new Exception("\n" + errorMsg)));
                 TAMod.TALog($"Tree Anarchy detected incompatible mods, please remove the following mentioned mods\n{errorMsg}");
                 return false;
             }

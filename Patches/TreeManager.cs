@@ -512,8 +512,8 @@ namespace TreeAnarchy {
                         materialBlock.SetVector(ID_ObjectIndex, defaultColorLocation);
                         drawCallData.m_defaultCalls++;
                         Graphics.DrawMesh(info.m_mesh,
-                            Matrix4x4.TRS(position, TAManager.m_treeQuaternions[(int)(position.x * position.x + position.z * position.z) % 359],
-                            new Vector3(scale, scale, scale)), info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
+                            Matrix4x4.TRS(position, TAManager.m_treeQuaternions[(int)(position.x * position.x + position.z * position.z) % 359], new Vector3(scale, scale, scale)),
+                            info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
                     } else {
                         position.y += info.m_generatedInfo.m_center.y * (scale - 1f);
                         Color color = info.m_defaultColor * brightness;
@@ -524,7 +524,6 @@ namespace TreeAnarchy {
                         info.m_lodMin = EMath.Min(info.m_lodMin, position);
                         info.m_lodMax = EMath.Max(info.m_lodMax, position);
                         if (++info.m_lodCount == info.m_lodLocations.Length) {
-                            //TreeInstance.RenderLod(cameraInfo, info);
                             Mesh mesh;
                             int num;
                             int lodCount = info.m_lodCount;
@@ -559,7 +558,9 @@ namespace TreeAnarchy {
                             info.m_lodMax = EMath.DefaultLodMax;
                             drawCallData.m_lodCalls++;
                             drawCallData.m_batchedCalls += (lodCount - 1);
-                            Graphics.DrawMesh(mesh, EMath.MatrixIdentity, info.m_lodMaterial, info.m_prefabDataLayer, null, 0, materialBlock);
+                            Graphics.DrawMesh(mesh,
+                                EMath.MatrixIdentity,
+                                info.m_lodMaterial, info.m_prefabDataLayer, null, 0, materialBlock);
                             info.m_lodCount = 0;
 
                         }
@@ -764,11 +765,10 @@ namespace TreeAnarchy {
                         }
                     } else if (cur.opcode == OpCodes.Conv_U) {
                         // skip
-                    } else if (cur.opcode == OpCodes.Ldloc_S && (cur.operand as LocalBuilder).LocalIndex == 5) {
+                    } else if (cur.opcode == OpCodes.Ldloc_S && cur.operand is LocalBuilder l1 && l1.LocalIndex == 5) {
                         while (codes.MoveNext()) {
                             if (codes.Current.opcode == OpCodes.Leave) break;
                         }
-                        yield return codes.Current;
                     } else {
                         yield return cur;
                     }
