@@ -171,7 +171,7 @@ namespace TreeAnarchy {
 #endif
         private static IEnumerable<CodeInstruction> SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             var codes = __SetGrowStateTranspiler(instructions, il);
-            foreach(var code in codes) {
+            foreach (var code in codes) {
                 TAMod.TALog(code.ToString());
             }
             return codes;

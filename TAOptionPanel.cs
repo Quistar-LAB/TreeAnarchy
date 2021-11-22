@@ -1,9 +1,9 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
+using System.Threading;
+using UI;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
-using UI;
-using System.Threading;
 
 namespace TreeAnarchy {
     public class TAOptionPanel : UIPanel {

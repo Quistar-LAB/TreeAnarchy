@@ -7,10 +7,10 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Xml;
-using UnityEngine;
-using UI;
 using System.Threading;
+using System.Xml;
+using UI;
+using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
