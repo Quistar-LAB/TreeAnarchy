@@ -15,7 +15,7 @@ using ColossalFramework.Globalization;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.1.2";
+        internal const string m_modVersion = @"1.1.3";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -148,30 +148,38 @@ namespace TreeAnarchy {
         public void OnLevelLoaded(LoadMode mode) {
             if (ShowIndicators) {
                 UIIndicator indicatorPanel = UIIndicator.Setup();
-                UIIndicator.UIIcon treeSnap = default;
-                treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
-                    bool state = UseTreeSnapping = !UseTreeSnapping;
-                    if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
-                        TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
+                if(indicatorPanel) {
+                    UIIndicator.UIIcon treeSnap = default;
+                    treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
+                        bool state = UseTreeSnapping = !UseTreeSnapping;
+                        if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                            TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
+                        }
+                        treeSnap.State = state;
+                        TAOptionPanel.SetTreeSnapState(state);
+                        ThreadPool.QueueUserWorkItem(SaveSettings);
+                    }, out bool finalState);
+                    if(finalState != UseTreeSnapping) {
+                        UseTreeSnapping = finalState;
                     }
-                    treeSnap.SetState(state);
-                    TAOptionPanel.SetTreeSnapState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
-                });
-                UIIndicator.UIIcon treeAnarchy = default;
-                treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
-                    bool state = UseTreeAnarchy = !UseTreeAnarchy;
-                    treeAnarchy.SetState(state);
-                    TAOptionPanel.SetTreeAnarchyState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
-                });
-                UIIndicator.UIIcon lockForestry = default;
-                lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
-                    bool state = UseLockForestry = !UseLockForestry;
-                    lockForestry.SetState(state);
-                    TAOptionPanel.SetLockForestryState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
-                });
+                    UIIndicator.UIIcon treeAnarchy = default;
+                    treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
+                        bool state = UseTreeAnarchy = !UseTreeAnarchy;
+                        treeAnarchy.State = state;
+                        TAOptionPanel.SetTreeAnarchyState(state);
+                        ThreadPool.QueueUserWorkItem(SaveSettings);
+                    }, out finalState);
+                    if(finalState != UseTreeAnarchy) {
+                        UseTreeAnarchy = finalState;
+                    }
+                    UIIndicator.UIIcon lockForestry = default;
+                    lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
+                        bool state = UseLockForestry = !UseLockForestry;
+                        lockForestry.State = state;
+                        TAOptionPanel.SetLockForestryState(state);
+                        ThreadPool.QueueUserWorkItem(SaveSettings);
+                    });
+                }
             }
             TAOptionPanel.UpdateState(true);
             IsInGame = true;

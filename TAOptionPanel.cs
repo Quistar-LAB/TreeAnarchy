@@ -55,10 +55,10 @@ namespace TreeAnarchy {
 
         public static void UpdateState(bool isInGame) {
             if (isInGame) {
-                TreeScaleFactorSlider.Disable();
+                TreeScaleFactorSlider?.Disable();
                 return;
             }
-            TreeScaleFactorSlider.Enable();
+            TreeScaleFactorSlider?.Enable();
         }
 
         private void ShowStandardOptions(UIPanel panel) {

@@ -78,7 +78,7 @@ namespace TreeAnarchy {
                 } else if (m_treeAnarchy.IsPressed(e)) {
                     bool state = UseTreeAnarchy = !UseTreeAnarchy;
                     TAOptionPanel.SetTreeAnarchyState(state);
-                    UIIndicator.AnarchyIndicator?.SetState(state);
+                    UIIndicator.AnarchyIndicator.State = state;
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 }
 #if ENABLETREEGROUP
