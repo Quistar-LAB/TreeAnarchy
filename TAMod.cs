@@ -11,16 +11,17 @@ using System.Threading;
 using System.Xml;
 using UI;
 using UnityEngine;
+using ColossalFramework.Globalization;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = "1.1.2";
-        internal const string m_assemblyVersion = m_modVersion + ".*";
-        private const string m_modName = "Tree Anarchy";
-        private const string m_modDesc = "Lets you plant more trees with tree snapping";
-        private const string m_debugLogFile = "00TreeAnarchyDebug.log";
+        internal const string m_modVersion = @"1.1.2";
+        internal const string m_assemblyVersion = m_modVersion + @".*";
+        private const string m_modName = @"Tree Anarchy";
+        private const string m_modDesc = @"Lets you plant more trees with tree snapping";
+        private const string m_debugLogFile = @"00TreeAnarchyDebug.log";
 
-        internal const string KeybindingConfigFile = "TreeAnarchyKeyBindSetting";
+        internal const string KeybindingConfigFile = @"TreeAnarchyKeyBindSetting";
 
         /* Some standard constant definition for tree limits */
         private static float m_ScaleFactor = 4f;
@@ -87,8 +88,8 @@ namespace TreeAnarchy {
         internal static bool IsInGame = false;
 
         #region IUserMod
-        string IUserMod.Name => m_modName + " " + m_modVersion;
-        string IUserMod.Description => m_modDesc;
+        public string Name => m_modName + " " + m_modVersion;
+        public string Description => m_modDesc;
 
         public TAMod() {
             try {
@@ -104,6 +105,7 @@ namespace TreeAnarchy {
 
         public void OnEnabled() {
             CreateDebugFile();
+            TALocale.Init();
             SingletonLite<TAPatcher>.instance.CheckIncompatibleMods();
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
@@ -117,17 +119,18 @@ namespace TreeAnarchy {
             if (HarmonyHelper.IsHarmonyInstalled) {
                 SingletonLite<TAPatcher>.instance.DisableCore();
             }
-            SingletonLite<TALocale>.instance.Destroy();
+            TALocale.Destroy();
             SaveSettings();
         }
 
         public void OnSettingsUI(UIHelperBase helper) {
-            SingletonLite<TALocale>.instance.Init();
-            ((helper.AddGroup($"{m_modName} -- Version {m_modVersion}") as UIHelper).self as UIPanel).AddUIComponent<TAOptionPanel>();
+            TALocale.OnLocaleChanged();
+            LocaleManager.eventLocaleChanged += TALocale.OnLocaleChanged;
+            ((helper.AddGroup(m_modName + @" -- Version " + m_modVersion) as UIHelper).self as UIPanel).AddUIComponent<TAOptionPanel>();
         }
         #endregion
         #region ILoadingExtension
-        void ILoadingExtension.OnCreated(ILoading loading) {
+        public void OnCreated(ILoading loading) {
             OutputPluginsList();
             TAManager.Initialize();
             TAManager.InitializeSwayManager();
@@ -136,18 +139,17 @@ namespace TreeAnarchy {
             }
         }
 
-        void ILoadingExtension.OnReleased() {
+        public void OnReleased() {
             if (HarmonyHelper.IsHarmonyInstalled) {
                 SingletonLite<TAPatcher>.instance.DisableLatePatch();
             }
         }
 
-        void ILoadingExtension.OnLevelLoaded(LoadMode mode) {
+        public void OnLevelLoaded(LoadMode mode) {
             if (ShowIndicators) {
                 UIIndicator indicatorPanel = UIIndicator.Setup();
-                TALocale locale = SingletonLite<TALocale>.instance;
                 UIIndicator.UIIcon treeSnap = default;
-                treeSnap = indicatorPanel.AddSnappingIcon(locale.GetLocale(@"TreeSnapIsOn"), locale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
+                treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
                     bool state = UseTreeSnapping = !UseTreeSnapping;
                     if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
                         TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
@@ -157,14 +159,14 @@ namespace TreeAnarchy {
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 });
                 UIIndicator.UIIcon treeAnarchy = default;
-                treeAnarchy = indicatorPanel.AddAnarchyIcon(locale.GetLocale(@"TreeAnarchyIsOn"), locale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
+                treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
                     bool state = UseTreeAnarchy = !UseTreeAnarchy;
                     treeAnarchy.SetState(state);
                     TAOptionPanel.SetTreeAnarchyState(state);
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 });
                 UIIndicator.UIIcon lockForestry = default;
-                lockForestry = indicatorPanel.AddLockForestryIcon(locale.GetLocale(@"LockForestryIsOn"), locale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
+                lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
                     bool state = UseLockForestry = !UseLockForestry;
                     lockForestry.SetState(state);
                     TAOptionPanel.SetLockForestryState(state);
@@ -180,7 +182,7 @@ namespace TreeAnarchy {
         }
         #endregion
 
-        private const string SettingsFileName = "TreeAnarchyConfig.xml";
+        private const string SettingsFileName = @"TreeAnarchyConfig.xml";
         internal static bool LoadSettings() {
             try {
                 if (!File.Exists(SettingsFileName)) {
@@ -188,31 +190,31 @@ namespace TreeAnarchy {
                 }
                 XmlDocument xmlConfig = new XmlDocument();
                 xmlConfig.Load(SettingsFileName);
-                m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
-                TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute("TreeEffectOnWind"));
-                UseTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapping"));
-                UseExperimentalTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseExperimentalTreeSnapping"));
-                UseTreeSnapToBuilding = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToBuilding"));
-                UseTreeSnapToNetwork = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToNetwork"));
-                UseTreeSnapToProp = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeSnapToProp"));
-                RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute("RandomTreeRotation"));
-                TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute("TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
-                UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("LockForestry"));
-                PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute("PersistentLock"));
-                ShowIndicators = bool.Parse(xmlConfig.DocumentElement.GetAttribute("ShowIndicators"));
-                UseTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeAnarchy"));
-                DeleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute("DeleteOnOverlap"));
+                m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
+                TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeEffectOnWind"));
+                UseTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapping"));
+                UseExperimentalTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseExperimentalTreeSnapping"));
+                UseTreeSnapToBuilding = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToBuilding"));
+                UseTreeSnapToNetwork = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToNetwork"));
+                UseTreeSnapToProp = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToProp"));
+                RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"RandomTreeRotation"));
+                TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
+                UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"LockForestry"));
+                PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"PersistentLock"));
+                ShowIndicators = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"ShowIndicators"));
+                UseTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
+                DeleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"DeleteOnOverlap"));
                 try {
-                    UseTreeLODFix = bool.Parse(xmlConfig.DocumentElement.GetAttribute("UseTreeLODFix"));
+                    UseTreeLODFix = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeLODFix"));
                 } catch {
-                    XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
-                    _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeLODFix", UseTreeLODFix));
+                    XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
+                    _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", UseTreeLODFix));
                 }
                 try {
-                    TreeLODSelectedResolution = (TAManager.TreeLODResolution)int.Parse(xmlConfig.DocumentElement.GetAttribute("TreeLODSelectedResolution"));
+                    TreeLODSelectedResolution = (TAManager.TreeLODResolution)int.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeLODSelectedResolution"));
                 } catch {
-                    XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
-                    _ = root.Attributes.Append(AddElement(xmlConfig, "TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
+                    XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
+                    _ = root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
                 }
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
@@ -223,23 +225,23 @@ namespace TreeAnarchy {
 
         internal static void SaveSettings(object _ = null) {
             XmlDocument xmlConfig = new XmlDocument();
-            XmlElement root = xmlConfig.CreateElement("TreeAnarchyConfig");
-            _ = root.Attributes.Append(AddElement(xmlConfig, "ScaleFactor", m_ScaleFactor));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "TreeEffectOnWind", TreeEffectOnWind));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapping", UseTreeSnapping));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToBuilding", UseTreeSnapToBuilding));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToNetwork", UseTreeSnapToNetwork));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeSnapToProp", UseTreeSnapToProp));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "RandomTreeRotation", RandomTreeRotation));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "TreeSwayFactor", TreeSwayFactor));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "LockForestry", UseLockForestry));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "PersistentLock", PersistentLockForestry));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "ShowIndicators", ShowIndicators));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeAnarchy", UseTreeAnarchy));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "DeleteOnOverlap", DeleteOnOverlap));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "UseTreeLODFix", UseTreeLODFix));
-            _ = root.Attributes.Append(AddElement(xmlConfig, "TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
+            XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"ScaleFactor", m_ScaleFactor));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"TreeEffectOnWind", TreeEffectOnWind));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapping", UseTreeSnapping));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToBuilding", UseTreeSnapToBuilding));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToNetwork", UseTreeSnapToNetwork));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToProp", UseTreeSnapToProp));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"RandomTreeRotation", RandomTreeRotation));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"TreeSwayFactor", TreeSwayFactor));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"LockForestry", UseLockForestry));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"PersistentLock", PersistentLockForestry));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"ShowIndicators", ShowIndicators));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", UseTreeAnarchy));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"DeleteOnOverlap", DeleteOnOverlap));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", UseTreeLODFix));
+            _ = root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
             xmlConfig.AppendChild(root);
             xmlConfig.Save(SettingsFileName);
         }
@@ -257,22 +259,22 @@ namespace TreeAnarchy {
             string path = Path.Combine(Application.dataPath, m_debugLogFile);
             using (FileStream debugFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
             using (StreamWriter sw = new StreamWriter(debugFile)) {
-                sw.WriteLine($"--- {m_modName} {m_modVersion} Debug File ---");
+                sw.WriteLine(@"--- " + m_modName + ' ' + m_modVersion + " Debug File ---");
                 sw.WriteLine(Environment.OSVersion);
-                sw.WriteLine($"C# CLR Version {Environment.Version}");
-                sw.WriteLine($"Unity Version {Application.unityVersion}");
-                sw.WriteLine("-------------------------------------");
+                sw.WriteLine(@"C# CLR Version " + Environment.Version);
+                sw.WriteLine(@"Unity Version " + Application.unityVersion);
+                sw.WriteLine(@"-------------------------------------");
             }
         }
 
         private void OutputPluginsList() {
             using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None))
             using (StreamWriter sw = new StreamWriter(debugFile)) {
-                sw.WriteLine("Mods Installed are:");
+                sw.WriteLine(@"Mods Installed are:");
                 foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
-                    sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? "** Enabled **" : "** Disabled **")}");
+                    sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? @"** Enabled **" : @"** Disabled **")}");
                 }
-                sw.WriteLine("-------------------------------------");
+                sw.WriteLine(@"-------------------------------------");
             }
         }
 

@@ -10,7 +10,7 @@ namespace TreeAnarchy {
 
         public static void Initialize() {
             m_materialBlock = Singleton<TreeManager>.instance.m_materialBlock;
-            m_simulationPrefabs = ((FastList<PrefabCollection<TreeInfo>.PrefabData>)typeof(PrefabCollection<TreeInfo>).GetField("m_simulationPrefabs", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).m_buffer;
+            m_simulationPrefabs = ((FastList<PrefabCollection<TreeInfo>.PrefabData>)typeof(PrefabCollection<TreeInfo>).GetField(@"m_simulationPrefabs", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).m_buffer;
         }
 
         public static void EnsureCapacity(TreeManager manager) {

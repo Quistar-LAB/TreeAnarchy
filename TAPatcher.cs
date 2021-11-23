@@ -15,23 +15,26 @@ namespace TreeAnarchy {
         }
         internal static FieldInfo MoveItUseTreeSnap = null;
         internal static bool isMoveItInstalled = false;
-        private struct ModInfo {
+        private readonly struct ModInfo {
             public readonly ulong fileID;
             public readonly string name;
-            public ModInfo(ulong modID, string modName) {
+            public readonly bool inclusive;
+            public ModInfo(ulong modID, string modName, bool isInclusive) {
                 fileID = modID;
                 name = modName;
+                inclusive = isInclusive;
             }
         }
         private static readonly ModInfo[] IncompatibleMods = new ModInfo[] {
-            new ModInfo(455403039, "Unlimited Trees Mod"),
-            new ModInfo(2378914031, "Unlimited Trees Revisited"),
-            new ModInfo(869134690, "Tree Snapping"),
-            new ModInfo(1637106958, "Lock Forestry"),
-            new ModInfo(556784825, "Random Tree Rotation"),
-            new ModInfo(1388613752, "Tree Movement Control"),
-            new ModInfo(842981708, "Random Tree Rotation for Natural Disasters"),
-            new ModInfo(1349895184, "Tree LOD Fix")
+            new ModInfo(455403039, @"Unlimited Trees Mod", true),
+            new ModInfo(2378914031, @"Unlimited Trees Revisited", true),
+            new ModInfo(869134690, @"Tree Snapping", true),
+            new ModInfo(1637106958, @"Lock Forestry", true),
+            new ModInfo(556784825, @"Random Tree Rotation", true),
+            new ModInfo(1388613752, @"Tree Movement Control", true),
+            new ModInfo(842981708, @"Random Tree Rotation for Natural Disasters", true),
+            new ModInfo(1349895184, @"Tree LOD Fix", true),
+            new ModInfo(2153618633, @"Prop Switcher", false)
         };
 
         internal static bool IsPluginExists(ulong id, string name) {
@@ -51,7 +54,7 @@ namespace TreeAnarchy {
         }
 
         private bool CheckMoveItTreeSnapSig() {
-            FieldInfo treeSnapField = typeof(MoveIt.MoveItTool).GetField("treeSnapping", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public);
+            FieldInfo treeSnapField = typeof(MoveIt.MoveItTool).GetField(@"treeSnapping", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public);
             if (treeSnapField != null) {
                 MoveItUseTreeSnap = treeSnapField;
                 MoveItUseTreeSnap.SetValue(null, TAMod.UseTreeSnapping);
@@ -66,13 +69,14 @@ namespace TreeAnarchy {
             foreach (var mod in PlatformService.workshop.GetSubscribedItems()) {
                 for (int i = 0; i < IncompatibleMods.Length; i++) {
                     if (mod.AsUInt64 == IncompatibleMods[i].fileID) {
-                        errorMsg += $"[{IncompatibleMods[i].name}] detected. Tree Anarchy already includes the same functionality\n";
-                        TAMod.TALog($"Incompatible mod: [{IncompatibleMods[i].name}] detected");
+                        errorMsg += '[' + IncompatibleMods[i].name + ']' + "detected. " +
+                            (IncompatibleMods[i].inclusive ? @"Tree Anarchy already includes the same functionality" : @"This mod is incompatible with Tree Anarchy");
+                        TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[i].name + "] detected");
                     }
                 }
             }
             if (errorMsg.Length > 0) {
-                UIView.ForwardException(new Exception("Tree Anarchy detected incompatible mods, please remove the following mentioned mods as the same functionality is already built into this mod", new Exception("\n" + errorMsg)));
+                UIView.ForwardException(new Exception(@"Tree Anarchy detected incompatible mods, please remove the following mentioned mods as the same functionality is already built into this mod", new Exception("\n" + errorMsg)));
                 TAMod.TALog($"Tree Anarchy detected incompatible mods, please remove the following mentioned mods\n{errorMsg}");
                 return false;
             }
@@ -104,7 +108,7 @@ namespace TreeAnarchy {
             PatchPTA(harmony);
             EnableTreeAnarchyPatches(harmony);
 #endif
-            if (IsPluginExists(1619685021, "MoveIt") || IsPluginExists(2215771668, "MoveIt")) {
+            if (IsPluginExists(1619685021, @"MoveIt") || IsPluginExists(2215771668, @"MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
                     PatchMoveItSnapping(harmony);
                 }

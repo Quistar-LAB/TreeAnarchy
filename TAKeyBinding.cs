@@ -7,29 +7,29 @@ using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
     internal class TAKeyBinding : UICustomControl {
-        private const string thisCategory = "TreeAnarchy";
+        private const string thisCategory = @"TreeAnarchy";
         private SavedInputKey m_EditingBinding;
 
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string toggleTreeSnapping = "toggleTreeSnapping";
-        [RebindableKey("TreeAnarchy")]
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string toggleTreeSnapping = @"toggleTreeSnapping";
+        [RebindableKey(@"TreeAnarchy")]
         private static readonly string toggleLockForestry = "toggleLockForestry";
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string toggleTreeAnarchy = "toggleTreeAnarchy";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string toggleTreeAnarchy = @"toggleTreeAnarchy";
 #if ENABLETREEGROUP
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string groupTrees = "groupTrees";
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string ungroupTrees = "ungroupTrees";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string groupTrees = @"groupTrees";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string ungroupTrees = @"ungroupTrees";
 #endif
 #if ENABLETERRAINCONFORM
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string terrainConformTrees = "terrainConformTrees";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string terrainConformTrees = @"terrainConformTrees";
 #endif
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string incrementTreeSize = "incrTreeVariation";
-        [RebindableKey("TreeAnarchy")]
-        private static readonly string decrementTreeSize = "decrTreeVariation";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string incrementTreeSize = @"incrTreeVariation";
+        [RebindableKey(@"TreeAnarchy")]
+        private static readonly string decrementTreeSize = @"decrTreeVariation";
 
         private static readonly InputKey defaultToggleTreeSnappingKey = SavedInputKey.Encode(KeyCode.S, false, false, true);
         private static readonly InputKey defaultToggleLockForestryKey = SavedInputKey.Encode(KeyCode.F, false, false, true);
@@ -108,19 +108,19 @@ namespace TreeAnarchy {
             desc.autoHeight = true;
             desc.wordWrap = true;
             desc.textScale = TAOptionPanel.SmallFontScale;
-            desc.text = SingletonLite<TALocale>.instance.GetLocale("KeyBindDescription");
-            AddKeymapping("TreeSnap", m_treeSnapping);
-            AddKeymapping("LockForestry", m_lockForestry);
-            AddKeymapping("TreeAnarchy", m_treeAnarchy);
+            desc.text = TALocale.GetLocale(@"KeyBindDescription");
+            AddKeymapping(@"TreeSnap", m_treeSnapping);
+            AddKeymapping(@"LockForestry", m_lockForestry);
+            AddKeymapping(@"TreeAnarchy", m_treeAnarchy);
 #if ENABLETERRAINCONFORM
-            AddKeymapping("TerrainConformTrees", m_terrainConformTrees);
+            AddKeymapping(@"TerrainConformTrees", m_terrainConformTrees);
 #endif
 #if ENABLETREEGROUP
-            AddKeymapping("GroupTrees", m_groupTrees);
-            AddKeymapping("UngroupTrees", m_ungroupTrees);
+            AddKeymapping(@"GroupTrees", m_groupTrees);
+            AddKeymapping(@"UngroupTrees", m_ungroupTrees);
 #endif
-            AddKeymapping("IncreaseTreeSize", m_incrTreeVariation);
-            AddKeymapping("DecreaseTreeSize", m_decrTreeVariation);
+            AddKeymapping(@"IncreaseTreeSize", m_incrTreeVariation);
+            AddKeymapping(@"DecreaseTreeSize", m_decrTreeVariation);
         }
 
         private bool IsCustomPressed(SavedInputKey inputKey, Event e) {
@@ -133,19 +133,17 @@ namespace TreeAnarchy {
 
         private int listCount = 0;
         private void AddKeymapping(string key, SavedInputKey savedInputKey) {
-            TALocale locale = SingletonLite<TALocale>.instance;
-            UIPanel uIPanel = component.AttachUIComponent(UITemplateManager.GetAsGameObject("KeyBindingTemplate")) as UIPanel;
+            UIPanel uIPanel = component.AttachUIComponent(UITemplateManager.GetAsGameObject(@"KeyBindingTemplate")) as UIPanel;
             if (listCount++ % 2 == 1) uIPanel.backgroundSprite = null;
 
-            UILabel uILabel = uIPanel.Find<UILabel>("Name");
-            UIButton uIButton = uIPanel.Find<UIButton>("Binding");
+            UILabel uILabel = uIPanel.Find<UILabel>(@"Name");
+            UIButton uIButton = uIPanel.Find<UIButton>(@"Binding");
 
             uIButton.eventKeyDown += new KeyPressHandler(OnBindingKeyDown);
             uIButton.eventMouseDown += new MouseEventHandler(OnBindingMouseDown);
-            uILabel.objectUserData = locale;
             uILabel.stringUserData = key;
-            uILabel.text = locale.GetLocale(key);
-            uIButton.text = savedInputKey.ToLocalizedString("KEYNAME");
+            uILabel.text = TALocale.GetLocale(key);
+            uIButton.text = savedInputKey.ToLocalizedString(@"KEYNAME");
             uIButton.objectUserData = savedInputKey;
             uIButton.stringUserData = thisCategory; // used for localization TODO:
         }
@@ -161,7 +159,7 @@ namespace TreeAnarchy {
                 }
                 m_EditingBinding.value = inputKey;
                 UITextComponent uITextComponent = p.source as UITextComponent;
-                uITextComponent.text = m_EditingBinding.ToLocalizedString("KEYNAME");
+                uITextComponent.text = m_EditingBinding.ToLocalizedString(@"KEYNAME");
                 m_EditingBinding = null;
             }
         }
@@ -172,7 +170,7 @@ namespace TreeAnarchy {
                 m_EditingBinding = (SavedInputKey)p.source.objectUserData;
                 UIButton uIButton = p.source as UIButton;
                 uIButton.buttonsMask = (UIMouseButton.Left | UIMouseButton.Right | UIMouseButton.Middle | UIMouseButton.Special0 | UIMouseButton.Special1 | UIMouseButton.Special2 | UIMouseButton.Special3);
-                uIButton.text = SingletonLite<TALocale>.instance.GetLocale("PressAnyKey");
+                uIButton.text = TALocale.GetLocale(@"PressAnyKey");
                 p.source.Focus();
                 UIView.PushModal(p.source);
             } else if (!IsUnbindableMouseButton(p.buttons)) {
@@ -181,7 +179,7 @@ namespace TreeAnarchy {
                 InputKey inputKey = SavedInputKey.Encode(ButtonToKeycode(p.buttons), IsControlDown(), IsShiftDown(), IsAltDown());
                 m_EditingBinding.value = inputKey;
                 UIButton uIButton2 = p.source as UIButton;
-                uIButton2.text = m_EditingBinding.ToLocalizedString("KEYNAME");
+                uIButton2.text = m_EditingBinding.ToLocalizedString(@"KEYNAME");
                 uIButton2.buttonsMask = UIMouseButton.Left;
                 m_EditingBinding = null;
             }
