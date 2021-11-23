@@ -4,11 +4,15 @@ using ColossalFramework.Plugins;
 using ColossalFramework.UI;
 using HarmonyLib;
 using System;
+using System.Threading;
 using System.Reflection;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
         private const string HARMONYID = @"quistar.treeanarchy.mod";
+        private const ulong PTAID = 593588108uL;
+        private bool isPTAPatched = false;
+        private bool isPTAInstalled = false;
         private Harmony m_harmony;
         internal Harmony CurrentHarmony {
             get => (m_harmony is null) ? m_harmony = new Harmony(HARMONYID) : m_harmony;
@@ -69,9 +73,11 @@ namespace TreeAnarchy {
             foreach (var mod in PlatformService.workshop.GetSubscribedItems()) {
                 for (int i = 0; i < IncompatibleMods.Length; i++) {
                     if (mod.AsUInt64 == IncompatibleMods[i].fileID) {
-                        errorMsg += '[' + IncompatibleMods[i].name + ']' + "detected. " +
+                        errorMsg += '[' + IncompatibleMods[i].name + ']' + @"detected. " +
                             (IncompatibleMods[i].inclusive ? @"Tree Anarchy already includes the same functionality" : @"This mod is incompatible with Tree Anarchy");
-                        TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[i].name + "] detected");
+                        TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[i].name + @"] detected");
+                    } else if(mod.AsUInt64 == PTAID) {
+                        isPTAInstalled = true;
                     }
                 }
             }
@@ -83,6 +89,23 @@ namespace TreeAnarchy {
             return true;
         }
 
+        private void PollForPTA(object _) {
+            int counter = 0;
+            Harmony harmony = CurrentHarmony;
+            while(counter < 60) {
+                Thread.Sleep(10000);
+                foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+                    if (info.publishedFileID.AsUInt64 == 593588108uL && info.isEnabled) {
+                        TAMod.TALog($"Found PTA");
+                        PatchPTA(harmony);
+                        isPTAPatched = true;
+                        break;
+                    }
+                    counter++;
+                }
+            }
+        }
+
         internal void EnableCore() {
             Harmony harmony = CurrentHarmony;
             EnableTreeInstancePatch(harmony);
@@ -90,6 +113,7 @@ namespace TreeAnarchy {
             EnableTreeLimitPatches(harmony);
             EnableTreeSnappingPatches(harmony);
             EnableTreeVariationPatches(harmony);
+            if(isPTAInstalled) ThreadPool.QueueUserWorkItem(PollForPTA);
         }
 
         internal void DisableCore() {
@@ -104,10 +128,7 @@ namespace TreeAnarchy {
         internal void LateEnable() {
             Harmony harmony = CurrentHarmony;
             EnableTreeMovementPatches(harmony);
-#if ENABLETREEANARCHY
-            PatchPTA(harmony);
             EnableTreeAnarchyPatches(harmony);
-#endif
             if (IsPluginExists(1619685021, @"MoveIt") || IsPluginExists(2215771668, @"MoveIt")) {
                 if (!CheckMoveItTreeSnapSig()) {
                     PatchMoveItSnapping(harmony);
@@ -119,10 +140,11 @@ namespace TreeAnarchy {
         internal void DisableLatePatch() {
             Harmony harmony = CurrentHarmony;
             DisableTreeMovementPatches(harmony);
-#if ENABLETREEANARCHY
-            UnpatchPTA(harmony);
+            if (isPTAPatched) {
+                UnpatchPTA(harmony);
+                isPTAPatched = false;
+            }
             DisableTreeAnarchyPatches(harmony);
-#endif
             if (isMoveItInstalled) {
                 DisableMoveItSnappingPatches(harmony);
             }
