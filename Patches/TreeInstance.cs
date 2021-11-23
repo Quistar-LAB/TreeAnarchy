@@ -161,24 +161,14 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> SetPositionTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
 
-#if ENABLETREEANARCHY
         /// <summary>
         /// Used in Tree Anarchy state to get anarchy state set by user. This is specifically used in TreeInstance::set_GrowState
         /// </summary>
         /// <param name="val">GrowState</param>
         /// <returns>Returns true if set</returns>
         public static bool GetAnarchyState(int growState) => TAMod.UseTreeAnarchy && growState == 0;
-#endif
-        private static IEnumerable<CodeInstruction> SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = __SetGrowStateTranspiler(instructions, il);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
 
-        private static IEnumerable<CodeInstruction> __SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-#if ENABLETREEANARCHY
+        private static IEnumerable<CodeInstruction> SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label valueNotZero = il.DefineLabel();
             int counter = 0;
             yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -193,19 +183,9 @@ namespace TreeAnarchy {
                 }
                 counter++;
             }
-#else
-            return ReplaceMath(instructions);
-#endif
         }
 
         private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __AfterTerrainUpdatedTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             bool firstBeqFound = false;
             foreach (var code in ReplaceMath(instructions)) {
@@ -240,13 +220,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __CalculateTreeTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
             MethodInfo sampleDetailHeight = AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) });
             foreach (var code in ReplaceMath(instructions)) {
@@ -260,7 +233,6 @@ namespace TreeAnarchy {
             }
         }
 
-#if ENABLETREEANARCHY
         public static bool CheckAnarchyState(ref TreeInstance tree) {
             if (Singleton<LoadingManager>.instance.m_currentlyLoading) {
                 return true;
@@ -303,25 +275,13 @@ namespace TreeAnarchy {
                 }
             }
         }
-#endif
-        private static IEnumerable<CodeInstruction> CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            var codes = __CheckOverlapTranspiler(instructions, il);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
 
-        private static IEnumerable<CodeInstruction> __CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
+        private static IEnumerable<CodeInstruction> CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label exit = il.DefineLabel();
             bool firstSigFound = false;
             IEnumerable<CodeInstruction> codes_intermediate;
             FieldInfo treeCount = AccessTools.Field(typeof(DistrictPark), nameof(DistrictPark.m_treeCount));
-#if ENABLETREEANARCHY
             codes_intermediate = ReplaceScaleCalculator(InstallCheckAnarchyInCheckOverlapTranspiler(instructions, il));
-#else
-            codes_intermediate = ReplaceScaleCalculator(instructions);
-#endif
             codes_intermediate.Last().WithLabels(exit);
             using (var codes = codes_intermediate.GetEnumerator()) {
                 while (codes.MoveNext()) {
@@ -340,15 +300,7 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __OverlapQuadTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
+        private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
 
         /// <summary>
         /// Tree movement (tree sway) is also coded in this method
@@ -369,43 +321,14 @@ namespace TreeAnarchy {
             }
         }
 
-        private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __OverlapQuadTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
+        private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
             ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions));
 
-        private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __RayCastTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
+        private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
 
-        private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) {
-            var codes = __RenderInstanceTransplier(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
+        private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
 
         private static IEnumerable<CodeInstruction> RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
-            var codes = __RenderInstanceStaticTransplier(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
             MethodInfo identity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
             foreach (var code in ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions))) {
                 if (code.opcode == OpCodes.Call && code.operand == identity) {
@@ -430,13 +353,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __RenderLODTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) {
             const float lodMin = 100000f;
             const float lodMax = -lodMin;
             bool set100 = false;
@@ -477,13 +393,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __TerrainUpdatedTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-        private static IEnumerable<CodeInstruction> __TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Beq) {
@@ -500,14 +409,6 @@ namespace TreeAnarchy {
         }
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
-            var codes = __TerrainUpdatedVectorTranspiler(instructions);
-            foreach (var code in codes) {
-                TAMod.TALog(code.ToString());
-            }
-            return codes;
-        }
-
-        private static IEnumerable<CodeInstruction> __TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Brtrue) {
