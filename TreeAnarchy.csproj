@@ -117,16 +117,6 @@
     <None Include="Localization\TreeAnarchy.ms.locale" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\LockForestryDisabled.png" />
-    <EmbeddedResource Include="Resources\LockForestryEnabled.png" />
-    <EmbeddedResource Include="Resources\TreeSnapDisabled.png" />
-    <EmbeddedResource Include="Resources\TreeSnapEnabled.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\TreeAnarchyDisabled.png" />
-    <EmbeddedResource Include="Resources\TreeAnarchyEnabled.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Localization\TreeAnarchy.pt-BR.locale" />
   </ItemGroup>
   <ItemGroup>
