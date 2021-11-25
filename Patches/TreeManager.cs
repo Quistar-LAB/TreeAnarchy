@@ -424,309 +424,174 @@ namespace TreeAnarchy {
             }
         }
 
-        public unsafe static void EndRenderingImplCoroutine(RenderManager.CameraInfo cameraInfo, TreeInstance[] buffer, FastList<TreeManager.BurningTree> burningTrees,
-                                                            MaterialPropertyBlock materialBlock, int ID_TreeLocation, int ID_TreeColor, int ID_TreeObjectIndex, ref DrawCallData drawCallData) {
-            PrefabCollection<TreeInfo>.PrefabData[] prefabDatas = m_simulationPrefabs().m_buffer;
-            int len = PrefabCollection<TreeInfo>.PrefabCount();
-            Color black = Color.black;
-            Vector4 vecZero = EMath.Vector4Zero;
-            Vector3 vec100 = new Vector3(100f, 100f, 100f);
-            Vector3 vec100000 = new Vector3(100000f, 100000f, 100000f);
-            Vector3 negvec100000 = new Vector3(-100000f, -100000f, -100000f);
-            Vector3 camForward = cameraInfo.m_forward;
-            Matrix4x4 identity = Matrix4x4.identity;
-            materialBlock.Clear();
-            Bounds bounds = default;
-            for (int i = 0; i < len; i++) {
-                if (prefabDatas[i].m_prefab is TreeInfo prefab && prefab.m_lodCount != 0) {
+        private static void EndRenderingImplCoroutine(TreeManager tmInstance, RenderManager.CameraInfo cameraInfo) {
+            int treeLayer = tmInstance.m_treeLayer;
+            uint[] treeGrid = tmInstance.m_treeGrid;
+            float[] treeDefScales = TAManager.m_defScales;
+            float[] treeIncScales = TAManager.m_treeScales;
+            float[] treeBrightness = TAManager.m_brightness;
+            Quaternion[] quaternions = TAManager.m_treeQuaternions;
+            TreeInstance[] trees = tmInstance.m_trees.m_buffer;
+            ref DrawCallData drawCallData = ref tmInstance.m_drawCallData;
+            RenderManager rmInstance = Singleton<RenderManager>.instance;
+            RenderGroup[] renderedGroups = rmInstance.m_renderedGroups.m_buffer;
+            Vector4 objectIndex = RenderManager.DefaultColorLocation;
+            objectIndex.z = -1f;
+            int ID_Color = tmInstance.ID_Color;
+            int ID_ObjectIndex = tmInstance.ID_ObjectIndex;
+            int ID_TreeColor = tmInstance.ID_TreeColor;
+            int ID_TreeLocation = tmInstance.ID_TreeLocation;
+            int ID_TreeObjectIndex = tmInstance.ID_TreeObjectIndex;
+            MaterialPropertyBlock materialBlock = tmInstance.m_materialBlock;
+            Matrix4x4 identity = EMath.matrix4Identity;
+            Vector3 lodMin = EMath.DefaultLodMin;
+            Vector3 lodMax = EMath.DefaultLodMax;
+            Color black = EMath.ColorBlack;
+            Vector4 v4zero = EMath.Vector4Zero;
+            int len = rmInstance.m_renderedGroups.m_size;
+            for(int i = 0; i < len; i++) {
+                RenderGroup renderGroup = renderedGroups[i];
+                if((renderGroup.m_instanceMask & 1 << treeLayer) != 0) {
+                    int startX = renderGroup.m_x * (540 / 45);
+                    int startZ = renderGroup.m_z * (540 / 45);
+                    int endX = (renderGroup.m_x + 1) * (540 / 45) - 1;
+                    int endZ = (renderGroup.m_z + 1) * (540 / 45) - 1;
+                    for(int j = startZ; j <= endZ; j++) {
+                        for(int k = startX; k <= endX; k++) {
+                            uint treeID = treeGrid[j * 540 + k];
+                            while(treeID != 0u) {
+                                ushort flags = trees[treeID].m_flags;
+                                if((flags & 0x0f00) != 0 && (flags & (ushort)TreeInstance.Flags.Hidden) == 0) {
+                                    TreeInfo info = trees[treeID].Info;
+                                    Vector3 position = trees[treeID].Position;
+                                    if(info.m_prefabInitialized && cameraInfo.Intersect(position, info.m_generatedInfo.m_size.y * info.m_maxScale)) {
+                                        float scale = treeDefScales[treeID] + treeIncScales[treeID];
+                                        float brightness = treeBrightness[treeID];
+                                        if (cameraInfo is null || info.m_lodMesh1 is null || cameraInfo.ECheckRenderDistance(position, info.m_lodRenderDistance)) {
+                                            Color value = info.m_defaultColor * brightness;
+                                            value.a = TAManager.GetWindSpeed(position);
+                                            materialBlock.Clear();
+                                            materialBlock.SetColor(ID_Color, value);
+                                            materialBlock.SetVector(ID_ObjectIndex, objectIndex);
+                                            drawCallData.m_defaultCalls++;
+                                            Graphics.DrawMesh(info.m_mesh,
+                                                Matrix4x4.TRS(position, quaternions[(int)(position.x * position.x + position.z * position.z) % 359], new Vector3(scale, scale, scale)),
+                                                info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
+                                        } else {
+                                            position.y += info.m_generatedInfo.m_center.y * (scale - 1f);
+                                            Color color = info.m_defaultColor * brightness;
+                                            color.a = TAManager.GetWindSpeed(position);
+                                            info.m_lodLocations[info.m_lodCount] = new Vector4(position.x, position.y, position.z, scale);
+                                            info.m_lodColors[info.m_lodCount] = color.linear;
+                                            info.m_lodObjectIndices[info.m_lodCount] = objectIndex;
+                                            info.m_lodMin = EMath.Min(info.m_lodMin, position);
+                                            info.m_lodMax = EMath.Max(info.m_lodMax, position);
+                                            if (++info.m_lodCount == info.m_lodLocations.Length) {
+                                                Mesh mesh;
+                                                int num;
+                                                if (info.m_lodCount <= 1) {
+                                                    mesh = info.m_lodMesh1;
+                                                    num = 1;
+                                                } else if (info.m_lodCount <= 4) {
+                                                    mesh = info.m_lodMesh4;
+                                                    num = 4;
+                                                } else if (info.m_lodCount <= 8) {
+                                                    mesh = info.m_lodMesh8;
+                                                    num = 8;
+                                                } else {
+                                                    mesh = info.m_lodMesh16;
+                                                    num = 16;
+                                                }
+                                                for (int l = info.m_lodCount; l < num; l++) {
+                                                    info.m_lodLocations[l] = cameraInfo.m_forward * -100000f;
+                                                    info.m_lodColors[l] = black;
+                                                    info.m_lodObjectIndices[i] = v4zero;
+                                                }
+                                                materialBlock.Clear();
+                                                materialBlock.SetVectorArray(ID_TreeLocation, info.m_lodLocations);
+                                                materialBlock.SetVectorArray(ID_TreeColor, info.m_lodColors);
+                                                materialBlock.SetVectorArray(ID_TreeObjectIndex, info.m_lodObjectIndices);
+                                                Bounds bounds = default;
+                                                bounds.SetMinMax(new Vector3(info.m_lodMin.x - 100f, info.m_lodMin.y - 100f, info.m_lodMin.z - 100f),
+                                                                 new Vector3(info.m_lodMax.x + 100f, info.m_lodMax.y + 100f, info.m_lodMax.z + 100f));
+                                                mesh.bounds = bounds;
+                                                info.m_lodMin = lodMin;
+                                                info.m_lodMax = lodMax;
+                                                drawCallData.m_lodCalls++;
+                                                drawCallData.m_batchedCalls += (info.m_lodCount - 1);
+                                                Graphics.DrawMesh(mesh, identity, info.m_lodMaterial, info.m_prefabDataLayer, null, 0, materialBlock);
+                                                info.m_lodCount = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                                treeID = trees[treeID].m_nextGridTree;
+                            }
+                        }
+                    }
+                }
+            }
+            len = PrefabCollection<TreeInfo>.PrefabCount();
+            PrefabCollection<TreeInfo>.PrefabData[] simPrefabs = TAManager.GetSimPrefabs().m_buffer;
+            for (int l = 0; l < len; l++) {
+                if (simPrefabs[l].m_prefab is TreeInfo info && info.m_lodCount != 0) {
                     Mesh mesh;
                     int num;
-                    int lodCount = prefab.m_lodCount;
-                    Vector4[] lodLocations = prefab.m_lodLocations;
-                    Vector4[] lodColors = prefab.m_lodColors;
-                    Vector4[] lodObjectIndices = prefab.m_lodObjectIndices;
-                    if (lodCount <= 1) {
-                        mesh = prefab.m_lodMesh1;
+                    if (info.m_lodCount <= 1) {
+                        mesh = info.m_lodMesh1;
                         num = 1;
-                    } else if (lodCount <= 4) {
-                        mesh = prefab.m_lodMesh4;
+                    } else if (info.m_lodCount <= 4) {
+                        mesh = info.m_lodMesh4;
                         num = 4;
-                    } else if (lodCount <= 8) {
-                        mesh = prefab.m_lodMesh8;
+                    } else if (info.m_lodCount <= 8) {
+                        mesh = info.m_lodMesh8;
                         num = 8;
                     } else {
-                        mesh = prefab.m_lodMesh16;
+                        mesh = info.m_lodMesh16;
                         num = 16;
                     }
-                    for (int j = lodCount; j < num; j++) {
-                        lodLocations[j] = camForward * -100000f;
-                        lodColors[j] = black;
-                        lodObjectIndices[j] = vecZero;
+                    for (int i = info.m_lodCount; i < num; i++) {
+                        info.m_lodLocations[i] = cameraInfo.m_forward * -100000f;
+                        info.m_lodColors[i] = black;
+                        info.m_lodObjectIndices[i] = v4zero;
                     }
-                    materialBlock.SetVectorArray(ID_TreeLocation, lodLocations);
-                    materialBlock.SetVectorArray(ID_TreeColor, lodColors);
-                    materialBlock.SetVectorArray(ID_TreeObjectIndex, lodObjectIndices);
-                    bounds.SetMinMax(prefab.m_lodMin - vec100, prefab.m_lodMax + vec100);
+                    materialBlock.Clear();
+                    materialBlock.SetVectorArray(ID_TreeLocation, info.m_lodLocations);
+                    materialBlock.SetVectorArray(ID_TreeColor, info.m_lodColors);
+                    materialBlock.SetVectorArray(ID_TreeObjectIndex, info.m_lodObjectIndices);
+                    Bounds bounds = default;
+                    bounds.SetMinMax(new Vector3(info.m_lodMin.x - 100f, info.m_lodMin.y - 100f, info.m_lodMin.z - 100f),
+                                     new Vector3(info.m_lodMax.x + 100f, info.m_lodMax.y + 100f, info.m_lodMax.z + 100f));
                     mesh.bounds = bounds;
-                    prefab.m_lodMin = vec100000;
-                    prefab.m_lodMax = negvec100000;
+                    info.m_lodMin = lodMin;
+                    info.m_lodMax = lodMax;
                     drawCallData.m_lodCalls++;
-                    drawCallData.m_batchedCalls += (lodCount - 1);
-                    Graphics.DrawMesh(mesh, identity, prefab.m_lodMaterial, prefab.m_prefabDataLayer, null, 0, materialBlock);
-                    prefab.m_lodCount = 0;
+                    drawCallData.m_batchedCalls += (info.m_lodCount - 1);
+                    Graphics.DrawMesh(mesh, identity, info.m_lodMaterial, info.m_prefabDataLayer, null, 0, materialBlock);
+                    info.m_lodCount = 0;
                 }
             }
             if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.None) {
-                len = burningTrees.m_size;
-                TreeManager.BurningTree[] burningBuf = burningTrees.m_buffer;
-                for (int m = 0; m < len; m++) {
-                    TreeManager.BurningTree burningTree = burningBuf[m];
-                    uint treeID = burningTree.m_treeIndex;
-                    if (treeID != 0u) {
+                TreeManager.BurningTree[] burningTrees = tmInstance.m_burningTrees.m_buffer;
+                len = tmInstance.m_burningTrees.m_size;
+                for (int i = 0; i < len; i++) {
+                    ref TreeManager.BurningTree burningTree = ref burningTrees[i];
+                    if (burningTree.m_treeIndex != 0u) {
                         float fireIntensity = burningTree.m_fireIntensity * 0.003921569f;
                         float fireDamage = burningTree.m_fireDamage * 0.003921569f;
-                        delegatedRenderFireEffect(cameraInfo, treeID, ref buffer[treeID], fireIntensity, fireDamage);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Optimized version that replaces TreeInstance::RenderInstance. This is called directly from TreeManager::EndRenderingImpl
-        /// </summary>
-        public static void RenderInstanceEnchanced(RenderManager.CameraInfo cameraInfo, uint treeID, ref TreeInstance tree,
-                                               MaterialPropertyBlock materialBlock, int ID_Color, int ID_ObjectIndex, int ID_TreeLocation, int ID_TreeColor, int ID_TreeObjectIndex, ref DrawCallData drawCallData) {
-            TreeInfo info = tree.Info;
-            Vector3 position = tree.Position;
-            if (cameraInfo.Intersect(position, info.m_generatedInfo.m_size.y * info.m_maxScale)) {
-                float scale = TAManager.CalcTreeScale(treeID);
-                float brightness = TAManager.m_brightness[treeID];
-                Vector4 defaultColorLocation = RenderManager.DefaultColorLocation;
-                defaultColorLocation.z = -1f;
-                if (info.m_prefabInitialized) {
-                    if (cameraInfo is null || info.m_lodMesh1 is null || cameraInfo.CheckRenderDistance(position, info.m_lodRenderDistance)) {
-                        Color value = info.m_defaultColor * brightness;
-                        value.a = TAManager.GetWindSpeed(position);
-                        materialBlock.Clear();
-                        materialBlock.SetColor(ID_Color, value);
-                        materialBlock.SetVector(ID_ObjectIndex, defaultColorLocation);
-                        drawCallData.m_defaultCalls++;
-                        Graphics.DrawMesh(info.m_mesh,
-                            Matrix4x4.TRS(position, TAManager.m_treeQuaternions[(int)(position.x * position.x + position.z * position.z) % 359], new Vector3(scale, scale, scale)),
-                            info.m_material, info.m_prefabDataLayer, null, 0, materialBlock);
-                    } else {
-                        position.y += info.m_generatedInfo.m_center.y * (scale - 1f);
-                        Color color = info.m_defaultColor * brightness;
-                        color.a = TAManager.GetWindSpeed(position);
-                        info.m_lodLocations[info.m_lodCount] = new Vector4(position.x, position.y, position.z, scale);
-                        info.m_lodColors[info.m_lodCount] = color.linear;
-                        info.m_lodObjectIndices[info.m_lodCount] = defaultColorLocation;
-                        info.m_lodMin = EMath.Min(info.m_lodMin, position);
-                        info.m_lodMax = EMath.Max(info.m_lodMax, position);
-                        if (++info.m_lodCount == info.m_lodLocations.Length) {
-                            Mesh mesh;
-                            int num;
-                            int lodCount = info.m_lodCount;
-                            Vector4[] lodLocations = info.m_lodLocations;
-                            Vector4[] lodColors = info.m_lodColors;
-                            Vector4[] lodObjectIndices = info.m_lodObjectIndices;
-                            if (lodCount <= 1) {
-                                mesh = info.m_lodMesh1;
-                                num = 1;
-                            } else if (lodCount <= 4) {
-                                mesh = info.m_lodMesh4;
-                                num = 4;
-                            } else if (lodCount <= 8) {
-                                mesh = info.m_lodMesh8;
-                                num = 8;
-                            } else {
-                                mesh = info.m_lodMesh16;
-                                num = 16;
-                            }
-                            for (int j = lodCount; j < num; j++) {
-                                lodLocations[j] = cameraInfo.m_forward * -100000f;
-                                lodColors[j] = EMath.ColorBlack;
-                                lodObjectIndices[j] = default;
-                            }
-                            materialBlock.SetVectorArray(ID_TreeLocation, lodLocations);
-                            materialBlock.SetVectorArray(ID_TreeColor, lodColors);
-                            materialBlock.SetVectorArray(ID_TreeObjectIndex, lodObjectIndices);
-                            Bounds bounds = default;
-                            bounds.SetMinMax(info.m_lodMin - EMath.DefaultLod100, info.m_lodMax + EMath.DefaultLod100);
-                            mesh.bounds = bounds;
-                            info.m_lodMin = EMath.DefaultLodMin;
-                            info.m_lodMax = EMath.DefaultLodMax;
-                            drawCallData.m_lodCalls++;
-                            drawCallData.m_batchedCalls += (lodCount - 1);
-                            Graphics.DrawMesh(mesh,
-                                EMath.MatrixIdentity,
-                                info.m_lodMaterial, info.m_prefabDataLayer, null, 0, materialBlock);
-                            info.m_lodCount = 0;
-
-                        }
+                        tmInstance.RenderFireEffect(cameraInfo, burningTree.m_treeIndex, ref trees[burningTree.m_treeIndex], fireIntensity, fireDamage);
                     }
                 }
             }
         }
 
         private static IEnumerable<CodeInstruction> EndRenderingImplTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int treeBufIndex = -1;
-            LocalBuilder treeLayer = il.DeclareLocal(typeof(int));
-            LocalBuilder renderGroupLen = il.DeclareLocal(typeof(int));
-            LocalBuilder renderGroups = il.DeclareLocal(typeof(RenderGroup[]));
-            LocalBuilder materialBlock = il.DeclareLocal(typeof(MaterialPropertyBlock));
-            LocalBuilder idColor = il.DeclareLocal(typeof(int));
-            LocalBuilder idObjectIndex = il.DeclareLocal(typeof(int));
-            LocalBuilder idTreeColor = il.DeclareLocal(typeof(int));
-            LocalBuilder idTreeLocation = il.DeclareLocal(typeof(int));
-            LocalBuilder idTreeObjectIndex = il.DeclareLocal(typeof(int));
-            LocalBuilder drawCallData = il.DeclareLocal(typeof(DrawCallData).MakeByRefType());
-            FieldInfo treeLayerField = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_treeLayer));
-            FieldInfo renderGroupsField = AccessTools.Field(typeof(FastList<RenderGroup>), nameof(FastList<RenderGroup>.m_buffer));
-            FieldInfo renderGroupsSizeField = AccessTools.Field(typeof(FastList<RenderGroup>), nameof(FastList<RenderGroup>.m_size));
-            FieldInfo instanceMask = AccessTools.Field(typeof(RenderGroup), nameof(RenderGroup.m_instanceMask));
-            MethodInfo renderInstance = AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance), new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) });
-            MethodInfo prefabCount = AccessTools.Method(typeof(PrefabCollection<TreeInfo>), nameof(PrefabCollection<TreeInfo>.PrefabCount));
-            using (var codes = InstallTreeGridBufferLocals(RemoveBoundaryCheck(instructions), il).GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    var cur = codes.Current;
-                    if (cur.opcode == OpCodes.Ldloc_S && cur.operand is LocalBuilder local && local.LocalType == typeof(TreeInstance[])) {
-                        treeBufIndex = local.LocalIndex;
-                    }
-                    if (cur.opcode == OpCodes.Stloc_0) {
-                        yield return cur;
-                        yield return new CodeInstruction(OpCodes.Ldloc_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(FastList<RenderGroup>), nameof(FastList<RenderGroup>.m_size)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, renderGroupLen);
-                        yield return new CodeInstruction(OpCodes.Ldloc_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(FastList<RenderGroup>), nameof(FastList<RenderGroup>.m_buffer)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, renderGroups);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_treeLayer)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, treeLayer);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_materialBlock)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, materialBlock);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.ID_Color)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, idColor);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.ID_ObjectIndex)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, idObjectIndex);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.ID_TreeLocation)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, idTreeLocation);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.ID_TreeColor)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, idTreeColor);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.ID_TreeObjectIndex)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, idTreeObjectIndex);
-                        yield return new CodeInstruction(OpCodes.Ldflda, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_drawCallData)));
-                        yield return new CodeInstruction(OpCodes.Stloc_S, drawCallData);
-                    } else if (cur.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
-                        var next = codes.Current;
-                        if (next.opcode == OpCodes.Ldfld && next.operand == treeLayerField) {
-                            yield return new CodeInstruction(OpCodes.Ldloc_S, treeLayer).WithLabels(cur.labels);
-                        } else {
-                            yield return cur;
-                            yield return next;
-                        }
-                    } else if (cur.opcode == OpCodes.Ldloc_0 && codes.MoveNext()) {
-                        var next = codes.Current;
-                        if (next.opcode == OpCodes.Ldfld && next.operand == renderGroupsField) {
-                            yield return new CodeInstruction(OpCodes.Ldloc_S, renderGroups).WithLabels(cur.labels);
-                        } else if (next.opcode == OpCodes.Ldfld && next.operand == renderGroupsSizeField) {
-                            yield return new CodeInstruction(OpCodes.Ldloc_S, renderGroupLen).WithLabels(cur.labels);
-                        } else {
-                            yield return cur;
-                            yield return next;
-                        }
-                    } else if (treeBufIndex > 0 && cur.opcode == OpCodes.Ldloc_S && cur.operand is LocalBuilder l2 && l2.LocalIndex == treeBufIndex && codes.MoveNext()) {
-                        var next = codes.Current;
-                        if (next.opcode == OpCodes.Ldloc_S && codes.MoveNext()) {
-                            var next1 = codes.Current;
-                            if (next1.opcode == OpCodes.Ldelema && codes.MoveNext()) {
-                                var next2 = codes.Current;
-                                if (next2.opcode == OpCodes.Ldarg_1 && codes.MoveNext()) {
-                                    var next3 = codes.Current;
-                                    if (next3.opcode == OpCodes.Ldloc_S && codes.MoveNext()) {
-                                        var next4 = codes.Current;
-                                        if (next4.opcode == OpCodes.Ldloc_2 && codes.MoveNext()) {
-                                            var next5 = codes.Current;
-                                            if (next5.opcode == OpCodes.Ldfld && next5.operand == instanceMask && codes.MoveNext()) {
-                                                yield return new CodeInstruction(OpCodes.Ldarg_1).WithLabels(cur.labels);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, 10);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, treeBufIndex);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, 10);
-                                                yield return new CodeInstruction(OpCodes.Ldelema, typeof(TreeInstance));
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, materialBlock);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, idColor);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, idObjectIndex);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeLocation);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeColor);
-                                                yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeObjectIndex);
-                                                yield return new CodeInstruction(OpCodes.Ldloca_S, drawCallData);
-                                                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.RenderInstanceEnchanced)));
-                                            } else {
-                                                yield return cur;
-                                                yield return next;
-                                                yield return next1;
-                                                yield return next2;
-                                                yield return next3;
-                                                yield return next4;
-                                                yield return next5;
-                                            }
-                                        } else {
-                                            yield return cur;
-                                            yield return next;
-                                            yield return next1;
-                                            yield return next2;
-                                            yield return next3;
-                                            yield return next4;
-                                        }
-                                    } else {
-                                        yield return cur;
-                                        yield return next;
-                                        yield return next1;
-                                        yield return next2;
-                                        yield return next3;
-                                    }
-                                } else {
-                                    yield return cur;
-                                    yield return next;
-                                    yield return next1;
-                                    yield return next2;
-                                }
-                            } else {
-                                yield return cur;
-                                yield return next;
-                                yield return next1;
-                            }
-                        } else {
-                            yield return cur;
-                            yield return next;
-                        }
-                    } else if (treeBufIndex > 0 && cur.opcode == OpCodes.Call && cur.operand == prefabCount) {
-                        yield return new CodeInstruction(OpCodes.Ldarg_1);
-                        yield return new CodeInstruction(OpCodes.Ldloc_S, treeBufIndex);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_burningTrees)));
-                        yield return new CodeInstruction(OpCodes.Ldloc_S, materialBlock);
-                        yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeLocation);
-                        yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeColor);
-                        yield return new CodeInstruction(OpCodes.Ldloc_S, idTreeObjectIndex);
-                        yield return new CodeInstruction(OpCodes.Ldloca_S, drawCallData);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EndRenderingImplCoroutine)));
-                        yield return instructions.Last();
-                        break;
-                    } else {
-                        yield return cur;
-                    }
-                }
-            }
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.EndRenderingImplCoroutine)));
+            yield return new CodeInstruction(OpCodes.Ret);
         }
+
 
         private static IEnumerable<CodeInstruction> FinalizeTreeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             int treeGridOccuranceCount = 0;

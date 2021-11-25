@@ -33,6 +33,7 @@ namespace TreeAnarchy {
             MethodInfo getBlack = AccessTools.PropertyGetter(typeof(Color), nameof(Color.black));
             MethodInfo getMatrixIdentity = AccessTools.PropertyGetter(typeof(Matrix4x4), nameof(Matrix4x4.identity));
             MethodInfo getVector4Zero = AccessTools.PropertyGetter(typeof(Vector4), nameof(Vector4.zero));
+            MethodInfo checkRenderDistance = AccessTools.Method(typeof(RenderManager.CameraInfo), nameof(RenderManager.CameraInfo.CheckRenderDistance));
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Call && code.operand == clamp) {
                     code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) });
@@ -84,7 +85,9 @@ namespace TreeAnarchy {
                 } else if (code.opcode == OpCodes.Call && code.operand == getVector4Zero) {
                     yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.Vector4Zero))).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Call && code.operand == getMatrixIdentity) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.MatrixIdentity))).WithLabels(code.labels);
+                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.matrix4Identity))).WithLabels(code.labels);
+                } else if (code.opcode == OpCodes.Callvirt && code.operand == checkRenderDistance) {
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(EMath), nameof(EMath.ECheckRenderDistance)));
                 } else {
                     yield return code;
                 }

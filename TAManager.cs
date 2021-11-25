@@ -2,15 +2,28 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using System.Reflection.Emit;
 
 namespace TreeAnarchy {
     public unsafe static partial class TAManager {
         public static MaterialPropertyBlock m_materialBlock;
-        public static PrefabCollection<TreeInfo>.PrefabData[] m_simulationPrefabs;
+        internal delegate U RefGetter<U>();
+        internal static RefGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>> GetSimPrefabs;
+        internal static RefGetter<U> CreatePrefabRefGetter<U>(string s_field) {
+            var prefab = typeof(PrefabCollection<TreeInfo>);
+            var fi = prefab.GetField(s_field, BindingFlags.NonPublic | BindingFlags.Static);
+            if (fi == null) throw new MissingFieldException(prefab.Name, s_field);
+            var s_name = "__refget_" + prefab.Name + "_fi_" + fi.Name;
+            var dm = new DynamicMethod(s_name, typeof(U), new[] { prefab }, prefab, true);
+            var il = dm.GetILGenerator();
+            il.Emit(OpCodes.Ldsfld, fi);
+            il.Emit(OpCodes.Ret);
+            return (RefGetter<U>)dm.CreateDelegate(typeof(RefGetter<U>));
+        }
 
         public static void Initialize() {
             m_materialBlock = Singleton<TreeManager>.instance.m_materialBlock;
-            m_simulationPrefabs = ((FastList<PrefabCollection<TreeInfo>.PrefabData>)typeof(PrefabCollection<TreeInfo>).GetField(@"m_simulationPrefabs", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).m_buffer;
+            GetSimPrefabs = CreatePrefabRefGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>>("m_simulationPrefabs");
         }
 
         public static void EnsureCapacity(TreeManager manager) {

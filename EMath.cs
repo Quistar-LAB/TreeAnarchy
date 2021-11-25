@@ -8,22 +8,24 @@ namespace TreeAnarchy {
     /// the wheel, but these speed ups are drastic enough to do them
     /// </summary>
     public static class EMath {
-        public const float lodMin = 100000f;
-        public const float lodMax = -lodMin;
         public static Vector2 Vector2Zero = Vector2.zero;
         public static Vector3 Vector3Zero = Vector3.zero;
         public static Vector4 Vector4Zero = Vector4.zero;
         public static Vector3 Vector3Down = Vector3.down;
         public static Vector3 Vector3One = Vector3.one;
         public static Vector3 Vector3Forward = Vector3.forward;
-        public static Vector3 DefaultLodMin = new Vector3(lodMin, lodMin, lodMin);
-        public static Vector3 DefaultLodMax = new Vector3(lodMax, lodMax, lodMax);
+        public static Vector3 DefaultLodMin = new Vector3(100000f, 100000f, 100000f);
+        public static Vector3 DefaultLodMax = new Vector3(-100000f, -100000f, -100000f);
         public static Vector3 DefaultLod100 = new Vector3(100f, 100f, 100f);
-        public static Matrix4x4 MatrixIdentity = Matrix4x4.identity;
         public static Color ColorClear = Color.clear;
         public static Color ColorBlack = Color.black;
-
         public static Randomizer randomizer = new Randomizer();
+       
+
+        /// <summary>
+        /// Get Matrix.identity using this static variable. It's about ~5x faster
+        /// </summary>
+        public static Matrix4x4 matrix4Identity = Matrix4x4.identity;
 
         /// <summary>
         /// Functions exactly the same as Mathf.Approximately but 52x faster
@@ -238,5 +240,49 @@ namespace TreeAnarchy {
         /// </summary>
         /// <param name="val"></param>
         public static void SetRandomizerSeed(uint val) => randomizer.seed = 6364136223846793005uL * val + 1442695040888963407uL;
+
+        /// <summary>
+        /// This is an extension method to ease the reuse of randomizers
+        /// </summary>
+        /// <param name="randomizer"></param>
+        /// <param name="val"></param>
+        public static void SetSeed(ref this Randomizer randomizer, int val) => randomizer.seed = (ulong)(6364136223846793005L * val + 1442695040888963407L);
+
+        /// <summary>
+        /// This is an extension method to ease the reuse of randomizers
+        /// </summary>
+        /// <param name="randomizer"></param>
+        /// <param name="val"></param>
+        public static void SetSeed(ref this Randomizer randomizer, uint val) => randomizer.seed = 6364136223846793005uL * val + 1442695040888963407uL;
+
+        /// <summary>
+        /// Functions exactly like MathUtils.SmoothStep. This one is only 1.2x faster
+        /// </summary>
+        /// <param name="edge0"></param>
+        /// <param name="edge1"></param>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static float SmoothStep(float edge0, float edge1, float x) {
+            x = (x - edge0) / (edge1 - edge0);
+            x = x < 0 ? 0 : (x > 1 ? 1 : x);
+            return x * x * (3f - 2f * x);
+        }
+
+        /// <summary>
+        /// Functions exactly the same as RenderManager.CameraInfo.CheckRenderDistance, but ~15x faster
+        /// </summary>
+        /// <param name="cameraInfo"></param>
+        /// <param name="point"></param>
+        /// <param name="maxDistance"></param>
+        /// <returns></returns>
+        public static bool ECheckRenderDistance(this RenderManager.CameraInfo cameraInfo, Vector3 point, float maxDistance) {
+            float distance = maxDistance * 0.45f;
+            Vector3 campos = cameraInfo.m_position;
+            Vector3 camforward = cameraInfo.m_forward;
+            float x = point.x - campos.x - camforward.x * distance;
+            float y = point.y - campos.y - camforward.y * distance;
+            float z = point.z - campos.z - camforward.z * distance;
+            return (x * x + y * y + z * z) < maxDistance * maxDistance * 0.3025f;
+        }
     }
 }
