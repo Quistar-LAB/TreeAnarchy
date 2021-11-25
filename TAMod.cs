@@ -15,7 +15,7 @@ using ColossalFramework.Globalization;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.1.3";
+        internal const string m_modVersion = @"1.1.4";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
