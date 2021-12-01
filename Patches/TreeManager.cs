@@ -449,22 +449,22 @@ namespace TreeAnarchy {
             Color black = EMath.ColorBlack;
             Vector4 v4zero = EMath.Vector4Zero;
             int len = rmInstance.m_renderedGroups.m_size;
-            for(int i = 0; i < len; i++) {
+            for (int i = 0; i < len; i++) {
                 RenderGroup renderGroup = renderedGroups[i];
-                if((renderGroup.m_instanceMask & 1 << treeLayer) != 0) {
+                if ((renderGroup.m_instanceMask & 1 << treeLayer) != 0) {
                     int startX = renderGroup.m_x * (540 / 45);
                     int startZ = renderGroup.m_z * (540 / 45);
                     int endX = (renderGroup.m_x + 1) * (540 / 45) - 1;
                     int endZ = (renderGroup.m_z + 1) * (540 / 45) - 1;
-                    for(int j = startZ; j <= endZ; j++) {
-                        for(int k = startX; k <= endX; k++) {
+                    for (int j = startZ; j <= endZ; j++) {
+                        for (int k = startX; k <= endX; k++) {
                             uint treeID = treeGrid[j * 540 + k];
-                            while(treeID != 0u) {
+                            while (treeID != 0u) {
                                 ushort flags = trees[treeID].m_flags;
-                                if((flags & 0x0f00) != 0 && (flags & (ushort)TreeInstance.Flags.Hidden) == 0) {
+                                if ((flags & 0x0f00) != 0 && (flags & (ushort)TreeInstance.Flags.Hidden) == 0) {
                                     TreeInfo info = trees[treeID].Info;
                                     Vector3 position = trees[treeID].Position;
-                                    if(info.m_prefabInitialized && cameraInfo.Intersect(position, info.m_generatedInfo.m_size.y * info.m_maxScale)) {
+                                    if (info.m_prefabInitialized && cameraInfo.Intersect(position, info.m_generatedInfo.m_size.y * info.m_maxScale)) {
                                         float scale = treeDefScales[treeID] + treeIncScales[treeID];
                                         float brightness = treeBrightness[treeID];
                                         if (cameraInfo is null || info.m_lodMesh1 is null || cameraInfo.ECheckRenderDistance(position, info.m_lodRenderDistance)) {
@@ -1071,7 +1071,7 @@ namespace TreeAnarchy {
         private static IEnumerable<CodeInstruction> AfterDeserializeTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label isOldFormatExit = il.DefineLabel();
             int cachedInfoIndex = 0;
-            FieldInfo treeCount = AccessTools.Field(typeof(DistrictPark), nameof(DistrictPark.m_treeCount));
+            FieldInfo infoIndex = AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_infoIndex));
             MethodInfo getInfo = AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.Info));
             using (var codes = instructions.GetEnumerator()) {
                 while (codes.MoveNext()) {
@@ -1093,7 +1093,7 @@ namespace TreeAnarchy {
                             yield return cur;
                             yield return next;
                         }
-                    } else if (cachedInfoIndex > 0 && cur.opcode == OpCodes.Stfld && cur.operand == treeCount) {
+                    } else if (cachedInfoIndex > 0 && cur.opcode == OpCodes.Stfld && cur.operand == infoIndex) {
                         yield return cur;
                         yield return new CodeInstruction(OpCodes.Ldloc_3);
                         yield return new CodeInstruction(OpCodes.Ldloc_S, cachedInfoIndex);
