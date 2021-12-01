@@ -1,5 +1,6 @@
 ﻿using CitiesHarmony.API;
 using ColossalFramework;
+using ColossalFramework.Globalization;
 using ColossalFramework.Plugins;
 using ColossalFramework.UI;
 using ICities;
@@ -11,11 +12,10 @@ using System.Threading;
 using System.Xml;
 using UI;
 using UnityEngine;
-using ColossalFramework.Globalization;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.1.4";
+        internal const string m_modVersion = @"1.1.8";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -148,7 +148,7 @@ namespace TreeAnarchy {
         public void OnLevelLoaded(LoadMode mode) {
             if (ShowIndicators) {
                 UIIndicator indicatorPanel = UIIndicator.Setup();
-                if(indicatorPanel) {
+                if (indicatorPanel) {
                     UIIndicator.UIIcon treeSnap = default;
                     treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
                         bool state = UseTreeSnapping = !UseTreeSnapping;
@@ -159,7 +159,7 @@ namespace TreeAnarchy {
                         TAOptionPanel.SetTreeSnapState(state);
                         ThreadPool.QueueUserWorkItem(SaveSettings);
                     }, out bool finalState);
-                    if(finalState != UseTreeSnapping) {
+                    if (finalState != UseTreeSnapping) {
                         UseTreeSnapping = finalState;
                     }
                     UIIndicator.UIIcon treeAnarchy = default;
@@ -169,7 +169,7 @@ namespace TreeAnarchy {
                         TAOptionPanel.SetTreeAnarchyState(state);
                         ThreadPool.QueueUserWorkItem(SaveSettings);
                     }, out finalState);
-                    if(finalState != UseTreeAnarchy) {
+                    if (finalState != UseTreeAnarchy) {
                         UseTreeAnarchy = finalState;
                     }
                     UIIndicator.UIIcon lockForestry = default;
