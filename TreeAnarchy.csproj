@@ -9,6 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TreeAnarchy</RootNamespace>
     <AssemblyName>TreeAnarchy</AssemblyName>
+    <LangVersion>8.0</LangVersion>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>false</Deterministic>

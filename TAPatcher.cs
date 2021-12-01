@@ -4,8 +4,8 @@ using ColossalFramework.Plugins;
 using ColossalFramework.UI;
 using HarmonyLib;
 using System;
-using System.Threading;
 using System.Reflection;
+using System.Threading;
 
 namespace TreeAnarchy {
     internal partial class TAPatcher : SingletonLite<TAPatcher> {
@@ -76,7 +76,7 @@ namespace TreeAnarchy {
                         errorMsg += '[' + IncompatibleMods[i].name + ']' + @"detected. " +
                             (IncompatibleMods[i].inclusive ? @"Tree Anarchy already includes the same functionality" : @"This mod is incompatible with Tree Anarchy");
                         TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[i].name + @"] detected");
-                    } else if(mod.AsUInt64 == PTAID) {
+                    } else if (mod.AsUInt64 == PTAID) {
                         isPTAInstalled = true;
                     }
                 }
@@ -92,7 +92,7 @@ namespace TreeAnarchy {
         private void PollForPTA(object _) {
             int counter = 0;
             Harmony harmony = CurrentHarmony;
-            while(counter < 60) {
+            while (counter < 60) {
                 Thread.Sleep(10000);
                 foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
                     if (info.publishedFileID.AsUInt64 == 593588108uL && info.isEnabled) {
@@ -113,7 +113,7 @@ namespace TreeAnarchy {
             EnableTreeLimitPatches(harmony);
             EnableTreeSnappingPatches(harmony);
             EnableTreeVariationPatches(harmony);
-            if(isPTAInstalled) ThreadPool.QueueUserWorkItem(PollForPTA);
+            if (isPTAInstalled) ThreadPool.QueueUserWorkItem(PollForPTA);
         }
 
         internal void DisableCore() {

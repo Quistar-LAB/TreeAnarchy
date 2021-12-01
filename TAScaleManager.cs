@@ -38,7 +38,12 @@ namespace TreeAnarchy {
         public static void IncrementTreeSize() {
             TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
             uint treeID = m_currentTreeID;
-            if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+            TAMod.TALog($"MoveItTool instance is: {MoveItTool.instance}");
+            TAMod.TALog($"UIToolOptionPanel instance is: {UIToolOptionPanel.instance}");
+            TAMod.TALog($"UIToolOptionPanel visibility: {UIToolOptionPanel.instance.isVisible}");
+            TAMod.TALog($"Selection: {Action.selection}");
+            TAMod.TALog($"Selection count: {Action.selection}");
+            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
                 m_treeScales[treeID] += scaleStep;
             } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
@@ -54,8 +59,13 @@ namespace TreeAnarchy {
 
         public static void DecrementTreeSize() {
             TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
+            TAMod.TALog($"MoveItTool instance is: {MoveItTool.instance}");
+            TAMod.TALog($"UIToolOptionPanel instance is: {UIToolOptionPanel.instance}");
+            TAMod.TALog($"UIToolOptionPanel visibility: {UIToolOptionPanel.instance.isVisible}");
+            TAMod.TALog($"Selection: {Action.selection}");
+            TAMod.TALog($"Selection count: {Action.selection}");
             uint treeID = m_currentTreeID;
-            if (treeTool != null && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
                 m_treeScales[treeID] -= scaleStep;
             } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
