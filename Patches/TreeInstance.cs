@@ -311,6 +311,10 @@ namespace TreeAnarchy {
         /// </summary>
         private static IEnumerable<CodeInstruction> PopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo getHidden = AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.Hidden));
+            MethodInfo populateGroupData = AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
+                new Type[] { typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(int).MakeByRefType(),
+                             typeof(int).MakeByRefType(), typeof(Vector3), typeof(RenderGroup.MeshData), typeof(Vector3).MakeByRefType(),
+                             typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() });
             foreach (var code in ReplaceScaleCalculator(instructions, true)) {
                 if (code.opcode == OpCodes.Stloc_0 || code.opcode == OpCodes.Ldloc_0) {
                     // skip it
@@ -318,10 +322,55 @@ namespace TreeAnarchy {
                     yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeInstance), nameof(TreeInstance.m_flags))).WithLabels(code.labels);
                     yield return new CodeInstruction(OpCodes.Ldc_I4_4);
                     yield return new CodeInstruction(OpCodes.And);
+                } else if (code.opcode == OpCodes.Call && code.operand == populateGroupData) {
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.PopulateGroupData)));
                 } else {
                     yield return code;
                 }
             }
+        }
+
+        public static void PopulateGroupData(TreeInfo info, Vector3 position, float scale, float brightness, Vector4 objectIndex, ref int vertexIndex, ref int triangleIndex, Vector3 groupPosition, RenderGroup.MeshData data, ref Vector3 min, ref Vector3 max, ref float maxRenderDistance, ref float maxInstanceDistance) {
+            float y = info.m_generatedInfo.m_size.y * scale;
+            float num = EMath.Max(info.m_generatedInfo.m_size.x, info.m_generatedInfo.m_size.z) * scale * 0.5f;
+            min = EMath.Min(min, position - new Vector3(num, 0f, num));
+            max = EMath.Max(max, position + new Vector3(num, y, num));
+            maxRenderDistance = EMath.Max(maxRenderDistance, 30000f);
+            maxInstanceDistance = EMath.Max(maxInstanceDistance, 425f);
+            Color32 color = (info.m_defaultColor * brightness).linear;
+            color.a = (byte)EMath.Clamp(EMath.RoundToInt(TAManager.GetWindSpeed(position)), 0, 255);
+            position -= groupPosition;
+            position.y += info.m_generatedInfo.m_center.y * scale;
+            data.m_vertices[vertexIndex] = position + new Vector3(info.m_renderUv0B.x * scale, info.m_renderUv0B.y * scale, 0f);
+            data.m_normals[vertexIndex] = objectIndex;
+            data.m_uvs[vertexIndex] = info.m_renderUv0;
+            data.m_uvs2[vertexIndex] = info.m_renderUv0B * scale;
+            data.m_colors[vertexIndex] = color;
+            vertexIndex++;
+            data.m_vertices[vertexIndex] = position + new Vector3(info.m_renderUv1B.x * scale, info.m_renderUv1B.y * scale, 0f);
+            data.m_normals[vertexIndex] = objectIndex;
+            data.m_uvs[vertexIndex] = info.m_renderUv1;
+            data.m_uvs2[vertexIndex] = info.m_renderUv1B * scale;
+            data.m_colors[vertexIndex] = color;
+            vertexIndex++;
+            data.m_vertices[vertexIndex] = position + new Vector3(info.m_renderUv2B.x * scale, info.m_renderUv2B.y * scale, 0f);
+            data.m_normals[vertexIndex] = objectIndex;
+            data.m_uvs[vertexIndex] = info.m_renderUv2;
+            data.m_uvs2[vertexIndex] = info.m_renderUv2B * scale;
+            data.m_colors[vertexIndex] = color;
+            vertexIndex++;
+            data.m_vertices[vertexIndex] = position + new Vector3(info.m_renderUv3B.x * scale, info.m_renderUv3B.y * scale, 0f);
+            data.m_normals[vertexIndex] = objectIndex;
+            data.m_uvs[vertexIndex] = info.m_renderUv3;
+            data.m_uvs2[vertexIndex] = info.m_renderUv3B * scale;
+            data.m_colors[vertexIndex] = color;
+            vertexIndex++;
+            data.m_triangles[triangleIndex++] = vertexIndex - 4;
+            data.m_triangles[triangleIndex++] = vertexIndex - 3;
+            data.m_triangles[triangleIndex++] = vertexIndex - 2;
+            data.m_triangles[triangleIndex++] = vertexIndex - 2;
+            data.m_triangles[triangleIndex++] = vertexIndex - 3;
+            data.m_triangles[triangleIndex++] = vertexIndex - 1;
         }
 
         private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
