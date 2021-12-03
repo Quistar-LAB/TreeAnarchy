@@ -21,7 +21,9 @@ namespace TreeAnarchy {
         }
         private int position = 0;
 #pragma warning disable IDE0044 // Add readonly modifier
+#pragma warning disable S2933 // Fields that are only assigned in the constructor should be "readonly"
         private ushort[] ushortStream; /* readonly modifier actually degrades performance */
+#pragma warning restore S2933 // Fields that are only assigned in the constructor should be "readonly"
 #pragma warning restore IDE0044 // Add readonly modifier
 
         protected TAOldDataSerializer(byte[] data) {
@@ -67,7 +69,9 @@ namespace TreeAnarchy {
                 switch (flags & SaveFlags.PACKED) {
                 case SaveFlags.None:
                     maxLen = treeLimit;
+#pragma warning disable S907 // "goto" statement should not be used
                     goto ReadData;
+#pragma warning restore S907 // "goto" statement should not be used
                 case SaveFlags.PACKED:
                     if (treeCount > MaxTreeLimit - DefaultTreeLimit) maxLen = MaxTreeLimit;
                     else maxLen = treeCount + DefaultTreeLimit;
