@@ -28,58 +28,53 @@ namespace TreeAnarchy {
         public const int DefaultTreeLimit = 262144;
         public const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
-        public static int RemoveReplaceOrKeep { get; set; } = 0;
-        public static bool OldFormatLoaded { get; set; } = false;
-        public static bool TreeEffectOnWind { get; set; } = true;
-        public static int LastMaxTreeLimit { get; set; } = DefaultTreeLimit;
-        public static int CheckLowLimit {
-            get => MaxTreeLimit - 12144;
-        }
-        public static int CheckHighLimit {
-            get => MaxTreeLimit - 5;
-        }
-
-        public static int MaxTreeLimit {
-            get => (int)(DefaultTreeLimit * TreeScaleFactor);
-        }
-        public static float TreeScaleFactor {
+#pragma warning disable S2223 // Non-constant static fields should not be visible
+        internal static int RemoveReplaceOrKeep = 0;
+        internal static bool OldFormatLoaded = false;
+        internal static bool TreeEffectOnWind = true;
+        internal static int LastMaxTreeLimit = DefaultTreeLimit;
+        internal static float TreeScaleFactor {
             get => m_ScaleFactor;
             set {
                 LastTreeScaleFactor = m_ScaleFactor;
                 m_ScaleFactor = value;
             }
         }
-        public static float LastTreeScaleFactor { get; private set; } = m_ScaleFactor;
-        public static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
+        internal static float LastTreeScaleFactor = m_ScaleFactor;
+        internal static int MaxTreeLimit => (int)(DefaultTreeLimit * TreeScaleFactor);
+        internal static int MaxTreeUpdateLimit => (int)(DefaultTreeUpdateCount * TreeScaleFactor);
+        internal static int CheckLowLimit => MaxTreeLimit - 12144;
+        internal static int CheckHighLimit => MaxTreeLimit - 5;
 
         /* Tree Snapping */
-        public static bool UseTreeSnapping { get; set; } = false;
-        public static bool UseExperimentalTreeSnapping { get; set; } = false;
-        public static bool UseTreeSnapToBuilding { get; set; } = true;
-        public static bool UseTreeSnapToNetwork { get; set; } = true;
-        public static bool UseTreeSnapToProp { get; set; } = true;
+        internal static bool UseTreeSnapping = false;
+        internal static bool UseExperimentalTreeSnapping = false;
+        internal static bool UseTreeSnapToBuilding = true;
+        internal static bool UseTreeSnapToNetwork = true;
+        internal static bool UseTreeSnapToProp = true;
 
         /* Lock Forestry */
-        public static bool UseLockForestry { get; set; } = false;
-        internal static bool PersistentLockForestry { get; set; } = true;
+        internal static bool UseLockForestry = false;
+        internal static bool PersistentLockForestry = true;
 
         /* Tree Movement Related */
-        public static float TreeSwayFactor { get; set; } = 1f;
-        public static bool RandomTreeRotation { get; set; } = true;
-        public static int RandomTreeRotationFactor { get; set; } = 1000;
+        internal static float TreeSwayFactor = 1f;
+        internal static bool RandomTreeRotation = true;
+        internal static int RandomTreeRotationFactor = 1000;
 
         /* Tree Anarchy Related */
-        public static bool UseTreeAnarchy { get; set; } = false;
-        public static bool DeleteOnOverlap { get; set; } = false;
+        internal static bool UseTreeAnarchy = false;
+        internal static bool DeleteOnOverlap = false;
 
         /* Tree LOD Fix Related */
-        public static bool UseTreeLODFix { get; set; } = true;
-        public static TAManager.TreeLODResolution TreeLODSelectedResolution { get; set; } = TAManager.TreeLODResolution.Medium;
+        internal static bool UseTreeLODFix = true;
+        internal static TAManager.TreeLODResolution TreeLODSelectedResolution = TAManager.TreeLODResolution.Medium;
 
         /* Indicators */
-        public static bool ShowIndicators { get; set; } = true;
+        internal static bool ShowIndicators = true;
 
         internal static bool IsInGame { get; private set; } = false;
+#pragma warning restore S2223 // Non-constant static fields should not be visible
 
         #region IUserMod
         public string Name => m_modName + " " + m_modVersion;
@@ -100,18 +95,18 @@ namespace TreeAnarchy {
         public void OnEnabled() {
             CreateDebugFile();
             TALocale.Init();
-            SingletonLite<TAPatcher>.instance.CheckIncompatibleMods();
+            TAPatcher.CheckIncompatibleMods();
             for (int loadTries = 0; loadTries < 2; loadTries++) {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
             if (PersistentLockForestry) UseLockForestry = true;
             TAManager.SetScaleBuffer(MaxTreeLimit);
-            HarmonyHelper.DoOnHarmonyReady(() => SingletonLite<TAPatcher>.instance.EnableCore());
+            HarmonyHelper.DoOnHarmonyReady(TAPatcher.EnableCore);
         }
 
         public void OnDisabled() {
             if (HarmonyHelper.IsHarmonyInstalled) {
-                SingletonLite<TAPatcher>.instance.DisableCore();
+                TAPatcher.DisableCore();
             }
             TALocale.Destroy();
             SaveSettings();
@@ -129,13 +124,13 @@ namespace TreeAnarchy {
             TAManager.Initialize();
             TAManager.InitializeSwayManager();
             if (HarmonyHelper.IsHarmonyInstalled) {
-                SingletonLite<TAPatcher>.instance.LateEnable();
+                TAPatcher.LateEnable();
             }
         }
 
         public void OnReleased() {
             if (HarmonyHelper.IsHarmonyInstalled) {
-                SingletonLite<TAPatcher>.instance.DisableLatePatch();
+                TAPatcher.DisableLatePatch();
             }
         }
 
@@ -145,8 +140,9 @@ namespace TreeAnarchy {
                 if (indicatorPanel) {
                     UIIndicator.UIIcon treeSnap = default;
                     treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
-                        bool state = UseTreeSnapping = !UseTreeSnapping;
-                        if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                        UseTreeSnapping = !UseTreeSnapping;
+                        bool state = UseTreeAnarchy;
+                        if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
                             TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                         }
                         treeSnap.State = state;
