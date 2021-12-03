@@ -8,17 +8,20 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 namespace TreeAnarchy {
-    internal partial class TAPatcher : SingletonLite<TAPatcher> {
-        private Type m_redirectUtil = null;
+    internal static partial class TAPatcher {
+        private static Type m_redirectUtil = null;
         private static MethodInfo m_redirectMethod = null;
 
-        private void PatchPTA(Harmony harmony) {
+        private static void PatchPTA(Harmony harmony) {
             try {
                 if (m_redirectUtil is null && (IsPluginExists(593588108, "Prop & Tree Anarchy") || IsPluginExists(2456344023, "Prop & Tree Anarchy"))) {
                     m_redirectUtil = Assembly.Load("PropAnarchy").GetType("PropAnarchy.Redirection.RedirectionUtil");
-                    foreach (var methodInfo in m_redirectUtil.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)) {
-                        if (methodInfo.Name == "RedirectMethod" && methodInfo.GetParameters()[2].ToString().Contains("Dictionary")) {
-                            m_redirectMethod = methodInfo;
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
+                    MethodInfo[] methods = m_redirectUtil.GetMethods(BindingFlags.NonPublic | BindingFlags.Static);
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
+                    for (int i = 0; i < methods.Length; i++) {
+                        if (methods[i].Name == "RedirectMethod" && methods[i].GetParameters()[2].ToString().Contains("Dictionary")) {
+                            m_redirectMethod = methods[i];
                         }
                     }
                     harmony.Patch(AccessTools.Method(m_redirectUtil, "RedirectMethods"),
@@ -29,7 +32,7 @@ namespace TreeAnarchy {
             }
         }
 
-        private void UnpatchPTA(Harmony harmony) {
+        private static void UnpatchPTA(Harmony harmony) {
             if (!(m_redirectUtil is null)) {
                 harmony.Unpatch(AccessTools.Method(m_redirectUtil, "RedirectMethods"), HarmonyPatchType.Transpiler, HARMONYID);
                 m_redirectUtil = null;
@@ -43,7 +46,9 @@ namespace TreeAnarchy {
             case @"CheckPlacementErrors":
                 Type type = method.GetParameters().First().ParameterType;
                 if (type == typeof(PropInstance).MakeByRefType() || type == typeof(PropInfo)) {
+#pragma warning disable S907 // "goto" statement should not be used
                     goto runDefault;
+#pragma warning restore S907 // "goto" statement should not be used
                 }
                 TAMod.TALog($"Overriding Prop & Tree Anarchy Redirect: {method}");
                 return;
@@ -61,7 +66,6 @@ runDefault:
 
         /* A patch to the patcher of Prop Tree Anarchy */
         private static IEnumerable<CodeInstruction> PTARedirectMethodsTranspiler(IEnumerable<CodeInstruction> instructions) {
-            Type redirectUtil = Assembly.Load("PropAnarchy").GetType("PropAnarchy.Redirection.RedirectionUtil");
             foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Call && code.ToString().Contains("RedirectMethod")) {
                     yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CustomRedirect)));
@@ -69,12 +73,12 @@ runDefault:
             }
         }
 
-        private void EnableTreeAnarchyPatches(Harmony harmony) {
+        private static void EnableTreeAnarchyPatches(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCheckPlacementErrorsTranspiler))));
         }
 
-        private void DisableTreeAnarchyPatches(Harmony harmony) {
+        private static void DisableTreeAnarchyPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)), HarmonyPatchType.Transpiler, HARMONYID);
         }
 

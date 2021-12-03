@@ -8,7 +8,7 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
-    internal partial class TAPatcher : SingletonLite<TAPatcher> {
+    internal static partial class TAPatcher {
         private static IEnumerable<CodeInstruction> ReplaceLDCI4_MaxTreeLimit(IEnumerable<CodeInstruction> instructions) {
             foreach (var code in instructions) {
                 if (code.Is(OpCodes.Ldc_I4, LastMaxTreeLimit)) {
@@ -106,7 +106,7 @@ namespace TreeAnarchy {
         }
 
 
-        internal void InjectTreeLimit(Harmony harmony) {
+        internal static void InjectTreeLimit(Harmony harmony) {
             HarmonyMethod replaceLDCI4 = new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ReplaceLDCI4_MaxTreeLimit)));
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), transpiler: replaceLDCI4);
             harmony.Patch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), transpiler: replaceLDCI4);
@@ -120,7 +120,7 @@ namespace TreeAnarchy {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(NRMTreesModifiedTranspiler))));
         }
 
-        internal void RemoveTreeLimitPatches(Harmony harmony) {
+        internal static void RemoveTreeLimitPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.SaveProps)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(BuildingDecoration), nameof(BuildingDecoration.ClearDecorations)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(CommonBuildingAI), @"HandleFireSpread"), HarmonyPatchType.Transpiler, HARMONYID);
@@ -132,7 +132,7 @@ namespace TreeAnarchy {
             harmony.Unpatch(AccessTools.Method(typeof(NaturalResourceManager), nameof(NaturalResourceManager.TreesModified)), HarmonyPatchType.Transpiler, HARMONYID);
         }
 
-        private void EnableTreeLimitPatches(Harmony harmony) {
+        private static void EnableTreeLimitPatches(Harmony harmony) {
             try {
                 InjectTreeLimit(harmony);
                 harmony.Patch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"),
@@ -142,7 +142,7 @@ namespace TreeAnarchy {
             }
         }
 
-        private void DisableTreeLimitPatches(Harmony harmony) {
+        private static void DisableTreeLimitPatches(Harmony harmony) {
             RemoveTreeLimitPatches(harmony);
             harmony.Unpatch(AccessTools.Method(typeof(WeatherManager), @"CalculateSelfHeight"), HarmonyPatchType.Transpiler, HARMONYID);
         }

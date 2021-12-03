@@ -9,11 +9,11 @@ using System.Reflection.Emit;
 using UnityEngine;
 
 namespace TreeAnarchy {
-    internal partial class TAPatcher : SingletonLite<TAPatcher> {
+    internal static partial class TAPatcher {
         /// <summary>
         /// Replace all Mathf to faster EMath
         /// </summary>
-        private static IEnumerable<CodeInstruction> ReplaceMath(IEnumerable<CodeInstruction> instructions) {
+        internal static IEnumerable<CodeInstruction> ReplaceMath(IEnumerable<CodeInstruction> instructions) {
             MethodInfo max = AccessTools.Method(typeof(Mathf), nameof(Mathf.Max), new Type[] { typeof(int), typeof(int) });
             MethodInfo min = AccessTools.Method(typeof(Mathf), nameof(Mathf.Min), new Type[] { typeof(int), typeof(int) });
             MethodInfo maxf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Max), new Type[] { typeof(float), typeof(float) });
@@ -241,12 +241,10 @@ namespace TreeAnarchy {
             }
             if (TAMod.UseTreeAnarchy) {
                 ToolBase currentTool = ToolsModifierControl.GetCurrentTool<ToolBase>();
-                if (!(currentTool is NetTool) && !(currentTool is BuildingTool) && !(currentTool is BulldozeTool)) {
-                    if (tree.GrowState == 0) {
-                        tree.GrowState = 1;
-                        DistrictManager district = Singleton<DistrictManager>.instance;
-                        district.m_parks.m_buffer[district.GetPark(tree.Position)].m_treeCount++;
-                    }
+                if (!(currentTool is NetTool) && !(currentTool is BuildingTool) && !(currentTool is BulldozeTool) && tree.GrowState == 0) {
+                    tree.GrowState = 1;
+                    DistrictManager district = Singleton<DistrictManager>.instance;
+                    district.m_parks.m_buffer[district.GetPark(tree.Position)].m_treeCount++;
                 }
                 return true;
             }
@@ -449,6 +447,7 @@ namespace TreeAnarchy {
                     code.opcode = OpCodes.Brfalse_S;
                     yield return code;
                 } else if (code.opcode == OpCodes.Ret && code.labels.Count == 0) {
+                    /* skip code */
                 } else {
                     if (code.opcode != OpCodes.Ret && code.labels.Count > 0) code.labels.Clear();
                     yield return code;
@@ -464,6 +463,7 @@ namespace TreeAnarchy {
                     code.operand = labels[0];
                     yield return code;
                 } else if (code.opcode == OpCodes.Ret && code.labels.Count == 0) {
+                    /* skip code */
                 } else {
                     if (code.opcode != OpCodes.Ret && code.labels.Count > 0) code.labels.Clear();
                     yield return code;
@@ -471,7 +471,7 @@ namespace TreeAnarchy {
             }
         }
 
-        private void EnableTreeInstancePatch(Harmony harmony) {
+        private static void EnableTreeInstancePatch(Harmony harmony) {
             harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SetInfoTranspiler))));
             harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)),
@@ -512,7 +512,7 @@ namespace TreeAnarchy {
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TerrainUpdatedVectorTranspiler))));
         }
 
-        private void DisableTreeInstancePatch(Harmony harmony) {
+        private static void DisableTreeInstancePatch(Harmony harmony) {
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)), HarmonyPatchType.Transpiler, HARMONYID);

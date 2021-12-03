@@ -10,20 +10,19 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
-    internal partial class TAPatcher : SingletonLite<TAPatcher> {
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
+    internal static partial class TAPatcher {
         private const float errorMargin = 0.075f;
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
-        private void EnableTreeSnappingPatches(Harmony harmony) {
-            //harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
-            //    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepPrefix))));
+        private static void EnableTreeSnappingPatches(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepTranspiler))));
             harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
                 transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCreateTreeTranspiler))));
         }
 
-        private void PatchMoveItSnapping(Harmony harmony) {
+        private static void PatchMoveItSnapping(Harmony harmony) {
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeTransformPrefix))));
             harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
@@ -36,13 +35,13 @@ namespace TreeAnarchy {
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ClonePrefix))));
         }
 
-        private void DisableTreeSnappingPatches(Harmony harmony) {
-            //harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Prefix, HARMONYID);
+        private static void DisableTreeSnappingPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"), HarmonyPatchType.Transpiler, HARMONYID);
         }
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
-        private void DisableMoveItSnappingPatches(Harmony harmony) {
+        private static void DisableMoveItSnappingPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)), HarmonyPatchType.Prefix, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)), HarmonyPatchType.Prefix, HARMONYID);
@@ -52,7 +51,6 @@ namespace TreeAnarchy {
                 HarmonyPatchType.Prefix, HARMONYID);
         }
 
-        private static ToolBase.RaycastService customServices = new ToolBase.RaycastService(ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Layer.Default);
         public static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
             if (UseTreeSnapping) {
                 input.m_currentEditObject = false;
@@ -184,7 +182,6 @@ namespace TreeAnarchy {
             Vector3 newPosition = matrix4x.MultiplyPoint(state.position - center);
             newPosition.y = state.position.y + deltaHeight;
 
-            //float oldTerrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(instance.position);
             float newTerrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(newPosition);
             TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
             uint treeID = instance.id.Tree;
@@ -282,13 +279,10 @@ namespace TreeAnarchy {
                 }) {
                     position = vector
                 };
-                if (!followTerrain) {
-                    if (deltaHeight != 0 || treeState.position.y > treeState.terrainHeight + errorMargin || treeState.position.y < treeState.terrainHeight - errorMargin) {
-                        buffer[tree].m_flags |= FixedHeightFlag;
-                    }
+                if (!followTerrain && (deltaHeight != 0 || treeState.position.y > treeState.terrainHeight + errorMargin || treeState.position.y < treeState.terrainHeight - errorMargin)) {
+                    buffer[tree].m_flags |= FixedHeightFlag;
                 }
             }
-            //Debug.Log($"TreeAnarchy: terrainHeight={terrainHeight} __instance.position={__instance.position} vector={vector} treeState.position={treeState.position} deltaHeight={deltaHeight} cloned position={buffer[tree].Position}");
 
             return false;
         }
