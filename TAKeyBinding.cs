@@ -64,7 +64,7 @@ namespace TreeAnarchy {
                 Event e = Event.current;
                 if (m_treeSnapping.IsPressed(e)) {
                     bool state = UseTreeSnapping = !UseTreeSnapping;
-                    if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                    if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
                         TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                     }
                     TAOptionPanel.SetTreeSnapState(state);

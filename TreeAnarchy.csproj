@@ -82,7 +82,7 @@
     <Compile Include="TAMovementManager.cs" />
     <Compile Include="EMath.cs" />
     <Compile Include="Patches\TreeInstance.cs" />
-    <Compile Include="Patches\TreeManager.cs" />
+    <Compile Include="Patches\TreeManagerPatches.cs" />
     <Compile Include="Patches\TreeAnarchy.cs" />
     <Compile Include="TAPrefab.cs" />
     <Compile Include="TAGroupManager.cs" />
@@ -106,7 +106,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>DefaultLocale.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include=".editorconfig" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

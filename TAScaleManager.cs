@@ -8,10 +8,12 @@ namespace TreeAnarchy {
         public const float minScale = 0.2f;
         public const float maxScale = 5.0f;
         public const float scaleStep = 0.2f;
-        public static uint m_currentTreeID = 0;
-        public static float[] m_treeScales;
-        public static float[] m_defScales;
-        public static float[] m_brightness;
+        private static uint m_currentTreeID = 0;
+#pragma warning disable S2223 // Non-constant static fields should not be visible
+        internal static float[] m_treeScales;
+        internal static float[] m_defScales;
+        internal static float[] m_brightness;
+#pragma warning restore S2223 // Non-constant static fields should not be visible
 
         public static void SetScaleBuffer(int maxSize) {
             m_treeScales = new float[maxSize];

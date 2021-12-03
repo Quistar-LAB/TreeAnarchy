@@ -133,7 +133,7 @@ namespace TreeAnarchy {
         private void ShowTreeAnarchyOptions(UIPanel panel) {
             TreeSnapCB = AddCheckBox(panel, TALocale.GetLocale(@"TreeSnap"), UseTreeSnapping, (_, isChecked) => {
                 UseTreeSnapping = isChecked;
-                if (TAPatcher.isMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
                     TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
                 }
                 TAPatcher.MoveItUseTreeSnap?.SetValue(null, isChecked);

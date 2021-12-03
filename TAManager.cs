@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public unsafe static partial class TAManager {
-        public static MaterialPropertyBlock m_materialBlock;
-        internal delegate U RefGetter<U>();
+        internal static MaterialPropertyBlock m_materialBlock;
+        internal delegate U RefGetter<out U>();
         internal static RefGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>> GetSimPrefabs;
         internal static RefGetter<U> CreatePrefabRefGetter<U>(string s_field) {
             var prefab = typeof(PrefabCollection<TreeInfo>);
