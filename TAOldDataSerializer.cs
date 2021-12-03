@@ -15,7 +15,7 @@ namespace TreeAnarchy {
         }
         [Flags]
         public enum SaveFlags : ushort {
-            NONE = 0,
+            None = 0,
             PACKED = 1,
             ENCODED = 2,
         }
@@ -61,11 +61,11 @@ namespace TreeAnarchy {
                 default:
                     return false;
                 }
-                if (treeLimit <= 0 | treeLimit > MaxSupportedTreeLimit) { return false; } /* Sanity Check */
+                if (treeLimit <= 0 || treeLimit > MaxSupportedTreeLimit) { return false; } /* Sanity Check */
                 if (treeLimit > MaxTreeLimit) treeLimit = MaxTreeLimit; // Only load what MaxTreeLimit is limited to
 
                 switch (flags & SaveFlags.PACKED) {
-                case SaveFlags.NONE:
+                case SaveFlags.None:
                     maxLen = treeLimit;
                     goto ReadData;
                 case SaveFlags.PACKED:

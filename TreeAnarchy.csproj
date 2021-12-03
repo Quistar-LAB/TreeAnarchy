@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TreeAnarchy</RootNamespace>
     <AssemblyName>TreeAnarchy</AssemblyName>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>false</Deterministic>
@@ -72,6 +72,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Localization\DefaultLocale.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DefaultLocale.resx</DependentUpon>
+    </Compile>
     <Compile Include="TALODFixManager.cs" />
     <Compile Include="TAManager.cs" />
     <Compile Include="TAMovementManager.cs" />
@@ -97,7 +102,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Localization\TreeAnarchy.en.locale" />
+    <EmbeddedResource Include="Localization\DefaultLocale.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>DefaultLocale.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include=".editorconfig" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
@@ -129,6 +138,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Localization\TreeAnarchy.ru.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\TreeAnarchy.en.locale" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

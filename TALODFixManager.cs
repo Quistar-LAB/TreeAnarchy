@@ -16,7 +16,7 @@ namespace TreeAnarchy {
         public static void SetResolution(this TreeManager manager, TreeLODResolution resolution) {
             int res = LOD_LODRES;
             switch (resolution) {
-            //case TreeLODResolution.Low: res = LOD_LODRES; break;
+            //case TreeLODResolution.Low: res = LOD_LODRES; break; // This seems to break the game not sure why
             case TreeLODResolution.Medium: res = LOD_MEDIUMRES; break;
             case TreeLODResolution.High: res = LOD_HIGHRES; break;
             case TreeLODResolution.UltraHigh: res = LOD_ULTRARES; break;

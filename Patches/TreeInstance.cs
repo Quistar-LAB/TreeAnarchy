@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Threading;
 using UnityEngine;
 
 namespace TreeAnarchy {
@@ -246,8 +245,7 @@ namespace TreeAnarchy {
                     if (tree.GrowState == 0) {
                         tree.GrowState = 1;
                         DistrictManager district = Singleton<DistrictManager>.instance;
-                        byte park = district.GetPark(tree.Position);
-                        district.m_parks.m_buffer[park].m_treeCount++;
+                        district.m_parks.m_buffer[district.GetPark(tree.Position)].m_treeCount++;
                     }
                 }
                 return true;
@@ -255,9 +253,7 @@ namespace TreeAnarchy {
             return false;
         }
 
-        private static void QueuedAction(object treeID) => Singleton<TreeManager>.instance.ReleaseTree((uint)treeID);
-
-        public static void ReleaseTreeQueue(uint treeID) => ThreadPool.QueueUserWorkItem(QueuedAction, treeID);
+        public static void ReleaseTreeQueue(uint treeID) => Singleton<SimulationManager>.instance.AddAction(() => Singleton<TreeManager>.instance.ReleaseTree(treeID));
 
         private static IEnumerable<CodeInstruction> InstallCheckAnarchyInCheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             bool firstSig = false;

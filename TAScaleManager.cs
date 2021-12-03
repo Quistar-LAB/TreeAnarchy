@@ -38,20 +38,16 @@ namespace TreeAnarchy {
         public static void IncrementTreeSize() {
             TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
             uint treeID = m_currentTreeID;
-            TAMod.TALog($"MoveItTool instance is: {MoveItTool.instance}");
-            TAMod.TALog($"UIToolOptionPanel instance is: {UIToolOptionPanel.instance}");
-            TAMod.TALog($"UIToolOptionPanel visibility: {UIToolOptionPanel.instance.isVisible}");
-            TAMod.TALog($"Selection: {Action.selection}");
-            TAMod.TALog($"Selection count: {Action.selection}");
-            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 0) {
                 m_treeScales[treeID] += scaleStep;
-            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
+            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
                 TreeManager tmInstance = Singleton<TreeManager>.instance;
                 foreach (Instance instance in Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
-                        m_treeScales[instance.id.Tree] += scaleStep;
-                        tmInstance.UpdateTree(instance.id.Tree);
+                    treeID = instance.id.Tree;
+                    if (instance is MoveableTree && treeID > 0) {
+                        m_treeScales[treeID] += scaleStep;
+                        tmInstance.UpdateTree(treeID);
                     }
                 }
             }
@@ -59,21 +55,17 @@ namespace TreeAnarchy {
 
         public static void DecrementTreeSize() {
             TreeTool treeTool = ToolsModifierControl.GetCurrentTool<TreeTool>();
-            TAMod.TALog($"MoveItTool instance is: {MoveItTool.instance}");
-            TAMod.TALog($"UIToolOptionPanel instance is: {UIToolOptionPanel.instance}");
-            TAMod.TALog($"UIToolOptionPanel visibility: {UIToolOptionPanel.instance.isVisible}");
-            TAMod.TALog($"Selection: {Action.selection}");
-            TAMod.TALog($"Selection count: {Action.selection}");
             uint treeID = m_currentTreeID;
-            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 1) {
+            if (!(treeTool is null) && treeTool.m_mode == TreeTool.Mode.Single && Cursor.visible && treeID > 0) {
                 m_treeScales[treeID] -= scaleStep;
-            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default/* || MoveItTool.ToolState == MoveItTool.ToolStates.Cloning*/) &&
+            } else if ((MoveItTool.ToolState == MoveItTool.ToolStates.Default) &&
                        UIToolOptionPanel.instance.isVisible && Action.selection.Count > 0) {
                 TreeManager tmInstance = Singleton<TreeManager>.instance;
                 foreach (Instance instance in Action.selection) {
-                    if (instance is MoveableTree && !instance.id.IsEmpty && instance.id.Tree > 0) {
-                        m_treeScales[instance.id.Tree] -= scaleStep;
-                        tmInstance.UpdateTree(instance.id.Tree);
+                    treeID = instance.id.Tree;
+                    if (instance is MoveableTree && treeID > 0) {
+                        m_treeScales[treeID] -= scaleStep;
+                        tmInstance.UpdateTree(treeID);
                     }
                 }
             }
