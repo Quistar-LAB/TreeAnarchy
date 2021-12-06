@@ -5,8 +5,8 @@ using ColossalFramework.UI;
 using HarmonyLib;
 using System;
 using System.Reflection;
-using System.Threading;
 using System.Text;
+using System.Threading;
 using TreeAnarchy.Patches;
 
 namespace TreeAnarchy {
@@ -36,7 +36,8 @@ namespace TreeAnarchy {
             new ModInfo(1388613752, @"Tree Movement Control", true),
             new ModInfo(842981708, @"Random Tree Rotation for Natural Disasters", true),
             new ModInfo(1349895184, @"Tree LOD Fix", true),
-            new ModInfo(2153618633, @"Prop Switcher", false)
+            new ModInfo(2153618633, @"Prop Switcher", false),
+            new ModInfo(1869561285, @"Prop Painter", false)
         };
 
         internal static bool IsPluginExists(ulong id, string name) {
@@ -66,18 +67,17 @@ namespace TreeAnarchy {
 
         internal static bool CheckIncompatibleMods() {
             StringBuilder errorMsg = new StringBuilder();
-            PublishedFileId[] publishedFileIds = PlatformService.workshop.GetSubscribedItems();
-            for(int i = 0; i < publishedFileIds.Length; i++) {
+            foreach (var mod in PlatformService.workshop.GetSubscribedItems()) {
                 for (int j = 0; j < IncompatibleMods.Length; j++) {
-                    if (publishedFileIds[i].AsUInt64 == IncompatibleMods[j].fileID) {
-                        errorMsg.AppendLine('[' + IncompatibleMods[i].name + ']' + @"detected. " +
-                            (IncompatibleMods[i].inclusive ? @"Tree Anarchy already includes the same functionality" : @"This mod is incompatible with Tree Anarchy"));
-                        TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[i].name + @"] detected");
-                    } else if (publishedFileIds[i].AsUInt64 == PTAID) {
-                        IsPTAInstalled = true;
+                    if (mod.AsUInt64 == IncompatibleMods[j].fileID) {
+                        errorMsg.AppendLine('[' + IncompatibleMods[j].name + ']' + @"detected. " +
+                            (IncompatibleMods[j].inclusive ? @"Tree Anarchy already includes the same functionality" : @"This mod is incompatible with Tree Anarchy"));
+                        TAMod.TALog(@"Incompatible mod: [" + IncompatibleMods[j].name + @"] detected");
                     }
                 }
-
+                if (mod.AsUInt64 == PTAID) {
+                    IsPTAInstalled = true;
+                }
             }
             if (errorMsg.Length > 0) {
                 UIView.ForwardException(new Exception(@"Tree Anarchy detected incompatible mods, please remove the following mentioned mods as the same functionality is already built into this mod", new Exception("\n" + errorMsg)));
