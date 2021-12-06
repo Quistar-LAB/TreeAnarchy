@@ -1,5 +1,4 @@
-﻿using ColossalFramework;
-using HarmonyLib;
+﻿using HarmonyLib;
 
 namespace TreeAnarchy {
     internal static partial class TAPatcher {

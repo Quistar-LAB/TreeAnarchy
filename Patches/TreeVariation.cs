@@ -1,5 +1,4 @@
-﻿using ColossalFramework;
-using ColossalFramework.Math;
+﻿using ColossalFramework.Math;
 using HarmonyLib;
 using MoveIt;
 using System;
