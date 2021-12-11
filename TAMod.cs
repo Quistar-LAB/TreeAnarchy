@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.2.0";
+        internal const string m_modVersion = @"1.2.2";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -28,7 +28,6 @@ namespace TreeAnarchy {
         public const int DefaultTreeLimit = 262144;
         public const int DefaultTreeUpdateCount = 4096;
         /* Unlimited Trees Related */
-#pragma warning disable S2223 // Non-constant static fields should not be visible
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
         internal static bool TreeEffectOnWind = true;
