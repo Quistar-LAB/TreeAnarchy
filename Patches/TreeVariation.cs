@@ -10,10 +10,22 @@ using UnityEngine;
 namespace TreeAnarchy {
     internal static partial class TAPatcher {
         private static void EnableTreeVariationPatches(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderGeometryTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderOverlayTranspiler))));
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderGeometry)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderGeometryTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeTool::RenderGeometry");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.RenderOverlay), new Type[] { typeof(RenderManager.CameraInfo) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolRenderOverlayTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed TreeTool::RenderOverlay");
+                TAMod.TALog(e.Message);
+                throw;
+            }
         }
 
         private static void DisableTreeVariationPatches(Harmony harmony) {
@@ -23,16 +35,17 @@ namespace TreeAnarchy {
         }
 
         private static void PatchMoveItTreeVariation(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderOverlay)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeRenderOverlayTranspiler))));
+            try {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderOverlay)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeRenderOverlayTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch MoveIt::MoveableTree::RenderOverlay, this is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
         }
 
         private static void DisableMoveItTreeVariationPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderOverlay)), HarmonyPatchType.Transpiler, HARMONYID);
-        }
-
-        public static void CreateTreePostfix(uint tree) {
-            TAManager.m_treeScales[tree] = 0;
         }
 
         private static IEnumerable<CodeInstruction> TreeInstancePopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions) {

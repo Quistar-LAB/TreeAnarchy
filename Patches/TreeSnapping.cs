@@ -10,36 +10,66 @@ using UnityEngine;
 using static TreeAnarchy.TAMod;
 
 namespace TreeAnarchy {
-#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
     internal static partial class TAPatcher {
         private const float errorMargin = 0.075f;
         private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
         private static void EnableTreeSnappingPatches(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCreateTreeTranspiler))));
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolSimulationStepTranspiler))));
+            } catch (Exception e) {
+                TALog("Failed to patch TreeTool::SimulationStep");
+                TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCreateTreeTranspiler))));
+            } catch (Exception e) {
+                TALog("Failed to patch TreeTool::CreateTree");
+                TALog(e.Message);
+                throw;
+            }
         }
 
         private static void PatchMoveItSnapping(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeTransformPrefix))));
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneGeometryPrefix))));
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneOverlayPrefix))));
-            harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
-                new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
+            try {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(MoveableTreeTransformPrefix))));
+            } catch (Exception e) {
+                TALog("Failed to patch MoveIt::MoveableTree::Transform, this is non-Fatal");
+                TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneGeometry)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneGeometryPrefix))));
+            } catch (Exception e) {
+                TALog("Failed to patch MoveIt::MoveableTree::RenderCloneGeometry, this is non-Fatal");
+                TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.RenderCloneOverlay)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderCloneOverlayPrefix))));
+            } catch (Exception e) {
+                TALog("Failed to patch MoveIt::MoveableTree::RenderCloneOverlay, this is non-Fatal");
+                TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Clone),
+                    new Type[] { typeof(InstanceState), typeof(Matrix4x4).MakeByRefType(),
                 typeof(float), typeof(float), typeof(Vector3), typeof(bool), typeof(Dictionary<ushort, ushort>), typeof(MoveIt.Action) }),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ClonePrefix))));
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(ClonePrefix))));
+            } catch (Exception e) {
+                TALog("Failed to patch MoveIt::MoveableTree::Clone, this is non-Fatal");
+                TALog(e.Message);
+            }
         }
 
         private static void DisableTreeSnappingPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.SimulationStep)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool).GetNestedType("<CreateTree>c__Iterator0", BindingFlags.Instance | BindingFlags.NonPublic), "MoveNext"), HarmonyPatchType.Transpiler, HARMONYID);
         }
-#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
         private static void DisableMoveItSnappingPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(MoveableTree), nameof(MoveableTree.Transform)), HarmonyPatchType.Prefix, HARMONYID);
@@ -227,8 +257,8 @@ namespace TreeAnarchy {
         private static bool RenderCloneGeometryPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            float scale = TAManager.CalcTreeScale(treeState.instance.id.Tree);
-            float brightness = TAManager.m_brightness[treeState.instance.id.Tree];
+            float scale = TAManager.m_extraTreeInfos[treeState.instance.id.Tree].TreeScale;
+            float brightness = TAManager.m_extraTreeInfos[treeState.instance.id.Tree].m_brightness;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
@@ -240,7 +270,7 @@ namespace TreeAnarchy {
         private static bool RenderCloneOverlayPrefix(InstanceState instanceState, ref Matrix4x4 matrix4x, Vector3 deltaPosition, Vector3 center, bool followTerrain, RenderManager.CameraInfo cameraInfo, Color toolColor) {
             TreeState treeState = instanceState as TreeState;
             TreeInfo treeInfo = treeState.Info.Prefab as TreeInfo;
-            float scale = TAManager.CalcTreeScale(treeState.instance.id.Tree);
+            float scale = TAManager.m_extraTreeInfos[treeState.instance.id.Tree].TreeScale;
             Vector3 vector = matrix4x.MultiplyPoint(treeState.position - center);
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);

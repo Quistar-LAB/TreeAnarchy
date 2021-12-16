@@ -15,9 +15,7 @@ namespace TreeAnarchy {
             try {
                 if (m_redirectUtil is null && (IsPluginExists(593588108, "Prop & Tree Anarchy") || IsPluginExists(2456344023, "Prop & Tree Anarchy"))) {
                     m_redirectUtil = Assembly.Load("PropAnarchy").GetType("PropAnarchy.Redirection.RedirectionUtil");
-#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
                     MethodInfo[] methods = m_redirectUtil.GetMethods(BindingFlags.NonPublic | BindingFlags.Static);
-#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
                     for (int i = 0; i < methods.Length; i++) {
                         if (methods[i].Name == "RedirectMethod" && methods[i].GetParameters()[2].ToString().Contains("Dictionary")) {
                             m_redirectMethod = methods[i];
@@ -45,9 +43,7 @@ namespace TreeAnarchy {
             case @"CheckPlacementErrors":
                 Type type = method.GetParameters().First().ParameterType;
                 if (type == typeof(PropInstance).MakeByRefType() || type == typeof(PropInfo)) {
-#pragma warning disable S907 // "goto" statement should not be used
                     goto runDefault;
-#pragma warning restore S907 // "goto" statement should not be used
                 }
                 TAMod.TALog($"Overriding Prop & Tree Anarchy Redirect: {method}");
                 return;
@@ -73,14 +69,19 @@ runDefault:
         }
 
         private static void EnableTreeAnarchyPatches(Harmony harmony) {
-            harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCheckPlacementErrorsTranspiler))));
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TreeToolCheckPlacementErrorsTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeTool::CheckPlacementErrors. This is fatal for tree anarchy function.");
+                TAMod.TALog(e.Message);
+                throw;
+            }
         }
 
         private static void DisableTreeAnarchyPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)), HarmonyPatchType.Transpiler, HARMONYID);
         }
-
 
         private static IEnumerable<CodeInstruction> TreeToolCheckPlacementErrorsTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label TreeAnarchyDisabled = il.DefineLabel();

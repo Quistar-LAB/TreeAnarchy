@@ -8,8 +8,12 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
-namespace TreeAnarchy {
-    internal static partial class TAPatcher {
+namespace TreeAnarchy.Patches {
+    internal static class TreeInstancePatches {
+        private const float errorMargin = 0.075f;
+        private const ushort FixedHeightMask = unchecked((ushort)~TreeInstance.Flags.FixedHeight);
+        private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
+
         /// <summary>
         /// Replace all Mathf to faster EMath
         /// </summary>
@@ -112,8 +116,10 @@ namespace TreeAnarchy {
                             cur = codes.Current;
                             if (IsStloc(ref cur.opcode)) break;
                         }
-                        yield return storedLDarg.WithLabels(labels);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.CalcTreeScale)));
+                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_extraTreeInfos))).WithLabels(labels);
+                        yield return storedLDarg;
+                        yield return new CodeInstruction(OpCodes.Ldelema, typeof(TAManager.ExtraTreeInfo));
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAManager.ExtraTreeInfo), nameof(TAManager.ExtraTreeInfo.TreeScale)));
                         yield return cur;
                         if (replaceBrightnessToo && codes.MoveNext()) {
                             cur = codes.Current;
@@ -124,9 +130,10 @@ namespace TreeAnarchy {
                                         next = codes.Current;
                                         if (IsStloc(ref next.opcode)) break;
                                     }
-                                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_brightness))).WithLabels(cur.labels);
+                                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_extraTreeInfos)));
                                     yield return storedLDarg;
-                                    yield return new CodeInstruction(OpCodes.Ldelem_R4);
+                                    yield return new CodeInstruction(OpCodes.Ldelema, typeof(TAManager.ExtraTreeInfo));
+                                    yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TAManager.ExtraTreeInfo), nameof(TAManager.ExtraTreeInfo.m_brightness)));
                                     yield return next;
                                 } else {
                                     yield return cur;
@@ -174,7 +181,7 @@ namespace TreeAnarchy {
             Label valueNotZero = il.DefineLabel();
             int counter = 0;
             yield return new CodeInstruction(OpCodes.Ldarg_1);
-            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(GetAnarchyState)));
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstancePatches), nameof(GetAnarchyState)));
             yield return new CodeInstruction(OpCodes.Brfalse_S, valueNotZero);
             yield return new CodeInstruction(OpCodes.Ret);
             foreach (var code in ReplaceMath(instructions)) {
@@ -228,7 +235,7 @@ namespace TreeAnarchy {
                 if (code.opcode == OpCodes.Call && code.operand == terrainInstance) {
                     yield return new CodeInstruction(OpCodes.Ldarga_S, 0).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Callvirt && code.operand == sampleDetailHeight) {
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SampleSnapDetailHeight))).WithLabels(code.labels);
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SampleSnapDetailHeight))).WithLabels(code.labels);
                 } else {
                     yield return code;
                 }
@@ -251,50 +258,50 @@ namespace TreeAnarchy {
             return false;
         }
 
-        public static void ReleaseTreeQueue(uint treeID) => Singleton<SimulationManager>.instance.AddAction(() => Singleton<TreeManager>.instance.ReleaseTree(treeID));
-
-        private static IEnumerable<CodeInstruction> InstallCheckAnarchyInCheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            bool firstSig = false;
-            Label exit = il.DefineLabel();
-            instructions.Last().WithLabels(exit);
-            using (var codes = instructions.GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    var cur = codes.Current;
-                    if (!firstSig && cur.opcode == OpCodes.Brtrue && codes.MoveNext()) {
-                        firstSig = true;
-                        yield return new CodeInstruction(OpCodes.Brfalse, exit);
-                        yield return new CodeInstruction(OpCodes.Ldarg_0);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.CheckAnarchyState)));
-                        yield return new CodeInstruction(OpCodes.Brtrue, exit);
-                    } else {
-                        yield return cur;
+        internal static void CheckOverlapCoroutine(ref TreeInstance tree, uint treeID, Vector3 position) {
+            if (tree.Info is TreeInfo info && !CheckAnarchyState(ref tree)) {
+                Quad2 quad;
+                ushort flags = tree.m_flags;
+                ItemClass.CollisionType collisionType = (flags & (ushort)TreeInstance.Flags.FixedHeight) == 0 ? ItemClass.CollisionType.Terrain : ItemClass.CollisionType.Elevated;
+                float scale = TAManager.m_extraTreeInfos[treeID].TreeScale;
+                float height = info.m_generatedInfo.m_size.y * scale;
+                float y = position.y;
+                float maxY = position.y + height;
+                float range = (flags & (ushort)TreeInstance.Flags.Single) == 0 ? 4.5f : 0.3f;
+                Vector2 a = VectorUtils.XZ(position);
+                quad.a = new Vector2(a.x - range, a.y - range);
+                quad.b = new Vector2(a.x - range, a.y + range);
+                quad.c = new Vector2(a.x + range, a.y + range);
+                quad.d = new Vector2(a.x + range, a.y - range);
+                bool flag = false;
+                if (Singleton<NetManager>.instance.OverlapQuad(quad, y, maxY, collisionType, info.m_class.m_layer, 0, 0, 0) ||
+                    Singleton<BuildingManager>.instance.OverlapQuad(quad, y, maxY, collisionType, info.m_class.m_layer, 0, 0, 0)) {
+                    flag = true;
+                }
+                if (flag) {
+                    if (tree.GrowState != 0) {
+                        tree.GrowState = 0;
+                        DistrictManager instance = Singleton<DistrictManager>.instance;
+                        instance.m_parks.m_buffer[instance.GetPark(position)].m_treeCount--;
+                        if (TAMod.DeleteOnOverlap) {
+                            Singleton<SimulationManager>.instance.AddAction(() => Singleton<TreeManager>.instance.ReleaseTree(treeID));
+                        }
                     }
+                } else if (tree.GrowState == 0) {
+                    tree.GrowState = 1;
+                    DistrictManager instance = Singleton<DistrictManager>.instance;
+                    instance.m_parks.m_buffer[instance.GetPark(position)].m_treeCount++;
                 }
             }
         }
 
         private static IEnumerable<CodeInstruction> CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            Label exit = il.DefineLabel();
-            bool firstSigFound = false;
-            IEnumerable<CodeInstruction> codes_intermediate;
-            FieldInfo treeCount = AccessTools.Field(typeof(DistrictPark), nameof(DistrictPark.m_treeCount));
-            codes_intermediate = ReplaceScaleCalculator(InstallCheckAnarchyInCheckOverlapTranspiler(instructions, il));
-            codes_intermediate.Last().WithLabels(exit);
-            using (var codes = codes_intermediate.GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    var cur = codes.Current;
-                    if (!firstSigFound && cur.opcode == OpCodes.Stfld && cur.operand == treeCount) {
-                        firstSigFound = true;
-                        yield return cur;
-                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.DeleteOnOverlap)));
-                        yield return new CodeInstruction(OpCodes.Brfalse_S, exit);
-                        yield return new CodeInstruction(OpCodes.Ldarg_1);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.ReleaseTreeQueue)));
-                    } else {
-                        yield return cur;
-                    }
-                }
-            }
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TreeInstance), nameof(TreeInstance.Position)));
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.CheckOverlapCoroutine)));
+            yield return new CodeInstruction(OpCodes.Ret);
         }
 
         private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
@@ -317,7 +324,7 @@ namespace TreeAnarchy {
                     yield return new CodeInstruction(OpCodes.Ldc_I4_4);
                     yield return new CodeInstruction(OpCodes.And);
                 } else if (code.opcode == OpCodes.Call && code.operand == populateGroupData) {
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.PopulateGroupData)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.PopulateGroupData)));
                 } else {
                     yield return code;
                 }
@@ -471,48 +478,130 @@ namespace TreeAnarchy {
             }
         }
 
-        private static void EnableTreeInstancePatch(Harmony harmony) {
-            harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SetInfoTranspiler))));
-            harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SetPositionTranspiler))));
-            harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.SetGrowStateTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TAPatcher.AfterTerrainUpdatedTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(CalculateTreeTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), "CheckOverlap"),
-                transpiler: new HarmonyMethod(typeof(TAPatcher), nameof(CheckOverlapTranspiler)));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.OverlapQuad)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(OverlapQuadTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
-                new Type[] { typeof(uint), typeof(int), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(), typeof(Vector3), typeof(RenderGroup.MeshData),
+        internal static void EnableTreeInstancePatch(Harmony harmony) {
+            try {
+                harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SetInfoTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::Info. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SetPositionTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::Position. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SetGrowStateTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::GrowState.");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.AfterTerrainUpdatedTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::AfterTerrainUpdated. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(CalculateTreeTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::CalculateTree");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), "CheckOverlap"),
+                    transpiler: new HarmonyMethod(typeof(TreeInstancePatches), nameof(CheckOverlapTranspiler)));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::CheckOverlap");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.OverlapQuad)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(OverlapQuadTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::OverlapQuad");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
+                    new Type[] { typeof(uint), typeof(int), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(), typeof(Vector3), typeof(RenderGroup.MeshData),
                              typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(PopulateGroupDataTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
-                new Type[] { typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(PopulateGroupDataTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::PopulateGroupData. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.PopulateGroupData),
+                    new Type[] { typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(),
                                 typeof(Vector3), typeof(RenderGroup.MeshData), typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(PopulateGroupDataStaticTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RayCast)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RayCastTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
-                new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderInstanceTransplier))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
-                new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderInstanceStaticTransplier))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderLod)),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(RenderLODTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
-                new Type[] { typeof(uint), typeof(float), typeof(float), typeof(float), typeof(float) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TerrainUpdatedTranspiler))));
-            harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
-                new Type[] { typeof(TreeInfo), typeof(Vector3) }),
-                transpiler: new HarmonyMethod(AccessTools.Method(typeof(TAPatcher), nameof(TerrainUpdatedVectorTranspiler))));
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(PopulateGroupDataStaticTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch static TreeInstance::PopulateGroupData. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RayCast)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RayCastTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::RayCast. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
+                    new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RenderInstanceTransplier))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::RenderInstance");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
+                    new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RenderInstanceStaticTransplier))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch static TreeInstance::RenderInstance");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderLod)),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RenderLODTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::RenderLod");
+                TAMod.TALog(e.Message);
+                throw;
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
+                    new Type[] { typeof(uint), typeof(float), typeof(float), typeof(float), typeof(float) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TerrainUpdatedTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::TerrainUpdated. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
+            try {
+                harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
+                    new Type[] { typeof(TreeInfo), typeof(Vector3) }),
+                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TerrainUpdatedVectorTranspiler))));
+            } catch (Exception e) {
+                TAMod.TALog("Failed to patch TreeInstance::TerrainUpdated. This is non-Fatal");
+                TAMod.TALog(e.Message);
+            }
         }
 
-        private static void DisableTreeInstancePatch(Harmony harmony) {
+        internal static void DisableTreeInstancePatch(Harmony harmony, string HARMONYID) {
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)), HarmonyPatchType.Transpiler, HARMONYID);
