@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.2.2";
+        internal const string m_modVersion = @"1.2.4";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -69,11 +69,7 @@ namespace TreeAnarchy {
         internal static bool UseTreeLODFix = true;
         internal static TAManager.TreeLODResolution TreeLODSelectedResolution = TAManager.TreeLODResolution.Medium;
 
-        /* Indicators */
-        internal static bool ShowIndicators = true;
-
         internal static bool IsInGame { get; private set; } = false;
-#pragma warning restore S2223 // Non-constant static fields should not be visible
 
         #region IUserMod
         public string Name => m_modName + " " + m_modVersion;
@@ -99,7 +95,6 @@ namespace TreeAnarchy {
                 if (LoadSettings()) break; // Try 2 times, and if still fails, then use default settings
             }
             if (PersistentLockForestry) UseLockForestry = true;
-            TAManager.SetScaleBuffer(MaxTreeLimit);
             HarmonyHelper.DoOnHarmonyReady(TAPatcher.EnableCore);
         }
 
@@ -114,14 +109,14 @@ namespace TreeAnarchy {
         public void OnSettingsUI(UIHelperBase helper) {
             TALocale.OnLocaleChanged();
             LocaleManager.eventLocaleChanged += TALocale.OnLocaleChanged;
-            ((helper.AddGroup(m_modName + @" -- Version " + m_modVersion) as UIHelper).self as UIPanel).AddUIComponent<TAOptionPanel>();
+            UIPanel root = (helper.AddGroup(m_modName + @" -- Version " + m_modVersion) as UIHelper).self as UIPanel;
+            TAOptionPanel.SetupPanel(root);
         }
         #endregion
         #region ILoadingExtension
         public void OnCreated(ILoading loading) {
             OutputPluginsList();
             TAManager.Initialize();
-            TAManager.InitializeSwayManager();
             if (HarmonyHelper.IsHarmonyInstalled) {
                 TAPatcher.LateEnable();
             }
@@ -134,41 +129,40 @@ namespace TreeAnarchy {
         }
 
         public void OnLevelLoaded(LoadMode mode) {
-            if (ShowIndicators) {
-                UIIndicator indicatorPanel = UIIndicator.Setup();
-                if (indicatorPanel) {
-                    UIIndicator.UIIcon treeSnap = default;
-                    treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
-                        UseTreeSnapping = !UseTreeSnapping;
-                        bool state = UseTreeAnarchy;
-                        if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
-                            TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
-                        }
-                        treeSnap.State = state;
-                        TAOptionPanel.SetTreeSnapState(state);
-                        ThreadPool.QueueUserWorkItem(SaveSettings);
-                    }, out bool finalState);
-                    if (finalState != UseTreeSnapping) {
-                        UseTreeSnapping = finalState;
+            UIIndicator indicatorPanel = UIIndicator.Setup();
+            if (indicatorPanel) {
+                UIIndicator.UIIcon treeSnap = default;
+                treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
+                    UseTreeSnapping = !UseTreeSnapping;
+                    bool state = UseTreeAnarchy;
+                    if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
+                        TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                     }
-                    UIIndicator.UIIcon treeAnarchy = default;
-                    treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
-                        bool state = UseTreeAnarchy = !UseTreeAnarchy;
-                        treeAnarchy.State = state;
-                        TAOptionPanel.SetTreeAnarchyState(state);
-                        ThreadPool.QueueUserWorkItem(SaveSettings);
-                    }, out finalState);
-                    if (finalState != UseTreeAnarchy) {
-                        UseTreeAnarchy = finalState;
-                    }
-                    UIIndicator.UIIcon lockForestry = default;
-                    lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
-                        bool state = UseLockForestry = !UseLockForestry;
-                        lockForestry.State = state;
-                        TAOptionPanel.SetLockForestryState(state);
-                        ThreadPool.QueueUserWorkItem(SaveSettings);
-                    });
+                    treeSnap.State = state;
+                    TAOptionPanel.SetTreeSnapState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }, out bool finalState);
+                if (finalState != UseTreeSnapping) {
+                    UseTreeSnapping = finalState;
                 }
+                UIIndicator.UIIcon treeAnarchy = default;
+                treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
+                    bool state = UseTreeAnarchy = !UseTreeAnarchy;
+                    treeAnarchy.State = state;
+                    TAOptionPanel.SetTreeAnarchyState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }, out finalState);
+                if (finalState != UseTreeAnarchy) {
+                    UseTreeAnarchy = finalState;
+                }
+                UIIndicator.UIIcon lockForestry = default;
+                lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
+                    UseLockForestry = !UseLockForestry;
+                    bool state = UseLockForestry;
+                    lockForestry.State = state;
+                    TAOptionPanel.SetLockForestryState(state);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                });
             }
             TAOptionPanel.UpdateState(true);
             IsInGame = true;
@@ -200,7 +194,6 @@ namespace TreeAnarchy {
                 TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"PersistentLock"));
-                ShowIndicators = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"ShowIndicators"));
                 UseTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
                 DeleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"DeleteOnOverlap"));
                 try {
@@ -238,7 +231,6 @@ namespace TreeAnarchy {
             root.Attributes.Append(AddElement(xmlConfig, @"TreeSwayFactor", TreeSwayFactor));
             root.Attributes.Append(AddElement(xmlConfig, @"LockForestry", UseLockForestry));
             root.Attributes.Append(AddElement(xmlConfig, @"PersistentLock", PersistentLockForestry));
-            root.Attributes.Append(AddElement(xmlConfig, @"ShowIndicators", ShowIndicators));
             root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", UseTreeAnarchy));
             root.Attributes.Append(AddElement(xmlConfig, @"DeleteOnOverlap", DeleteOnOverlap));
             root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", UseTreeLODFix));
@@ -254,6 +246,7 @@ namespace TreeAnarchy {
         }
 
         private static readonly Stopwatch profiler = new Stopwatch();
+        private static readonly object fileLock = new object();
         private void CreateDebugFile() {
             profiler.Start();
             /* Create Debug Log File */
@@ -269,21 +262,31 @@ namespace TreeAnarchy {
         }
 
         private void OutputPluginsList() {
-            using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None))
-            using (StreamWriter sw = new StreamWriter(debugFile)) {
-                sw.WriteLine(@"Mods Installed are:");
-                foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
-                    sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? @"** Enabled **" : @"** Disabled **")}");
+            Monitor.Enter(fileLock);
+            try {
+                using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append, FileAccess.Write, FileShare.None))
+                using (StreamWriter sw = new StreamWriter(debugFile)) {
+                    sw.WriteLine(@"Mods Installed are:");
+                    foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
+                        sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? @"** Enabled **" : @"** Disabled **")}");
+                    }
+                    sw.WriteLine(@"-------------------------------------");
                 }
-                sw.WriteLine(@"-------------------------------------");
+            } finally {
+                Monitor.Exit(fileLock);
             }
         }
 
         internal static void TALog(string msg) {
             var ticks = profiler.ElapsedTicks;
-            using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append))
-            using (StreamWriter sw = new StreamWriter(debugFile)) {
-                sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
+            Monitor.Enter(fileLock);
+            try {
+                using (FileStream debugFile = new FileStream(Path.Combine(Application.dataPath, m_debugLogFile), FileMode.Append))
+                using (StreamWriter sw = new StreamWriter(debugFile)) {
+                    sw.WriteLine($"{(ticks / Stopwatch.Frequency):n0}:{(ticks % Stopwatch.Frequency):D7}-{new StackFrame(1, true).GetMethod().Name} ==> {msg}");
+                }
+            } finally {
+                Monitor.Exit(fileLock);
             }
         }
     }
