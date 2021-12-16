@@ -37,7 +37,9 @@ namespace TreeAnarchy {
             new ModInfo(842981708, @"Random Tree Rotation for Natural Disasters", true),
             new ModInfo(1349895184, @"Tree LOD Fix", true),
             new ModInfo(2153618633, @"Prop Switcher", false),
-            new ModInfo(1869561285, @"Prop Painter", false)
+            new ModInfo(1869561285, @"Prop Painter", false),
+            new ModInfo(910440715, @"Plant Scaling", false),
+            //new ModInfo(2584051448, @"Tree Anarchy Beta", false)
         };
 
         internal static bool IsPluginExists(ulong id, string name) {
@@ -106,7 +108,7 @@ namespace TreeAnarchy {
 
         internal static void EnableCore() {
             Harmony harmony = new Harmony(HARMONYID);
-            EnableTreeInstancePatch(harmony);
+            TreeInstancePatches.EnableTreeInstancePatch(harmony);
             TreeManagerPatches.EnableTreeManagerPatch(harmony);
             EnableTreeLimitPatches(harmony);
             EnableTreeSnappingPatches(harmony);
@@ -116,7 +118,7 @@ namespace TreeAnarchy {
 
         internal static void DisableCore() {
             Harmony harmony = new Harmony(HARMONYID);
-            DisableTreeInstancePatch(harmony);
+            TreeInstancePatches.DisableTreeInstancePatch(harmony, HARMONYID);
             TreeManagerPatches.DisableTreeManagerPatch(harmony, HARMONYID);
             DisableTreeLimitPatches(harmony);
             DisableTreeSnappingPatches(harmony);

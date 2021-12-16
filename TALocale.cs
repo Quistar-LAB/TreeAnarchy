@@ -41,10 +41,10 @@ namespace TreeAnarchy {
                 }
             }
             LoadLocale(locale);
-            TAOptionPanel[] optionPanel = UnityEngine.Object.FindObjectsOfType<TAOptionPanel>();
-            foreach (var panel in optionPanel) {
-                panel.Invalidate();
-            }
+            //TAOptionPanel[] optionPanel = UnityEngine.Object.FindObjectsOfType<TAOptionPanel>();
+            //foreach (var panel in optionPanel) {
+            //    panel.Invalidate();
+            //}
         }
 
         private static void LoadLocale(string culture) {

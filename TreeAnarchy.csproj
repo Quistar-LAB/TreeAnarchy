@@ -9,7 +9,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TreeAnarchy</RootNamespace>
     <AssemblyName>TreeAnarchy</AssemblyName>
-    <LangVersion>7.3</LangVersion>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>false</Deterministic>
@@ -53,17 +52,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>H:\SteamLibrary\steamapps\common\Cities_Skylines\Cities_Data\Managed\ICities.dll</HintPath>
     </Reference>
-    <Reference Include="MoveIt, Version=2.9.2.41847, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="MoveIt, Version=2.9.2.42170, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>.\MoveIt.dll</HintPath>
-    </Reference>
-    <Reference Include="PropAnarchy">
-      <HintPath>.\PropAnarchy.dll</HintPath>
+      <HintPath>..\MoveIt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.XML" />
-    <Reference Include="UIIndicator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="UIIndicator">
       <HintPath>C:\Users\Quistar\AppData\Local\Colossal Order\Cities_Skylines\Addons\Mods\EManagersLib\UIIndicator.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -72,6 +68,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TAOptionPanel.cs" />
     <Compile Include="Localization\DefaultLocale.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -79,16 +76,13 @@
     </Compile>
     <Compile Include="TALODFixManager.cs" />
     <Compile Include="TAManager.cs" />
-    <Compile Include="TAMovementManager.cs" />
     <Compile Include="EMath.cs" />
-    <Compile Include="Patches\TreeInstance.cs" />
+    <Compile Include="Patches\TreeInstancePatches.cs" />
     <Compile Include="Patches\TreeManagerPatches.cs" />
     <Compile Include="Patches\TreeAnarchy.cs" />
     <Compile Include="TAPrefab.cs" />
     <Compile Include="TAGroupManager.cs" />
     <Compile Include="TATerrainConformManager.cs" />
-    <Compile Include="TAScaleManager.cs" />
-    <Compile Include="TAOptionPanel.cs" />
     <Compile Include="TALocale.cs" />
     <Compile Include="TAKeyBinding.cs" />
     <Compile Include="Patches\TreeVariation.cs" />
@@ -100,6 +94,8 @@
     <Compile Include="TASerializableDataExtension.cs" />
     <Compile Include="TAMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\UIUtils.cs" />
+    <Compile Include="UI\UIFancySlider.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Localization\DefaultLocale.resx">
@@ -140,6 +136,18 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Localization\TreeAnarchy.en.locale" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\treelimitbg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\thumb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\leftSprite.png" />
+    <EmbeddedResource Include="Resources\midSprite.png" />
+    <EmbeddedResource Include="Resources\rightSprite.png" />
+    <EmbeddedResource Include="Resources\slider.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

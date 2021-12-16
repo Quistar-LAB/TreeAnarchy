@@ -1,7 +1,6 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
 using System.Threading;
-using UI;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -68,17 +67,17 @@ namespace TreeAnarchy {
                         TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
                     }
                     TAOptionPanel.SetTreeSnapState(state);
-                    UIIndicator.SnapIndicator?.SetState(state);
+                    //UIIndicator.SnapIndicator?.SetState(state);
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 } else if (m_lockForestry.IsPressed(e)) {
                     bool state = UseLockForestry = !UseLockForestry;
                     TAOptionPanel.SetLockForestryState(state);
-                    UIIndicator.LockForestryIndicator?.SetState(state);
+                    //UIIndicator.LockForestryIndicator?.SetState(state);
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 } else if (m_treeAnarchy.IsPressed(e)) {
                     bool state = UseTreeAnarchy = !UseTreeAnarchy;
                     TAOptionPanel.SetTreeAnarchyState(state);
-                    UIIndicator.AnarchyIndicator.State = state;
+                    //UIIndicator.AnarchyIndicator.State = state;
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 }
 #if ENABLETREEGROUP
