@@ -31,12 +31,12 @@ namespace TreeAnarchy {
                 SaveSettings();
             }
 
-            private void EnsureCapacity(int maxLimit, out Array32<TreeInstance> newArray, out TreeInstance[] treeBuffer, out float[] treeScale) {
+            private void EnsureCapacity(int maxLimit, out Array32<TreeInstance> newArray, out TreeInstance[] treeBuffer, out TAManager.ExtraTreeInfo[] extraTreeInfos) {
                 TreeManager tmInstance = Singleton<TreeManager>.instance;
                 if (maxLimit > MaxTreeLimit) {
                     TreeInstance[] oldBuffer = tmInstance.m_trees.m_buffer;
                     Array32<TreeInstance> newTreeArray = new Array32<TreeInstance>((uint)maxLimit);
-                    float[] newTreeScaleBuffer = new float[maxLimit];
+                    TAManager.ExtraTreeInfo[] newExtraTreeInfos = new TAManager.ExtraTreeInfo[maxLimit];
                     newTreeArray.CreateItem(out uint _);
                     newTreeArray.ClearUnused();
                     TreeInstance[] newBuffer = newTreeArray.m_buffer;
@@ -51,15 +51,15 @@ namespace TreeAnarchy {
                     }
                     newArray = newTreeArray;
                     treeBuffer = newBuffer;
-                    treeScale = newTreeScaleBuffer;
+                    extraTreeInfos = newExtraTreeInfos;
                     return;
                 }
                 newArray = tmInstance.m_trees;
                 treeBuffer = tmInstance.m_trees.m_buffer;
-                treeScale = TAManager.m_treeScales;
+                extraTreeInfos = TAManager.m_extraTreeInfos;
             }
 
-            private void RepackBuffer(int maxLimit, int treeCount, Format version, Array32<TreeInstance> existingTreeBuffer, float[] existingTreeScaleBuffer) {
+            private void RepackBuffer(int maxLimit, int treeCount, Format version, Array32<TreeInstance> existingTreeBuffer, TAManager.ExtraTreeInfo[] existingExtraTreeBuffer) {
                 if (maxLimit > MaxTreeLimit) {
                     TreeManager tmInstance = Singleton<TreeManager>.instance;
                     if (treeCount > MaxTreeLimit) {
@@ -67,19 +67,19 @@ namespace TreeAnarchy {
                         UpdateTreeLimit(maxLimit);
                         /* UpdateTreeLimit first so TreeScaleFactor is updated for next statement */
                         tmInstance.m_updatedTrees = new ulong[MaxTreeUpdateLimit];
-                        TAManager.m_treeScales = existingTreeScaleBuffer;
+                        TAManager.m_extraTreeInfos = existingExtraTreeBuffer;
                         return; /* Just return with existing buffers */
                     }
                     /* Pack the result into old buffer as we are sure there are enough space to fit in buffer */
                     TreeInstance[] existingBuffer = existingTreeBuffer.m_buffer;
                     TreeInstance[] oldBuffer = Singleton<TreeManager>.instance.m_trees.m_buffer;
-                    float[] existingScales = existingTreeScaleBuffer;
-                    float[] oldScales = TAManager.m_treeScales;
+                    TAManager.ExtraTreeInfo[] existingExtraTreeInfos = existingExtraTreeBuffer;
+                    TAManager.ExtraTreeInfo[] oldExtraTreeInfos = TAManager.m_extraTreeInfos;
                     /* make sure to fill in 1~262144 trees first */
                     for (int i = 1; i < DefaultTreeLimit; i++) {
                         if (existingBuffer[i].m_flags != 0) {
                             oldBuffer[i].m_posY = existingBuffer[i].m_posY;
-                            oldScales[i] = existingScales[i];
+                            oldExtraTreeInfos[i].m_extraScale = existingExtraTreeInfos[i].m_extraScale;
                         }
                     }
                     for (uint i = DefaultTreeLimit, offsetIndex = 1; i < existingBuffer.Length; i++) {
@@ -90,7 +90,7 @@ namespace TreeAnarchy {
                             oldBuffer[offsetIndex].m_posX = existingBuffer[i].m_posX;
                             oldBuffer[offsetIndex].m_posZ = existingBuffer[i].m_posZ;
                             oldBuffer[offsetIndex].m_posY = existingBuffer[i].m_posY;
-                            oldScales[offsetIndex] = existingScales[i];
+                            oldExtraTreeInfos[offsetIndex].m_extraScale = existingExtraTreeInfos[i].m_extraScale;
                             /* re-order burning tree also */
                             for (int j = 0; j < tmInstance.m_burningTrees.m_size; j++) {
                                 if (tmInstance.m_burningTrees[j].m_treeIndex == i) {
@@ -106,7 +106,7 @@ namespace TreeAnarchy {
                 TreeManager treeManager = Singleton<TreeManager>.instance;
                 int maxLen = s.ReadInt32(); // Read in Max limit
                 int treeCount = 0;
-                EnsureCapacity(maxLen, out Array32<TreeInstance> newBuffer, out TreeInstance[] trees, out float[] treeScaleBuffer);
+                EnsureCapacity(maxLen, out Array32<TreeInstance> newBuffer, out TreeInstance[] trees, out TAManager.ExtraTreeInfo[] extraTreeInfos);
                 EncodedArray.UShort uShort = EncodedArray.UShort.BeginRead(s);
                 for (int i = DefaultTreeLimit; i < maxLen; i++) {
                     trees[i].m_flags = (ushort)(uShort.Read() & fireDamageBurningMask);
@@ -149,7 +149,7 @@ namespace TreeAnarchy {
                     EncodedArray.Float @float = EncodedArray.Float.BeginRead(s);
                     for (int i = 1; i < maxLen; i++) {
                         if (trees[i].m_flags != 0) {
-                            treeScaleBuffer[i] = @float.Read();
+                            extraTreeInfos[i].m_extraScale = @float.Read();
                         }
                     }
                     @float.EndRead();
@@ -170,7 +170,7 @@ namespace TreeAnarchy {
                     }
                 }
                 /* Now Resize / Repack buffer if necessary */
-                RepackBuffer(maxLen, treeCount, (Format)s.version, newBuffer, treeScaleBuffer);
+                RepackBuffer(maxLen, treeCount, (Format)s.version, newBuffer, extraTreeInfos);
             }
 
             public void AfterDeserialize(DataSerializer s) { }
@@ -179,7 +179,7 @@ namespace TreeAnarchy {
                 int treeLimit = MaxTreeLimit;
                 TreeManager treeManager = Singleton<TreeManager>.instance;
                 TreeInstance[] buffer = treeManager.m_trees.m_buffer;
-                float[] treeScaleBuffer = TAManager.m_treeScales;
+                TAManager.ExtraTreeInfo[] extraInfos = TAManager.m_extraTreeInfos;
 
                 // Important to save treelimit as it is an adjustable variable on every load
                 s.WriteInt32(treeLimit);
@@ -228,7 +228,7 @@ namespace TreeAnarchy {
                 EncodedArray.Float @float = EncodedArray.Float.BeginWrite(s);
                 for (int i = 1; i < treeLimit; i++) {
                     if (buffer[i].m_flags != 0) {
-                        @float.Write(treeScaleBuffer[i]);
+                        @float.Write(extraInfos[i].m_extraScale);
                     }
                 }
                 @float.EndWrite();
