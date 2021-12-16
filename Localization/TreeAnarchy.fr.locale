@@ -47,7 +47,7 @@ TreeAnarchy Default Locale Template
   <string name="WindEffectLabel">Cette option affecte l'effet de la taille des arbres sur la répartition et la force du vent [activé par défaut].</string>
   <string name="RandomTreeRotation">Rotation aléatoire des arbres</string>
   <string name="TreeSwayFactor">Facteur de balancement des arbres</string>
-  <string name="LockForestry">Verrouillage de la ressource forestière</string>
+  <string name="LockForestry">verrouiller la foresterie</string>
   <string name="PersistentLock">Verrou permanent de ressource forestière (conseillé).</string>
   <string name="SwayLabel">Outil et cosmétique utiles. Le Verrou de ressource forestière empêche les arbres de générer de la ressource forestière et de retirer ainsi la ressource agricole. Sélectionner le Verrou permanent de ressource forestière active le Verrou de ressource forestière à chaque lancement du jeu ; cela permet de ne plus avoir à y penser (et évite d'effacer de la ressource agricole par étourderie)</string>
   <string name="Important">IMPORTANT ! Doit être défini avant de commencer ou charger une partie.

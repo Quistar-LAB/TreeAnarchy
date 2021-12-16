@@ -18,7 +18,7 @@ TreeAnarchy Default Locale Template
   <string name="UngroupTrees">Разделить группу деревьев</string>
   <string name="TerrainConformTrees">Размещать деревья в соответствии с ландшафтом</string>
   <!-- Indicator Messages -->
-  <string name="EnableIndicator"> Включить игровые индикаторы</string>
+  <string name="EnableIndicator">Включить игровые индикаторы</string>
   <string name="TreeSnapIsOff">Привязка деревьев ВЫКЛ</string>
   <string name="TreeSnapIsOn">Привязка деревьев ВКЛ</string>
   <string name="LockForestryIsOff">Блокировка областей леса ВЫКЛ</string>
