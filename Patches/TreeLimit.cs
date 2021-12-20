@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
+using System.Runtime.CompilerServices;
 
 namespace TreeAnarchy {
     internal static partial class TAPatcher {
