@@ -1,5 +1,6 @@
 ﻿using ColossalFramework;
 using ColossalFramework.Globalization;
+using ColossalFramework.IO;
 using ColossalFramework.PlatformServices;
 using System;
 using System.Globalization;
@@ -52,7 +53,7 @@ namespace TreeAnarchy {
                 XmlResolver = null
             };
             try {
-                string localeFile = m_directory + @"TreeAnarchy." + culture + @".locale";
+                string localeFile = Path.Combine(m_directory, @"TreeAnarchy." + culture + @".locale");
                 locale.Load(localeFile);
             } catch {
                 /* Load default english locale embedded in assembly */
@@ -69,23 +70,23 @@ namespace TreeAnarchy {
                 try {
                     foreach (PublishedFileId fileID in PlatformService.workshop.GetSubscribedItems()) {
                         if (fileID.AsUInt64 == m_thisModID) {
-                            string dir = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
-                            if (Directory.Exists(dir) && File.Exists(dir + DefaultEnLocale)) {
+                            string dir = PlatformService.workshop.GetSubscribedItemPath(fileID) + Path.DirectorySeparatorChar + @"Locale";
+                            if (Directory.Exists(dir) && File.Exists(dir + Path.DirectorySeparatorChar + DefaultEnLocale)) {
                                 m_directory = dir;
                                 break;
                             }
-                        }
-                        if (fileID.AsUInt64 == m_betaModID) {
-                            string dir = PlatformService.workshop.GetSubscribedItemPath(fileID) + @"/Locale/";
-                            if (Directory.Exists(dir) && File.Exists(dir + DefaultEnLocale)) {
+                        } else if (fileID.AsUInt64 == m_betaModID) {
+                            string dir = PlatformService.workshop.GetSubscribedItemPath(fileID) + Path.DirectorySeparatorChar + @"Locale";
+                            if (Directory.Exists(dir) && File.Exists(dir + Path.DirectorySeparatorChar + DefaultEnLocale)) {
                                 m_directory = dir;
                                 break;
                             }
                         }
                     }
                     if (m_directory is null) {
-                        string dir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"/Colossal Order/Cities_Skylines/Addons/Mods/TreeAnarchy/Locale/";
-                        if (Directory.Exists(dir) && File.Exists(dir + DefaultEnLocale)) {
+                        string dir = Path.Combine(Path.Combine(DataLocation.modsPath, @"TreeAnarchy"), @"Locale");
+                        TAMod.TALog(dir);
+                        if (Directory.Exists(dir) && File.Exists(Path.Combine(dir, DefaultEnLocale))) {
                             m_directory = dir;
                         }
                     }

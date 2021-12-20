@@ -1,6 +1,5 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
-using System.Threading;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -62,23 +61,11 @@ namespace TreeAnarchy {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
                 Event e = Event.current;
                 if (m_treeSnapping.IsPressed(e)) {
-                    bool state = UseTreeSnapping = !UseTreeSnapping;
-                    if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
-                        TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
-                    }
-                    TAOptionPanel.SetTreeSnapState(state);
-                    //UIIndicator.SnapIndicator?.SetState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                    UseTreeSnapping = !UseTreeSnapping;
                 } else if (m_lockForestry.IsPressed(e)) {
-                    bool state = UseLockForestry = !UseLockForestry;
-                    TAOptionPanel.SetLockForestryState(state);
-                    //UIIndicator.LockForestryIndicator?.SetState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                    UseLockForestry = !UseLockForestry;
                 } else if (m_treeAnarchy.IsPressed(e)) {
-                    bool state = UseTreeAnarchy = !UseTreeAnarchy;
-                    TAOptionPanel.SetTreeAnarchyState(state);
-                    //UIIndicator.AnarchyIndicator.State = state;
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                    UseTreeAnarchy = !UseTreeAnarchy;
                 }
 #if ENABLETREEGROUP
                 else if (m_groupTrees.IsPressed(e)) {

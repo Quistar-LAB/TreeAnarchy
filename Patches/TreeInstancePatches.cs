@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace TreeAnarchy.Patches {
@@ -166,8 +167,10 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> SetInfoTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> SetPositionTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
 
         /// <summary>
@@ -175,6 +178,7 @@ namespace TreeAnarchy.Patches {
         /// </summary>
         /// <param name="val">GrowState</param>
         /// <returns>Returns true if set</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool GetAnarchyState(int growState) => TAMod.UseTreeAnarchy && growState == 0;
 
         private static IEnumerable<CodeInstruction> SetGrowStateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
@@ -218,6 +222,7 @@ namespace TreeAnarchy.Patches {
         /// <param name="tree">Asset</param>
         /// <param name="position">Current position</param>
         /// <returns>Returns the terrain height if asset close to terrain, otherwise returns the asset current position y</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static float SampleSnapDetailHeight(ref TreeInstance tree, Vector3 position) {
             float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
             float positionY = position.y;
@@ -228,6 +233,7 @@ namespace TreeAnarchy.Patches {
             return terrainHeight;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
             MethodInfo sampleDetailHeight = AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) });
@@ -242,6 +248,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool CheckAnarchyState(ref TreeInstance tree) {
             if (Singleton<LoadingManager>.instance.m_currentlyLoading) {
                 return true;
@@ -258,6 +265,7 @@ namespace TreeAnarchy.Patches {
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void CheckOverlapCoroutine(ref TreeInstance tree, uint treeID, Vector3 position) {
             if (tree.Info is TreeInfo info && !CheckAnarchyState(ref tree)) {
                 Quad2 quad;
@@ -295,6 +303,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> CheckOverlapTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -304,6 +313,7 @@ namespace TreeAnarchy.Patches {
             yield return new CodeInstruction(OpCodes.Ret);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> OverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions);
 
         /// <summary>
@@ -374,11 +384,14 @@ namespace TreeAnarchy.Patches {
             data.m_triangles[triangleIndex++] = vertexIndex - 1;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
             ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
 
         private static IEnumerable<CodeInstruction> RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {

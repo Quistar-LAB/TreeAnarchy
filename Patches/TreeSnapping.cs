@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -81,6 +82,7 @@ namespace TreeAnarchy {
                 HarmonyPatchType.Prefix, HARMONYID);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ConfigureRaycastInput(ref ToolBase.RaycastInput input) {
             if (UseTreeSnapping) {
                 input.m_currentEditObject = false;
@@ -96,6 +98,7 @@ namespace TreeAnarchy {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void CalcFixedHeight(uint treeID) {
             TreeInstance[] trees = Singleton<TreeManager>.instance.m_trees.m_buffer;
             Vector3 position = trees[treeID].Position;
@@ -123,6 +126,7 @@ namespace TreeAnarchy {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool GetFixedHeight(Vector3 position) {
             float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
             float positionY = position.y;
@@ -155,12 +159,12 @@ namespace TreeAnarchy {
                     } else if (outputOccuranceCount == 0 && cur.opcode == OpCodes.Ldfld && (cur.operand == rayOutputObject || cur.operand == rayOutputObjectEML)) {
                         outputOccuranceCount++;
                         yield return cur;
-                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
                         yield return new CodeInstruction(OpCodes.Or);
                     } else if (outputOccuranceCount == 1 && cur.opcode == OpCodes.Ldfld && (cur.operand == rayOutputObject || cur.operand == rayOutputObjectEML)) {
                         outputOccuranceCount++;
                         yield return cur;
-                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                        yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
                         yield return new CodeInstruction(OpCodes.Ldc_I4_0);
                         yield return new CodeInstruction(OpCodes.Ceq);
                         yield return new CodeInstruction(OpCodes.Or);
@@ -169,7 +173,7 @@ namespace TreeAnarchy {
                         if (next.opcode == OpCodes.Ldloca_S && next.operand is LocalBuilder l3 && (l3.LocalType == typeof(ToolBase.RaycastOutput) || l3.LocalType == EMLRaycastOutputType)) {
                             if (++sigFoundCount == 3) {
                                 yield return cur;
-                                yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
+                                yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(TAMod.UseTreeSnapping)));
                                 yield return new CodeInstruction(OpCodes.Brtrue_S, TreeSnapEnabled);
                                 yield return next;
                                 codes.MoveNext();
@@ -284,6 +288,7 @@ namespace TreeAnarchy {
          * When position.y is at terrainHeight +- errorMargin
          * When raycastPosition.y > terrainHeight
          */
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static Vector3 CalculateTreeVector(Vector3 position, float deltaHeight, bool followTerrain) {
             float terrainHeight = Singleton<TerrainManager>.instance.SampleDetailHeight(position);
             if (!UseTreeSnapping || followTerrain) {

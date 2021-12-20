@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace TreeAnarchy {
     internal static partial class TAPatcher {
@@ -29,6 +30,7 @@ namespace TreeAnarchy {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void UnpatchPTA(Harmony harmony) {
             if (!(m_redirectUtil is null)) {
                 harmony.Unpatch(AccessTools.Method(m_redirectUtil, "RedirectMethods"), HarmonyPatchType.Transpiler, HARMONYID);
@@ -36,6 +38,7 @@ namespace TreeAnarchy {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void CustomRedirect(Type targetType, MethodInfo method, object redirects, bool reverse = false) {
             switch (method.Name) {
             case @"set_GrowState":
@@ -68,6 +71,7 @@ runDefault:
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void EnableTreeAnarchyPatches(Harmony harmony) {
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)),
@@ -79,13 +83,14 @@ runDefault:
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void DisableTreeAnarchyPatches(Harmony harmony) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeTool), nameof(TreeTool.CheckPlacementErrors)), HarmonyPatchType.Transpiler, HARMONYID);
         }
 
         private static IEnumerable<CodeInstruction> TreeToolCheckPlacementErrorsTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             Label TreeAnarchyDisabled = il.DefineLabel();
-            yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TAMod.UseTreeAnarchy)));
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(TAMod.UseTreeAnarchy)));
             yield return new CodeInstruction(OpCodes.Brfalse_S, TreeAnarchyDisabled);
             yield return new CodeInstruction(OpCodes.Ldc_I4_0);
             yield return new CodeInstruction(OpCodes.Conv_I8);

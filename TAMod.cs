@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.2.4";
+        internal const string m_modVersion = @"1.2.5";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -30,13 +30,23 @@ namespace TreeAnarchy {
         /* Unlimited Trees Related */
         internal static int RemoveReplaceOrKeep = 0;
         internal static bool OldFormatLoaded = false;
-        internal static bool TreeEffectOnWind = true;
+        private static bool m_treeEffectOnWind = true;
+        internal static bool TreeEffectOnWind {
+            get => m_treeEffectOnWind;
+            set {
+                if (m_treeEffectOnWind != value) {
+                    m_treeEffectOnWind = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
         internal static int LastMaxTreeLimit = DefaultTreeLimit;
         internal static float TreeScaleFactor {
             get => m_ScaleFactor;
             set {
                 LastTreeScaleFactor = m_ScaleFactor;
                 m_ScaleFactor = value;
+                ThreadPool.QueueUserWorkItem(SaveSettings);
             }
         }
         internal static float LastTreeScaleFactor = m_ScaleFactor;
@@ -46,28 +56,106 @@ namespace TreeAnarchy {
         internal static int CheckHighLimit => MaxTreeLimit - 5;
 
         /* Tree Snapping */
-        internal static bool UseTreeSnapping = false;
+        private static bool m_useTreeSnapping = false;
+        internal static bool UseTreeSnapping {
+            get => m_useTreeSnapping;
+            set {
+                if (m_useTreeSnapping != value) {
+                    m_useTreeSnapping = value;
+                    if (TAOptionPanel.TreeSnapCB) TAOptionPanel.TreeSnapCB.isChecked = value;
+                    UIIndicator.SnapIndicator?.SetState(value);
+                    MoveIt.MoveItTool.treeSnapping = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
         internal static bool UseExperimentalTreeSnapping = false;
         internal static bool UseTreeSnapToBuilding = true;
         internal static bool UseTreeSnapToNetwork = true;
         internal static bool UseTreeSnapToProp = true;
 
         /* Lock Forestry */
-        internal static bool UseLockForestry = false;
-        internal static bool PersistentLockForestry = true;
+        private static bool m_useLockForestry = false;
+        internal static bool UseLockForestry {
+            get => m_useLockForestry;
+            set {
+                if (m_useLockForestry != value) {
+                    m_useLockForestry = value;
+                    if (TAOptionPanel.TreeSnapCB) TAOptionPanel.LockForestryCB.isChecked = value;
+                    UIIndicator.LockForestryIndicator?.SetState(value);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
+        private static bool m_persistentLockForestry = true;
+        internal static bool PersistentLockForestry {
+            get => m_persistentLockForestry;
+            set {
+                if (m_persistentLockForestry != value) {
+                    m_persistentLockForestry = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
 
         /* Tree Movement Related */
-        internal static float TreeSwayFactor = 1f;
-        internal static bool RandomTreeRotation = true;
-        internal static int RandomTreeRotationFactor = 1000;
+        private static float m_treeSwayFactor = 1f;
+        internal static float TreeSwayFactor {
+            get => m_treeSwayFactor;
+            set {
+                if (m_treeSwayFactor != value) {
+                    m_treeSwayFactor = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
 
         /* Tree Anarchy Related */
-        internal static bool UseTreeAnarchy = false;
-        internal static bool DeleteOnOverlap = false;
+        private static bool m_useTreeAnarchy = false;
+        internal static bool UseTreeAnarchy {
+            get => m_useTreeAnarchy;
+            set {
+                if (m_useTreeAnarchy != value) {
+                    m_useTreeAnarchy = value;
+                    if (TAOptionPanel.TreeAnarchyCB) TAOptionPanel.TreeAnarchyCB.isChecked = value;
+                    UIIndicator.AnarchyIndicator?.SetState(value);
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
+
+        private static bool m_deleteOnOverlap = false;
+        internal static bool DeleteOnOverlap {
+            get => m_deleteOnOverlap;
+            set {
+                if (m_deleteOnOverlap != value) {
+                    m_deleteOnOverlap = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
 
         /* Tree LOD Fix Related */
-        internal static bool UseTreeLODFix = true;
-        internal static TAManager.TreeLODResolution TreeLODSelectedResolution = TAManager.TreeLODResolution.Medium;
+        private static bool m_useTreeLODFix = true;
+        internal static bool UseTreeLODFix {
+            get => m_useTreeLODFix;
+            set {
+                if (m_useTreeLODFix != value) {
+                    m_useTreeLODFix = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
+        private static TAManager.TreeLODResolution m_treeLODResolution = TAManager.TreeLODResolution.Medium;
+        internal static TAManager.TreeLODResolution TreeLODSelectedResolution {
+            get => m_treeLODResolution;
+            set {
+                if (m_treeLODResolution != value) {
+                    m_treeLODResolution = value;
+                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                }
+            }
+        }
 
         internal static bool IsInGame { get; private set; } = false;
 
@@ -109,8 +197,7 @@ namespace TreeAnarchy {
         public void OnSettingsUI(UIHelperBase helper) {
             TALocale.OnLocaleChanged();
             LocaleManager.eventLocaleChanged += TALocale.OnLocaleChanged;
-            UIPanel root = (helper.AddGroup(m_modName + @" -- Version " + m_modVersion) as UIHelper).self as UIPanel;
-            TAOptionPanel.SetupPanel(root);
+            TAOptionPanel.SetupPanel((helper.AddGroup(m_modName + @" -- Version " + m_modVersion) as UIHelper).self as UIPanel);
         }
         #endregion
         #region ILoadingExtension
@@ -134,23 +221,13 @@ namespace TreeAnarchy {
                 UIIndicator.UIIcon treeSnap = default;
                 treeSnap = indicatorPanel.AddSnappingIcon(TALocale.GetLocale(@"TreeSnapIsOn"), TALocale.GetLocale(@"TreeSnapIsOff"), UseTreeSnapping, (_, p) => {
                     UseTreeSnapping = !UseTreeSnapping;
-                    bool state = UseTreeAnarchy;
-                    if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
-                        TAPatcher.MoveItUseTreeSnap.SetValue(null, state);
-                    }
-                    treeSnap.State = state;
-                    TAOptionPanel.SetTreeSnapState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
                 }, out bool finalState);
                 if (finalState != UseTreeSnapping) {
                     UseTreeSnapping = finalState;
                 }
                 UIIndicator.UIIcon treeAnarchy = default;
                 treeAnarchy = indicatorPanel.AddAnarchyIcon(TALocale.GetLocale(@"TreeAnarchyIsOn"), TALocale.GetLocale(@"TreeAnarchyIsOff"), UseTreeAnarchy, (_, p) => {
-                    bool state = UseTreeAnarchy = !UseTreeAnarchy;
-                    treeAnarchy.State = state;
-                    TAOptionPanel.SetTreeAnarchyState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                    UseTreeAnarchy = !UseTreeAnarchy;
                 }, out finalState);
                 if (finalState != UseTreeAnarchy) {
                     UseTreeAnarchy = finalState;
@@ -158,10 +235,6 @@ namespace TreeAnarchy {
                 UIIndicator.UIIcon lockForestry = default;
                 lockForestry = indicatorPanel.AddLockForestryIcon(TALocale.GetLocale(@"LockForestryIsOn"), TALocale.GetLocale(@"LockForestryIsOff"), UseLockForestry, (_, p) => {
                     UseLockForestry = !UseLockForestry;
-                    bool state = UseLockForestry;
-                    lockForestry.State = state;
-                    TAOptionPanel.SetLockForestryState(state);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
                 });
             }
             TAOptionPanel.UpdateState(true);
@@ -184,30 +257,19 @@ namespace TreeAnarchy {
                 };
                 xmlConfig.Load(SettingsFileName);
                 m_ScaleFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"ScaleFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
-                TreeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeEffectOnWind"));
-                UseTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapping"));
+                m_treeEffectOnWind = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeEffectOnWind"));
+                m_useTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapping"));
                 UseExperimentalTreeSnapping = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseExperimentalTreeSnapping"));
                 UseTreeSnapToBuilding = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToBuilding"));
                 UseTreeSnapToNetwork = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToNetwork"));
                 UseTreeSnapToProp = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeSnapToProp"));
-                RandomTreeRotation = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"RandomTreeRotation"));
-                TreeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
-                UseLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"LockForestry"));
+                m_treeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
+                m_useLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"PersistentLock"));
-                UseTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
-                DeleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"DeleteOnOverlap"));
-                try {
-                    UseTreeLODFix = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeLODFix"));
-                } catch {
-                    XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
-                    root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", UseTreeLODFix));
-                }
-                try {
-                    TreeLODSelectedResolution = (TAManager.TreeLODResolution)int.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeLODSelectedResolution"));
-                } catch {
-                    XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
-                    root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
-                }
+                m_useTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
+                m_deleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"DeleteOnOverlap"));
+                m_useTreeLODFix = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeLODFix"));
+                m_treeLODResolution = (TAManager.TreeLODResolution)int.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeLODSelectedResolution"));
             } catch {
                 SaveSettings(); // Most likely a corrupted file if we enter here. Recreate the file
                 return false;
@@ -215,28 +277,33 @@ namespace TreeAnarchy {
             return true;
         }
 
+        private static object settingsLock = new object();
         internal static void SaveSettings(object _ = null) {
-            XmlDocument xmlConfig = new XmlDocument {
-                XmlResolver = null
-            };
-            XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
-            root.Attributes.Append(AddElement(xmlConfig, @"ScaleFactor", m_ScaleFactor));
-            root.Attributes.Append(AddElement(xmlConfig, @"TreeEffectOnWind", TreeEffectOnWind));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapping", UseTreeSnapping));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToBuilding", UseTreeSnapToBuilding));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToNetwork", UseTreeSnapToNetwork));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToProp", UseTreeSnapToProp));
-            root.Attributes.Append(AddElement(xmlConfig, @"RandomTreeRotation", RandomTreeRotation));
-            root.Attributes.Append(AddElement(xmlConfig, @"TreeSwayFactor", TreeSwayFactor));
-            root.Attributes.Append(AddElement(xmlConfig, @"LockForestry", UseLockForestry));
-            root.Attributes.Append(AddElement(xmlConfig, @"PersistentLock", PersistentLockForestry));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", UseTreeAnarchy));
-            root.Attributes.Append(AddElement(xmlConfig, @"DeleteOnOverlap", DeleteOnOverlap));
-            root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", UseTreeLODFix));
-            root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)TreeLODSelectedResolution));
-            xmlConfig.AppendChild(root);
-            xmlConfig.Save(SettingsFileName);
+            Monitor.Enter(settingsLock);
+            try {
+                XmlDocument xmlConfig = new XmlDocument {
+                    XmlResolver = null
+                };
+                XmlElement root = xmlConfig.CreateElement(@"TreeAnarchyConfig");
+                root.Attributes.Append(AddElement(xmlConfig, @"ScaleFactor", m_ScaleFactor));
+                root.Attributes.Append(AddElement(xmlConfig, @"TreeEffectOnWind", m_treeEffectOnWind));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapping", m_useTreeSnapping));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseExperimentalTreeSnapping", UseExperimentalTreeSnapping));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToBuilding", UseTreeSnapToBuilding));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToNetwork", UseTreeSnapToNetwork));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeSnapToProp", UseTreeSnapToProp));
+                root.Attributes.Append(AddElement(xmlConfig, @"TreeSwayFactor", m_treeSwayFactor));
+                root.Attributes.Append(AddElement(xmlConfig, @"LockForestry", m_useLockForestry));
+                root.Attributes.Append(AddElement(xmlConfig, @"PersistentLock", PersistentLockForestry));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", m_useTreeAnarchy));
+                root.Attributes.Append(AddElement(xmlConfig, @"DeleteOnOverlap", m_deleteOnOverlap));
+                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", m_useTreeLODFix));
+                root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)m_treeLODResolution));
+                xmlConfig.AppendChild(root);
+                xmlConfig.Save(SettingsFileName);
+            } finally {
+                Monitor.Exit(settingsLock);
+            }
         }
 
         private static XmlAttribute AddElement<T>(XmlDocument doc, string name, T t) {

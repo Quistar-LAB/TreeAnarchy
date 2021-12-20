@@ -4,6 +4,7 @@ using MoveIt;
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using Action = MoveIt.Action;
 
@@ -48,6 +49,7 @@ namespace TreeAnarchy {
 
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void EnsureCapacity(TreeManager manager) {
             if (manager.m_trees.m_buffer.Length != TAMod.MaxTreeLimit) {
                 manager.m_trees = new Array32<TreeInstance>((uint)TAMod.MaxTreeLimit);
@@ -63,6 +65,7 @@ namespace TreeAnarchy {
             TAMod.TALog("Setting Tree LOD to " + TAMod.TreeLODSelectedResolution);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe static float GetWindSpeed(Vector3 pos) {
             /* Apparently the lambda expression (a = (a ? > 127 : 127 : a) < 0 ? 0 : a) produces
              * unreliable results.. mono bug? Using local functions instead so they can be inlined
@@ -76,6 +79,7 @@ namespace TreeAnarchy {
             return (windSpeed > 2f ? 2f : (windSpeed < 0f ? 0f : windSpeed)) * TAMod.TreeSwayFactor;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void UpdateLODProc() {
             int layerID = Singleton<TreeManager>.instance.m_treeLayer;
             FastList<RenderGroup> renderedGroupsList = Singleton<RenderManager>.instance.m_renderedGroups;
@@ -93,6 +97,7 @@ namespace TreeAnarchy {
 
         public static void UpdateTreeSway() => m_updateLODTreeSway = true;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void OnOptionPanelClosed() {
             if (m_updateLODTreeSway) {
                 UpdateLODProc();
@@ -100,6 +105,7 @@ namespace TreeAnarchy {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static float CalcTreeScale(uint treeID) {
             ExtraTreeInfo[] extraInfos = m_extraTreeInfos;
             float scale = extraInfos[treeID].TreeScale;
@@ -108,6 +114,7 @@ namespace TreeAnarchy {
             return extraInfos[treeID].TreeScale;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static float GetSeedTreeScale(ref Randomizer randomizer, uint treeID, TreeInfo treeInfo) {
             if (treeInfo is null) return 0;
             m_currentTreeID = treeID;

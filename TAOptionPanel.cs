@@ -1,7 +1,5 @@
 ﻿using ColossalFramework;
 using ColossalFramework.UI;
-using System.Threading;
-using UI;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
 
@@ -19,28 +17,11 @@ namespace TreeAnarchy {
         private const string TreeSnapCBName = @"TreeSnapCB";
         private const string TreeAnarchyCBName = @"TreeAnarchyCB";
         private const string TreeLODFixCBName = @"TreeLODFixCB";
-        private static UICheckBox LockForestryCB;
-        private static UICheckBox TreeSnapCB;
-        private static UICheckBox TreeAnarchyCB;
-        private static UISlider TreeScaleFactorSlider;
-        private static UILabel MaxTreeLabel;
-
-        internal static void SetTreeLimitSlider(float value) {
-            TreeScaleFactorSlider.value = value;
-            ThreadPool.QueueUserWorkItem(SaveSettings);
-        }
-
-        internal static void SetTreeSnapState(bool isChecked) {
-            TreeSnapCB.isChecked = isChecked;
-        }
-
-        internal static void SetLockForestryState(bool isChecked) {
-            LockForestryCB.isChecked = isChecked;
-        }
-
-        internal static void SetTreeAnarchyState(bool isChecked) {
-            TreeAnarchyCB.isChecked = isChecked;
-        }
+        internal static UICheckBox LockForestryCB;
+        internal static UICheckBox TreeSnapCB;
+        internal static UICheckBox TreeAnarchyCB;
+        internal static UISlider TreeScaleFactorSlider;
+        internal static UILabel MaxTreeLabel;
 
         internal static void UpdateState(bool isInGame) {
             if (isInGame) {
@@ -75,20 +56,15 @@ namespace TreeAnarchy {
         private const float OFFSETX = 10f;
         private static void ShowStandardOptions(UIPanel panel) {
             string windEffectText = TALocale.GetLocale(@"WindEffect");
-            UICheckBox WindEffectCB = AddCheckBox(panel, windEffectText, TreeEffectOnWind, (_, isChecked) => {
-                TreeEffectOnWind = isChecked;
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+            UICheckBox WindEffectCB = AddCheckBox(panel, windEffectText, TreeEffectOnWind);
+            WindEffectCB.eventCheckChanged += (_, isChecked) => TreeEffectOnWind = isChecked;
             WindEffectCB.relativePosition = new Vector3(OFFSETX, 0f);
             UIFontRenderer fontRenderer = WindEffectCB.label.ObtainRenderer();
             WindEffectCB.width = fontRenderer.MeasureString(windEffectText).x + 5f;
             UILabel WindEffectLabel = AddDescription(panel, @"WindEffectLabel", WindEffectCB, SmallFontScale, TALocale.GetLocale(@"WindEffectLabel"));
             string lockForestryText = TALocale.GetLocale(@"LockForestry");
-            LockForestryCB = AddCheckBox(panel, lockForestryText, UseLockForestry, (_, isChecked) => {
-                UseLockForestry = isChecked;
-                UIIndicator.LockForestryIndicator?.SetState(isChecked);
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+            LockForestryCB = AddCheckBox(panel, lockForestryText, UseLockForestry);
+            LockForestryCB.eventClicked += (c, p) => UseLockForestry = (c as UICheckBox).isChecked;
             LockForestryCB.cachedName = LockForestryCBName;
             LockForestryCB.name = LockForestryCBName;
             LockForestryCB.relativePosition = new Vector3(OFFSETX, WindEffectCB.relativePosition.y + WindEffectCB.height + WindEffectLabel.height);
@@ -99,14 +75,11 @@ namespace TreeAnarchy {
             swayPanel.Initialize(TALocale.GetLocale("TreeSwayFactor"), 0f, 1f, 0.1f, TreeSwayFactor, (_, val) => {
                 TreeSwayFactor = val;
                 if (IsInGame) TAManager.UpdateTreeSway();
-                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             swayPanel.relativePosition = new Vector3(panel.width - 60f - swayPanel.size.x, LockForestryCB.relativePosition.y + 5f);
             string persistentLockText = TALocale.GetLocale(@"PersistentLock");
-            UICheckBox PersistentLockCB = AddCheckBox(panel, persistentLockText, PersistentLockForestry, (_, isChecked) => {
-                PersistentLockForestry = isChecked;
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+            UICheckBox PersistentLockCB = AddCheckBox(panel, persistentLockText, PersistentLockForestry);
+            PersistentLockCB.eventCheckChanged += (_, isChecked) => PersistentLockForestry = isChecked;
             PersistentLockCB.relativePosition = new Vector3(OFFSETX, LockForestryCB.relativePosition.y + LockForestryCB.height);
             fontRenderer = PersistentLockCB.label.ObtainRenderer();
             PersistentLockCB.width = fontRenderer.MeasureString(persistentLockText).x + 5f;
@@ -120,12 +93,10 @@ namespace TreeAnarchy {
             TreeScaleFactorSlider = AddSlider(ScalePanel, MinScaleFactor, MaxScaleFactor, 0.5f, TreeScaleFactor, (_, val) => {
                 TreeScaleFactor = val;
                 MaxTreeLabel.text = string.Format(TALocale.GetLocale(@"MaxTreeLimit"), MaxTreeLimit);
-                ThreadPool.QueueUserWorkItem(SaveSettings);
             });
             UITextureAtlas atlas = UI.UIUtils.CreateTextureAtlas(@"TAOptionAtlas", new string[] { @"thumb", @"treelimitbg" });
             ScalePanel.relativePosition = new Vector3(OFFSETX, PersistentLockCB.relativePosition.y + PersistentLockCB.height + SwayLabel.height + 15);
             TreeScaleFactorSlider.atlas = atlas;
-            TreeScaleFactorSlider.fillMode = UIFillMode.Fill;
             TreeScaleFactorSlider.backgroundSprite = @"treelimitbg";
             TreeScaleFactorSlider.size = new Vector2(panel.width - 70f, 21f);
             UISprite sliderThumb = TreeScaleFactorSlider.thumbObject as UISprite;
@@ -138,43 +109,31 @@ namespace TreeAnarchy {
 
             UIDropDown RemoveReplaceDropDown = AddDropdown(panel, ImportantLabel, TALocale.GetLocale(@"ReplaceRemoveName"),
                 new string[] { TALocale.GetLocale(@"ReplaceRemoveDropdown0"), TALocale.GetLocale(@"ReplaceRemoveDropdown1"), TALocale.GetLocale(@"ReplaceRemoveDropdown2") },
-                0, (c, selectIndex) => {
-                    RemoveReplaceOrKeep = selectIndex;
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
-                });
+                0, (c, selectIndex) => RemoveReplaceOrKeep = selectIndex);
             UILabel RRDLabel = AddDescription(panel, @"RRDLabel", RemoveReplaceDropDown.parent, SmallFontScale, TALocale.GetLocale(@"ReplaceRemoveDesc"));
             RRDLabel.relativePosition = new Vector3(OFFSETX, RRDLabel.relativePosition.y);
         }
 
         private static void ShowTreeAnarchyOptions(UIPanel panel) {
-            TreeSnapCB = AddCheckBox(panel, TALocale.GetLocale(@"TreeSnap"), UseTreeSnapping, (_, isChecked) => {
-                UseTreeSnapping = isChecked;
-                if (TAPatcher.IsMoveItInstalled && TAPatcher.MoveItUseTreeSnap != null) {
-                    TAPatcher.MoveItUseTreeSnap.SetValue(null, isChecked);
-                }
-                TAPatcher.MoveItUseTreeSnap?.SetValue(null, isChecked);
-                UIIndicator.SnapIndicator?.SetState(isChecked);
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+            TreeSnapCB = AddCheckBox(panel, TALocale.GetLocale(@"TreeSnap"), UseTreeSnapping);
+            TreeSnapCB.eventClicked += (c, p) => {
+                UseTreeSnapping = (c as UICheckBox).isChecked;
+            };
             TreeSnapCB.cachedName = TreeSnapCBName;
             TreeSnapCB.name = TreeSnapCBName;
             TreeSnapCB.relativePosition = new Vector3(OFFSETX, 0f);
             UILabel TreeSnapDesc = AddDescription(panel, @"TreeSnapDesc", TreeSnapCB, SmallFontScale, TALocale.GetLocale(@"TreeSnapLabel"));
-            TreeAnarchyCB = AddCheckBox(panel, TALocale.GetLocale(@"TreeAnarchy"), UseTreeAnarchy, (_, isChecked) => {
-                UseTreeAnarchy = isChecked;
-                UIIndicator.AnarchyIndicator?.SetState(isChecked);
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+            TreeAnarchyCB = AddCheckBox(panel, TALocale.GetLocale(@"TreeAnarchy"), UseTreeAnarchy);
+            TreeAnarchyCB.eventClicked += (c, p) => {
+                UseTreeAnarchy = (c as UICheckBox).isChecked;
+            };
             TreeAnarchyCB.cachedName = TreeAnarchyCBName;
             TreeAnarchyCB.name = TreeAnarchyCBName;
             TreeAnarchyCB.relativePosition = new Vector3(OFFSETX, TreeSnapCB.height + TreeSnapDesc.height);
             UILabel TreeAnarchyDesc = AddDescription(panel, @"TreeAnarchyDesc", TreeAnarchyCB, SmallFontScale, TALocale.GetLocale(@"TreeAnarchyDesc"));
             UIDropDown TreeBehaviourDD = AddDropdown(panel, panel, TALocale.GetLocale(@"TreeAnarchyBehaviour"),
                             new string[] { TALocale.GetLocale(@"TreeAnarchyHideTree"), TALocale.GetLocale(@"TreeAnarchyDeleteTree") },
-                            DeleteOnOverlap ? 1 : 0, (_, val) => {
-                                DeleteOnOverlap = val != 0;
-                                ThreadPool.QueueUserWorkItem(SaveSettings);
-                            });
+                            DeleteOnOverlap ? 1 : 0, (_, val) => DeleteOnOverlap = val != 0);
             TreeBehaviourDD.parent.relativePosition = new Vector3(OFFSETX + 25f, TreeAnarchyDesc.relativePosition.y + TreeAnarchyDesc.height);
             UIDropDown TreeLODFixDD = AddDropdown(panel, panel, null,
                             new string[] { TALocale.GetLocale(@"TreeLODLow"), TALocale.GetLocale(@"TreeLODMedium"), TALocale.GetLocale(@"TreeLODHigh"), TALocale.GetLocale(@"TreeLODUltraHigh") },
@@ -183,7 +142,6 @@ namespace TreeAnarchy {
                                 if (IsInGame) {
                                     Singleton<TreeManager>.instance.SetResolution((TAManager.TreeLODResolution)val);
                                 }
-                                ThreadPool.QueueUserWorkItem(SaveSettings);
                             });
             TreeLODFixDD.disabledColor = new Color(0.2f, 0.2f, 0.2f, 1f);
             TreeLODFixDD.disabledTextColor = new Color(0.2f, 0.2f, 0.2f, 1f);
@@ -194,12 +152,15 @@ namespace TreeAnarchy {
             TreeLODFixDD.itemHeight = 22;
             TreeLODFixDD.itemPadding = new RectOffset(5, 0, 3, 0);
             string treeLODFixName = TALocale.GetLocale(@"TreeLODFix");
-            UICheckBox TreeLodFixCB = AddCheckBox(panel, treeLODFixName, UseTreeLODFix, (_, isChecked) => {
+            UICheckBox TreeLodFixCB = AddCheckBox(panel, treeLODFixName, UseTreeLODFix);
+            TreeLodFixCB.eventCheckChanged += (_, isChecked) => {
                 UseTreeLODFix = isChecked;
-                if (isChecked) TreeLODFixDD.Enable();
-                else TreeLODFixDD.Disable();
-                ThreadPool.QueueUserWorkItem(SaveSettings);
-            });
+                if (isChecked) {
+                    TreeLODFixDD.Enable();
+                } else {
+                    TreeLODFixDD.Disable();
+                }
+            };
             TreeLodFixCB.cachedName = TreeLODFixCBName;
             TreeLodFixCB.name = TreeLODFixCBName;
             UILabel label = TreeLodFixCB.Find<UILabel>(@"Label");
@@ -235,9 +196,8 @@ namespace TreeAnarchy {
             return rootPanel;
         }
 
-        private static UICheckBox AddCheckBox(UIPanel panel, string name, bool defaultVal, PropertyChangedEventHandler<bool> callback) {
+        private static UICheckBox AddCheckBox(UIPanel panel, string name, bool defaultVal) {
             UICheckBox cb = (UICheckBox)panel.AttachUIComponent(UITemplateManager.GetAsGameObject(@"OptionsCheckBoxTemplate"));
-            cb.eventCheckChanged += callback;
             cb.autoSize = true;
             cb.isLocalized = true;
             cb.label.textScale = 0.95f;

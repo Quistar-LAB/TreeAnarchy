@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace TreeAnarchy.Patches {
@@ -225,6 +226,7 @@ namespace TreeAnarchy.Patches {
         public delegate void RenderFireEffectAPI(RenderManager.CameraInfo cameraInfo, uint treeID, ref TreeInstance data, float fireIntensity, float fireDamage);
         private static RenderFireEffectAPI delegatedRenderFireEffect;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CustomAwakeRoutine(TreeManager instance) {
             FieldInfo simPrefabs = typeof(PrefabCollection<TreeInfo>).GetField("m_simulationPrefabs", BindingFlags.NonPublic | BindingFlags.Static);
             m_simulationPrefabs = CreateGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>>(simPrefabs);
@@ -233,6 +235,7 @@ namespace TreeAnarchy.Patches {
             TAMod.TALog("Max tree limit set at: " + TAMod.MaxTreeLimit);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> AwakeTranspiler(IEnumerable<CodeInstruction> instructions) {
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.CustomAwakeRoutine)));
@@ -704,6 +707,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> CalculateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) => RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
         private static IEnumerable<CodeInstruction> CheckLimitsTranspiler(IEnumerable<CodeInstruction> instructions) {
@@ -724,6 +728,7 @@ namespace TreeAnarchy.Patches {
         /// </summary>
         /// <param name="treeID"></param>
         /// <param name="info"></param>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void SetTreeScaleBrightness(int treeID, TreeInfo info) {
             int random = new Randomizer(treeID).Int32(10000u);
             TAManager.m_extraTreeInfos[treeID].m_treeScale = info.m_minScale + random * (info.m_maxScale - info.m_minScale) * 0.0001f;
@@ -750,6 +755,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> InitializeTreeTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
 
         private unsafe static void OnPostRenderCoroutine(RenderManager.CameraInfo cameraInfo, ref Quaternion quaternion, int renderPass, int prefabCount, int sqrLen,
@@ -823,15 +829,19 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerOverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
              RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerPopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
             RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerRayCastTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
             RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> SampleSmoothHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
             RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
@@ -873,6 +883,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
             RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
@@ -909,11 +920,14 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> UpdateTreeRendererTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> UpdateTreesTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
             RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CustomSetPosY(TreeInstance[] trees, int treeID) {
             if ((trees[treeID].m_flags & 32) == 0) {
                 trees[treeID].m_posY = 0;
@@ -1009,6 +1023,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RemoveOrReplaceTree(int treeID) {
             const int RemoveTree = 1;
             const int ReplaceTree = 2;
@@ -1032,6 +1047,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool ValidateTreePrefab(TreeInfo treeInfo) {
             try {
                 TreeInfo prefabInfo = PrefabCollection<TreeInfo>.GetLoaded((uint)treeInfo.m_prefabDataIndex);
@@ -1044,6 +1060,7 @@ namespace TreeAnarchy.Patches {
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool OldAfterDeserializeHandler() {
             if (!TAMod.OldFormatLoaded) return false;
             int maxLen = TAMod.MaxTreeLimit;
@@ -1158,8 +1175,6 @@ namespace TreeAnarchy.Patches {
                 throw;
             }
             try {
-                //harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)),
-                //    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.AfterTerrainUpdateTranspiler))));
                 MethodInfo afterTerrainUpdate = AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate));
                 var patches = Harmony.GetPatchInfo(afterTerrainUpdate);
                 if (!(patches is null) && !(patches.Prefixes is null)) {

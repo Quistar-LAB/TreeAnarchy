@@ -1,5 +1,4 @@
 ﻿using ColossalFramework.UI;
-using System.Reflection;
 using UnityEngine;
 
 namespace TreeAnarchy.UI {
@@ -116,16 +115,6 @@ namespace TreeAnarchy.UI {
             rightLabel.relativePosition = new Vector3(sliderPanel.relativePosition.x + sliderPanel.size.x - 1f, 0f);
             this.size = new Vector2(leftLabel.size.x + sliderPanel.size.x + rightLabel.size.x, HEIGHT);
 
-        }
-
-        public override void OnEnable() {
-            base.OnEnable();
-            /* RenderOrder */
-            int renderOrder = m_slider.renderOrder;
-            FieldInfo sliderRenderOrder = typeof(UISlider).GetField("m_RenderOrder", BindingFlags.Instance | BindingFlags.NonPublic);
-            sliderRenderOrder.SetValue(m_slider, m_sliderLabel.renderOrder);
-            FieldInfo labelRenderOrder = typeof(UILabel).GetField("m_RenderOrder", BindingFlags.Instance | BindingFlags.NonPublic);
-            labelRenderOrder.SetValue(m_sliderLabel, renderOrder);
         }
 
         public override void OnDestroy() {
