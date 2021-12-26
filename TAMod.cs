@@ -111,7 +111,7 @@ namespace TreeAnarchy {
         }
 
         /* Tree Anarchy Related */
-        private static bool m_useTreeAnarchy = false;
+        private static bool m_useTreeAnarchy = true;
         internal static bool UseTreeAnarchy {
             get => m_useTreeAnarchy;
             set {
@@ -119,7 +119,7 @@ namespace TreeAnarchy {
                     m_useTreeAnarchy = value;
                     if (TAOptionPanel.TreeAnarchyCB) TAOptionPanel.TreeAnarchyCB.isChecked = value;
                     UIIndicator.AnarchyIndicator?.SetState(value);
-                    ThreadPool.QueueUserWorkItem(SaveSettings);
+                    //ThreadPool.QueueUserWorkItem(SaveSettings);
                 }
             }
         }
@@ -165,18 +165,17 @@ namespace TreeAnarchy {
 
         public TAMod() {
             try {
-                if (GameSettings.FindSettingsFileByName(KeybindingConfigFile) == null) {
-                    GameSettings.AddSettingsFile(new SettingsFile[] {
-                        new SettingsFile() { fileName = KeybindingConfigFile }
-                    });
-                }
+                CreateDebugFile();
             } catch (Exception e) {
                 UnityEngine.Debug.LogException(e);
             }
         }
 
         public void OnEnabled() {
-            CreateDebugFile();
+            GameSettings.AddSettingsFile(new SettingsFile[] {
+                        new SettingsFile() { fileName = KeybindingConfigFile }
+                    });
+
             TALocale.Init();
             TAPatcher.CheckIncompatibleMods();
             for (int loadTries = 0; loadTries < 2; loadTries++) {
@@ -266,7 +265,7 @@ namespace TreeAnarchy {
                 m_treeSwayFactor = float.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeSwayFactor"), NumberStyles.Float, CultureInfo.CurrentCulture.NumberFormat);
                 m_useLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"LockForestry"));
                 PersistentLockForestry = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"PersistentLock"));
-                m_useTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
+                //m_useTreeAnarchy = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeAnarchy"));
                 m_deleteOnOverlap = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"DeleteOnOverlap"));
                 m_useTreeLODFix = bool.Parse(xmlConfig.DocumentElement.GetAttribute(@"UseTreeLODFix"));
                 m_treeLODResolution = (TAManager.TreeLODResolution)int.Parse(xmlConfig.DocumentElement.GetAttribute(@"TreeLODSelectedResolution"));
@@ -295,7 +294,7 @@ namespace TreeAnarchy {
                 root.Attributes.Append(AddElement(xmlConfig, @"TreeSwayFactor", m_treeSwayFactor));
                 root.Attributes.Append(AddElement(xmlConfig, @"LockForestry", m_useLockForestry));
                 root.Attributes.Append(AddElement(xmlConfig, @"PersistentLock", PersistentLockForestry));
-                root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", m_useTreeAnarchy));
+                //root.Attributes.Append(AddElement(xmlConfig, @"UseTreeAnarchy", m_useTreeAnarchy));
                 root.Attributes.Append(AddElement(xmlConfig, @"DeleteOnOverlap", m_deleteOnOverlap));
                 root.Attributes.Append(AddElement(xmlConfig, @"UseTreeLODFix", m_useTreeLODFix));
                 root.Attributes.Append(AddElement(xmlConfig, @"TreeLODSelectedResolution", (int)m_treeLODResolution));
