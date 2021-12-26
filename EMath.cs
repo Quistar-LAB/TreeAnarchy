@@ -1,5 +1,4 @@
-﻿using ColossalFramework.Math;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace TreeAnarchy {
     /// <summary>
@@ -7,20 +6,21 @@ namespace TreeAnarchy {
     /// and these are common Mathf methods that are optimized. I hate re-inventing
     /// the wheel, but these speed ups are drastic enough to do them
     /// </summary>
-    public static class EMath {
+    public struct EMath {
         public static readonly Vector2 Vector2Zero = Vector2.zero;
         public static readonly Vector3 Vector3Zero = Vector3.zero;
         public static readonly Vector4 Vector4Zero = Vector4.zero;
         public static readonly Vector3 Vector3Down = Vector3.down;
         public static readonly Vector3 Vector3One = Vector3.one;
+        public static readonly Vector3 Vector3Up = Vector3.up;
+        public static readonly Vector3 Vector3Left = Vector3.left;
+        public static readonly Vector3 Vector3Right = Vector3.right;
         public static readonly Vector3 Vector3Forward = Vector3.forward;
         public static readonly Vector3 DefaultLodMin = new Vector3(100000f, 100000f, 100000f);
         public static readonly Vector3 DefaultLodMax = new Vector3(-100000f, -100000f, -100000f);
         public static readonly Vector3 DefaultLod100 = new Vector3(100f, 100f, 100f);
         public static readonly Color ColorClear = Color.clear;
         public static readonly Color ColorBlack = Color.black;
-        public static Randomizer randomizer = new Randomizer();
-
 
         /// <summary>
         /// Get Matrix.identity using this static variable. It's about ~5x faster
@@ -115,6 +115,19 @@ namespace TreeAnarchy {
         /// <param name="t"></param>
         /// <returns></returns>
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
+
+        /// <summary>
+        /// Same as Vector3.Lerp, just slightly faster
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="t"></param>
+        /// <returns>Returns Vector3</returns>
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t) {
+            t = t > 1 ? 1 : t;
+            t = t < 0 ? 0 : t;
+            return new Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+        }
 
         /// <summary>
         /// I don't know why Mathf.Max and Math.Max is so slow, but this method will work ~27x faster
@@ -227,33 +240,21 @@ namespace TreeAnarchy {
         /// <returns></returns>
         public static int Sign(int a) => a < 0 ? -1 : 1;
 
+        /// <summary>
+        /// Functions Exactly like Mathf.FloorToInt, just ~8x faster
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
+        public static int FloorToInt(float val) => (val < 0) ? (int)(val - 1) : (int)val;
+
+        /// <summary>
+        /// Functions like Mathf.CeilToInt, just ~3x faster
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
+        public static int CeilToInt(float val) => (val < 0) ? (int)(val) : (val % (int)val > 0f ? (int)(val + 1) : (int)val);
+
         public static bool IsNearlyEqual(float a, float b, float epsilon = 0.0001f) => a == b || Abs(a - b) < epsilon;
-
-        /// <summary>
-        /// Use this method to set the seed value, instead of calling new Randomizer(int val), so randomizer can be re-used
-        /// </summary>
-        /// <param name="val"></param>
-        public static void SetRandomizerSeed(int val) => randomizer.seed = (ulong)(6364136223846793005L * val + 1442695040888963407L);
-
-        /// <summary>
-        /// Use this method to set the seed value, instead of calling new Randomizer(int val), so randomizer can be re-used
-        /// </summary>
-        /// <param name="val"></param>
-        public static void SetRandomizerSeed(uint val) => randomizer.seed = 6364136223846793005uL * val + 1442695040888963407uL;
-
-        /// <summary>
-        /// This is an extension method to ease the reuse of randomizers
-        /// </summary>
-        /// <param name="randomizer"></param>
-        /// <param name="val"></param>
-        public static void SetSeed(ref this Randomizer randomizer, int val) => randomizer.seed = (ulong)(6364136223846793005L * val + 1442695040888963407L);
-
-        /// <summary>
-        /// This is an extension method to ease the reuse of randomizers
-        /// </summary>
-        /// <param name="randomizer"></param>
-        /// <param name="val"></param>
-        public static void SetSeed(ref this Randomizer randomizer, uint val) => randomizer.seed = 6364136223846793005uL * val + 1442695040888963407uL;
 
         /// <summary>
         /// Functions exactly like MathUtils.SmoothStep. This one is only 1.2x faster
@@ -275,7 +276,7 @@ namespace TreeAnarchy {
         /// <param name="point"></param>
         /// <param name="maxDistance"></param>
         /// <returns></returns>
-        public static bool ECheckRenderDistance(this RenderManager.CameraInfo cameraInfo, Vector3 point, float maxDistance) {
+        public static bool CheckRenderDistance(RenderManager.CameraInfo cameraInfo, Vector3 point, float maxDistance) {
             float distance = maxDistance * 0.45f;
             Vector3 campos = cameraInfo.m_position;
             Vector3 camforward = cameraInfo.m_forward;
