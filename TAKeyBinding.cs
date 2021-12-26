@@ -44,18 +44,18 @@ namespace TreeAnarchy {
         private static readonly InputKey defaultIncrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Period, false, false, false);
         private static readonly InputKey defaultDecrementTreeSizeKey = SavedInputKey.Encode(KeyCode.Comma, false, false, false);
 
-        private static readonly SavedInputKey m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
-        private static readonly SavedInputKey m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
-        private static readonly SavedInputKey m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
+        private SavedInputKey m_treeSnapping;
+        private SavedInputKey m_lockForestry;
+        private SavedInputKey m_treeAnarchy;
 #if ENABLETREEGROUP
-        private static readonly SavedInputKey m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
-        private static readonly SavedInputKey m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
+        private SavedInputKey m_groupTrees;
+        private SavedInputKey m_ungroupTrees;
 #endif
 #if ENABLETERRAINCONFORM
-        private static readonly SavedInputKey m_terrainConformTrees = new SavedInputKey(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
+        private SavedInputKey m_terrainConformTrees;
 #endif
-        private static readonly SavedInputKey m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
-        private static readonly SavedInputKey m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
+        private SavedInputKey m_incrTreeVariation;
+        private SavedInputKey m_decrTreeVariation;
 
         protected void Update() {
             if (!UIView.HasModalInput() && !UIView.HasInputFocus()) {
@@ -88,6 +88,19 @@ namespace TreeAnarchy {
         }
 
         protected void Awake() {
+            m_treeSnapping = new SavedInputKey(toggleTreeSnapping, KeybindingConfigFile, defaultToggleTreeSnappingKey, true);
+            m_lockForestry = new SavedInputKey(toggleLockForestry, KeybindingConfigFile, defaultToggleLockForestryKey, true);
+            m_treeAnarchy = new SavedInputKey(toggleTreeAnarchy, KeybindingConfigFile, defaultToggleTreeAnarchyKey, true);
+#if ENABLETREEGROUP
+            m_groupTrees = new SavedInputKey(groupTrees, KeybindingConfigFile, defaultGroupTreeKey, true);
+            m_ungroupTrees = new SavedInputKey(ungroupTrees, KeybindingConfigFile, defaultUngroupTreeKey, true);
+#endif
+#if ENABLETERRAINCONFORM
+            m_terrainConformTrees = new SavedInputKey(terrainConformTrees, KeybindingConfigFile, defaultTerrainConformTrees, true);
+#endif
+            m_incrTreeVariation = new SavedInputKey(incrementTreeSize, KeybindingConfigFile, defaultIncrementTreeSizeKey, true);
+            m_decrTreeVariation = new SavedInputKey(decrementTreeSize, KeybindingConfigFile, defaultDecrementTreeSizeKey, true);
+
             UILabel desc = component.AddUIComponent<UILabel>();
             desc.padding.top = 10;
             desc.width = component.width - 50;

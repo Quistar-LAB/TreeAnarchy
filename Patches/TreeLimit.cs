@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using static TreeAnarchy.TAMod;
-using System.Runtime.CompilerServices;
 
 namespace TreeAnarchy {
     internal static partial class TAPatcher {
@@ -116,7 +116,7 @@ namespace TreeAnarchy {
                                         yield return next;
                                         yield return next1;
                                         yield return next2;
-                                        yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAMod), nameof(TreeEffectOnWind)));
+                                        yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(TAMod), nameof(TreeEffectOnWind)));
                                         yield return new CodeInstruction(OpCodes.Brtrue_S, returnTreeManagerLabel);
                                         yield return new CodeInstruction(OpCodes.Ldloc_S, terrainAvg);
                                         yield return new CodeInstruction(OpCodes.Ldloc_S, terrainMax);

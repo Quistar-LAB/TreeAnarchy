@@ -33,7 +33,8 @@ namespace TreeAnarchy.Patches {
             MethodInfo absi = AccessTools.Method(typeof(Mathf), nameof(Mathf.Abs), new Type[] { typeof(int) });
             MethodInfo absf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Abs), new Type[] { typeof(float) });
             MethodInfo sqrt = AccessTools.Method(typeof(Mathf), nameof(Mathf.Sqrt));
-            MethodInfo lerp = AccessTools.Method(typeof(Mathf), nameof(Mathf.Lerp));
+            MethodInfo lerpFloat = AccessTools.Method(typeof(Mathf), nameof(Mathf.Lerp), new Type[] { typeof(float), typeof(float), typeof(float) });
+            MethodInfo lerpVector = AccessTools.Method(typeof(Mathf), nameof(Mathf.Lerp), new Type[] { typeof(Vector3), typeof(Vector3), typeof(float) });
             MethodInfo getBlack = AccessTools.PropertyGetter(typeof(Color), nameof(Color.black));
             MethodInfo getMatrixIdentity = AccessTools.PropertyGetter(typeof(Matrix4x4), nameof(Matrix4x4.identity));
             MethodInfo getVector4Zero = AccessTools.PropertyGetter(typeof(Vector4), nameof(Vector4.zero));
@@ -81,8 +82,11 @@ namespace TreeAnarchy.Patches {
                 } else if (code.opcode == OpCodes.Call && code.operand == sqrt) {
                     code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Sqrt));
                     yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == lerp) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp));
+                } else if (code.opcode == OpCodes.Call && code.operand == lerpVector) {
+                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp), new Type[] { typeof(Vector3), typeof(Vector3), typeof(float) });
+                    yield return code;
+                } else if (code.opcode == OpCodes.Call && code.operand == lerpFloat) {
+                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp), new Type[] { typeof(float), typeof(float), typeof(float) });
                     yield return code;
                 } else if (code.opcode == OpCodes.Call && code.operand == getBlack) {
                     yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.ColorBlack))).WithLabels(code.labels);
@@ -91,7 +95,7 @@ namespace TreeAnarchy.Patches {
                 } else if (code.opcode == OpCodes.Call && code.operand == getMatrixIdentity) {
                     yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.matrix4Identity))).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Callvirt && code.operand == checkRenderDistance) {
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(EMath), nameof(EMath.ECheckRenderDistance)));
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(EMath), nameof(EMath.CheckRenderDistance)));
                 } else {
                     yield return code;
                 }
@@ -250,9 +254,6 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool CheckAnarchyState(ref TreeInstance tree) {
-            if (Singleton<LoadingManager>.instance.m_currentlyLoading) {
-                return true;
-            }
             if (TAMod.UseTreeAnarchy) {
                 ToolBase currentTool = ToolsModifierControl.GetCurrentTool<ToolBase>();
                 if (!(currentTool is NetTool) && !(currentTool is BuildingTool) && !(currentTool is BulldozeTool) && tree.GrowState == 0) {

@@ -477,7 +477,7 @@ namespace TreeAnarchy.Patches {
                                             TAManager.ExtraTreeInfo* extraTreeInfo = pExtraInfos + treeID;
                                             float scale = extraTreeInfo->TreeScale;
                                             float brightness = extraTreeInfo->m_brightness;
-                                            if (cameraInfo is null || info.m_lodMesh1 is null || cameraInfo.ECheckRenderDistance(position, info.m_lodRenderDistance)) {
+                                            if (cameraInfo is null || info.m_lodMesh1 is null || EMath.CheckRenderDistance(cameraInfo, position, info.m_lodRenderDistance)) {
                                                 Color value = info.m_defaultColor * brightness;
                                                 value.a = TAManager.GetWindSpeed(position);
                                                 materialBlock.Clear();
