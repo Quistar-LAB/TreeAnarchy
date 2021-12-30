@@ -16,9 +16,6 @@ namespace TreeAnarchy {
         public static readonly Vector3 Vector3Left = Vector3.left;
         public static readonly Vector3 Vector3Right = Vector3.right;
         public static readonly Vector3 Vector3Forward = Vector3.forward;
-        public static readonly Vector3 DefaultLodMin = new Vector3(100000f, 100000f, 100000f);
-        public static readonly Vector3 DefaultLodMax = new Vector3(-100000f, -100000f, -100000f);
-        public static readonly Vector3 DefaultLod100 = new Vector3(100f, 100f, 100f);
         public static readonly Color ColorClear = Color.clear;
         public static readonly Color ColorBlack = Color.black;
 
