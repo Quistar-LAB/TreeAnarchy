@@ -131,10 +131,17 @@ namespace TreeAnarchy {
             TreeAnarchyCB.name = TreeAnarchyCBName;
             TreeAnarchyCB.relativePosition = new Vector3(OFFSETX, TreeSnapCB.height + TreeSnapDesc.height);
             UILabel TreeAnarchyDesc = AddDescription(panel, @"TreeAnarchyDesc", TreeAnarchyCB, SmallFontScale, TALocale.GetLocale(@"TreeAnarchyDesc"));
+            UICheckBox hideTreeOnLoadCB = AddCheckBox(panel, TALocale.GetLocale(@"HideTreeOnLoad"), HideTreeOnLoad);
+            hideTreeOnLoadCB.eventClicked += (c, p) => {
+                HideTreeOnLoad = (c as UICheckBox).isChecked;
+            };
+            hideTreeOnLoadCB.relativePosition = new Vector3(OFFSETX + 25f, TreeAnarchyDesc.relativePosition.y + TreeAnarchyDesc.height);
+            UILabel hideTreeDesc = AddDescription(panel, @"HideTreeDesc", hideTreeOnLoadCB, SmallFontScale, TALocale.GetLocale(@"HideTreeDesc"));
+            hideTreeDesc.relativePosition = new Vector3(OFFSETX + 25f, hideTreeDesc.relativePosition.y);
             UIDropDown TreeBehaviourDD = AddDropdown(panel, panel, TALocale.GetLocale(@"TreeAnarchyBehaviour"),
                             new string[] { TALocale.GetLocale(@"TreeAnarchyHideTree"), TALocale.GetLocale(@"TreeAnarchyDeleteTree") },
                             DeleteOnOverlap ? 1 : 0, (_, val) => DeleteOnOverlap = val != 0);
-            TreeBehaviourDD.parent.relativePosition = new Vector3(OFFSETX + 25f, TreeAnarchyDesc.relativePosition.y + TreeAnarchyDesc.height);
+            TreeBehaviourDD.parent.relativePosition = new Vector3(OFFSETX + 25f, hideTreeDesc.relativePosition.y + hideTreeDesc.height + 3f);
             UIDropDown TreeLODFixDD = AddDropdown(panel, panel, null,
                             new string[] { TALocale.GetLocale(@"TreeLODLow"), TALocale.GetLocale(@"TreeLODMedium"), TALocale.GetLocale(@"TreeLODHigh"), TALocale.GetLocale(@"TreeLODUltraHigh") },
                             (int)TreeLODSelectedResolution, (_, val) => {
