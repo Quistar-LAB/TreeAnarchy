@@ -2,8 +2,6 @@
 using ColossalFramework.Math;
 using MoveIt;
 using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Action = MoveIt.Action;
@@ -25,23 +23,7 @@ namespace TreeAnarchy {
         private static bool m_updateLODTreeSway = false;
         private static WeatherManager.WindCell[] m_windGrid;
 
-
-        private delegate U RefGetter<out U>();
-        private static RefGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>> GetSimPrefabs;
-        private static RefGetter<U> CreatePrefabRefGetter<U>(string s_field) {
-            var prefab = typeof(PrefabCollection<TreeInfo>);
-            var fi = prefab.GetField(s_field, BindingFlags.NonPublic | BindingFlags.Static);
-            if (fi == null) throw new MissingFieldException(prefab.Name, s_field);
-            var s_name = "__refget_" + prefab.Name + "_fi_" + fi.Name;
-            var dm = new DynamicMethod(s_name, typeof(U), new[] { prefab }, prefab, true);
-            var il = dm.GetILGenerator();
-            il.Emit(OpCodes.Ldsfld, fi);
-            il.Emit(OpCodes.Ret);
-            return (RefGetter<U>)dm.CreateDelegate(typeof(RefGetter<U>));
-        }
-
         public static void Initialize() {
-            GetSimPrefabs = CreatePrefabRefGetter<FastList<PrefabCollection<TreeInfo>.PrefabData>>("m_simulationPrefabs");
             for (int i = 0; i < 360; i++) {
                 m_treeQuaternions[i] = Quaternion.Euler(0, i, 0);
             }

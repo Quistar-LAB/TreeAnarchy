@@ -419,45 +419,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) {
-            const float lodMin = 100000f;
-            const float lodMax = -lodMin;
-            bool set100 = false;
-            bool setlodMin = false;
-            bool setlodMax = false;
-            CodeInstruction storedCode = default;
-            ConstructorInfo newVector3 = AccessTools.Constructor(typeof(Vector3), new Type[] { typeof(float), typeof(float), typeof(float) });
-            foreach (var code in ReplaceMath(instructions)) {
-                if (code.opcode == OpCodes.Ldelema && code.operand == typeof(Vector4)) {
-                    // skip code
-                } else if (code.opcode == OpCodes.Stobj && code.operand == typeof(Vector4)) {
-                    code.opcode = OpCodes.Stelem;
-                    yield return code;
-                } else if (code.LoadsConstant(100f)) {
-                    set100 = true;
-                } else if (set100 && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
-                    set100 = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLod100))).WithLabels(code.labels);
-                } else if (code.LoadsConstant(lodMin)) {
-                    setlodMin = true;
-                } else if (setlodMin && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
-                    setlodMin = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMin))).WithLabels(code.labels);
-                } else if (code.LoadsConstant(lodMax)) {
-                    storedCode = code;
-                    setlodMax = true;
-                } else if (setlodMax && (code.opcode != OpCodes.Ldc_R4 && code.opcode != OpCodes.Newobj)) {
-                    setlodMax = false;
-                    yield return storedCode;
-                    yield return code;
-                } else if (setlodMax && code.opcode == OpCodes.Newobj && code.operand == newVector3) {
-                    setlodMax = false;
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.DefaultLodMax))).WithLabels(code.labels);
-                } else {
-                    yield return code;
-                }
-            }
-        }
+        private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
 
         private static IEnumerable<CodeInstruction> TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;

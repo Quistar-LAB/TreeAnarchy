@@ -247,6 +247,10 @@ namespace TreeAnarchy {
 
         public void OnLoadData() { }
 
+        private static void ClearBurningTrees() {
+            Singleton<TreeManager>.instance.m_burningTrees.Clear();
+        }
+
         public static void IntegratedDeserialize(TreeInstance[] trees) {
             try { /* Try find old data version first */
                 if (Singleton<SimulationManager>.instance.m_serializableDataStorage.ContainsKey(OldTreeUnlimiterKey)) {
@@ -260,6 +264,9 @@ namespace TreeAnarchy {
                         if (oldSerializer.Deserialize()) {
                             OldFormatLoaded = true;
                             TALog("Old Format Loaded");
+                            // Clear burning tree buffer on first load from legacy tree data, due to it possibly containing
+                            // old indexes that are out of range for new buffer 
+                            Singleton<TreeManager>.instance.m_burningTrees.Clear();
                         } else {
                             TALog("Invalid Data Format");
                         }

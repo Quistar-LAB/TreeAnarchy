@@ -448,8 +448,8 @@ namespace TreeAnarchy.Patches {
             int ID_TreeObjectIndex = __instance.ID_TreeObjectIndex;
             MaterialPropertyBlock materialBlock = __instance.m_materialBlock;
             Matrix4x4 identity = EMath.matrix4Identity;
-            Vector3 lodMin = EMath.DefaultLodMin;
-            Vector3 lodMax = EMath.DefaultLodMax;
+            Vector3 lodMin = new Vector3(100000f, 100000f, 100000f);
+            Vector3 lodMax = new Vector3(-100000f, -100000f, -100000f);
             Color black = EMath.ColorBlack;
             Vector4 v4zero = EMath.Vector4Zero;
             int len = rmInstance.m_renderedGroups.m_size;
