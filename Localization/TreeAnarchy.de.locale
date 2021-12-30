@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">Anarchie für Bäume ist AUS</string>
   <string name="TreeAnarchyIsOn">Anarchie für Bäume ist AN</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
   <string name="TreeAnarchy">Baum-Anarchie</string>
   <string name="TreeAnarchyDesc">Erlaubt es dir, Bäume überall zu platzieren. Wenn du Netzwerke oder Gebäude platzierst, kannst du mit der folgenden Einstellung den Baum verstecken oder den Baum löschen</string>
   <string name="TreeAnarchyBehaviour">Verhalten bei Überlappung</string>

@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">Анархия деревьев ВЫКЛ</string>
   <string name="TreeAnarchyIsOn">Анархия деревьев ВКЛ</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
   <string name="TreeAnarchy">Анархия деревьев</string>
   <string name="TreeAnarchyDesc">Позволяет размещать деревья в любом месте. При размещении дорог или зданий вы можете использовать следующую настройку, чтобы скрыть или удалить дерево</string>
   <string name="TreeAnarchyBehaviour">Поведение при столкновении</string>

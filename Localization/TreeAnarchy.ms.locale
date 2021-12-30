@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">Anarki Pokok DIMATIKAN</string>
   <string name="TreeAnarchyIsOn">Anarki Pokok DIHIDUPKAN</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
   <string name="TreeAnarchy">Anarki Pokok</string>
   <string name="TreeAnarchyDesc">Membolehkan anda meletakkan pokok di mana-mana sahaja. Apabila anda letak rangkaian atau bangunan, anda boleh guna tetapan ini untuk sembunyikan atau buangkan pokok</string>
   <string name="TreeAnarchyBehaviour">Perilaku apabila wujudnya tindihan</string>

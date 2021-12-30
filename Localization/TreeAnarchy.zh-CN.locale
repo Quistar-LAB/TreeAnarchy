@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">树木无碰撞已关闭</string>
   <string name="TreeAnarchyIsOn">树木无碰撞已开启</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">载入游戏时隐藏覆盖树木</string>
+  <string name="HideTreeDesc">更改此设定候必须重新启动游戏</string>
   <string name="TreeAnarchy">树木种植限制解锁</string>
   <string name="TreeAnarchyDesc">此选项勾选后可无限制的任意种植树木。当摆放道路或楼房时，可依下方选项所选方式隐藏树木或删除树木</string>
   <string name="TreeAnarchyBehaviour">与道路或楼房重叠时反应</string>

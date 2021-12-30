@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">Tree Anarchy가 꺼짐</string>
   <string name="TreeAnarchyIsOn">Tree Anarchy가 켜짐</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
   <string name="TreeAnarchy">Tree Anarchy</string>
   <string name="TreeAnarchyDesc">나무를 아무 곳에나 배치할 수 있습니다. 네트워크 또는 건물을 배치할 때 다음 설정을 사용하여 나무를 숨기거나 삭제할 수 있습니다.</string>
   <string name="TreeAnarchyBehaviour">겹침 발생 시 동작</string>

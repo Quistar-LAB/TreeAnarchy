@@ -26,6 +26,8 @@ TreeAnarchy Default Locale Template
   <string name="TreeAnarchyIsOff">Árvores em todo lugar: DESL</string>
   <string name="TreeAnarchyIsOn">Árvores em todo lugar: LIG</string>
   <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
   <string name="TreeAnarchy">Árvores em Todo Lugar</string>
   <string name="TreeAnarchyDesc">Você poderá colocar árvores em todos os lugares. Ao construir estradas ou colocar construções, use a configuração para esconder / deletar árvores</string>
   <string name="TreeAnarchyBehaviour">O que será feito com sobreposição</string>

@@ -7,65 +7,67 @@
 TreeAnarchy Default Locale Template
 -->
 <resources>
-    <!-- Tree Lod Fix -->
-    <string name="TreeLODFix">Tree LOD Fix - Level of Detail:</string>
-    <string name="TreeLODLow">Low</string>
-    <string name="TreeLODMedium">Medium</string>
-    <string name="TreeLODHigh">High</string>
-    <string name="TreeLODUltraHigh">Ultra High</string>
-    <!-- Misc Trees -->
-    <string name="GroupTrees">Group Trees</string>
-    <string name="UngroupTrees">Ungroup Trees</string>
-    <string name="TerrainConformTrees">Terrain Conform Trees</string>
-    <!-- Indicator Messages -->
-    <string name="EnableIndicator">Enable in game indicators</string>
-    <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
-    <string name="TreeSnapIsOn">Tree Snapping is ON</string>
-    <string name="LockForestryIsOff">Lock Forestry is OFF</string>
-    <string name="LockForestryIsOn">Lock Forestry is ON</string>
-    <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
-    <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
-    <!-- Tree Anarchy -->
-    <string name="TreeAnarchy">Tree Anarchy</string>
-    <string name="TreeAnarchyDesc">Allows you to place trees anywhere. When you place networks or buildings, you may use the following setting to hide the tree or delete the tree</string>
-    <string name="TreeAnarchyBehaviour">Behavior when overlap occurs</string>
-    <string name="TreeAnarchyHideTree">Hide Tree</string>
-    <string name="TreeAnarchyDeleteTree">Delete Tree</string>
-    <!-- Tree Resize -->
-    <string name="IncreaseTreeSize">Increase tree size</string>
-    <string name="DecreaseTreeSize">Decrease tree size</string>
-    <string name="PressAnyKey">Press any key</string>
-    <!-- Tab Strips -->
-    <string name="MainOptionTab">Main Options</string>
-    <string name="TreeAnarchyTab">Tree Anarchy</string>
-    <string name="KeyboardShortcutTab">Key Binding</string>
-    <string name="KeyBindDescription">When binding hotkeys, please make sure to use modifiers (SHIFT | CONTROL | ALT) for Tree Snapping and Lock Forestry. For tree size increment and decrement hotkeys, it is specially treated so you don't have to use modifiers, but please make sure to pick a unique hotkey.</string>
-    <!-- Main options -->
-    <string name="MaxTreeLimitTitle">Configure Custom Tree Limit</string>
-    <string name="MaxTreeLimit">Maximum Tree Limit:  {0} trees</string>
-    <string name="WindEffect">Allow tree effect on wind</string>
-    <string name="WindEffectLabel">This option affects the normal game behavior of tree's height diluting and weakening the wind on the map. Original game default is enabled</string>
-    <string name="RandomTreeRotation">Random Tree Rotation</string>
-    <string name="TreeSwayFactor">Tree Sway Factor</string>
-    <string name="LockForestry">Lock Forestry</string>
-    <string name="PersistentLock">Persistent lock on forestry resources</string>
-    <string name="SwayLabel">Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land. Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting to turn on Lock Forestry when entering a game and destroying fertile land on a map</string>
-    <string name="Important">Important! Must be set before starting/loading a game
+  <!-- Tree Lod Fix -->
+  <string name="TreeLODFix">Tree LOD Fix - Level of Detail:</string>
+  <string name="TreeLODLow">Low</string>
+  <string name="TreeLODMedium">Medium</string>
+  <string name="TreeLODHigh">High</string>
+  <string name="TreeLODUltraHigh">Ultra High</string>
+  <!-- Misc Trees -->
+  <string name="GroupTrees">Group Trees</string>
+  <string name="UngroupTrees">Ungroup Trees</string>
+  <string name="TerrainConformTrees">Terrain Conform Trees</string>
+  <!-- Indicator Messages -->
+  <string name="EnableIndicator">Enable in game indicators</string>
+  <string name="TreeSnapIsOff">Tree Snapping is OFF</string>
+  <string name="TreeSnapIsOn">Tree Snapping is ON</string>
+  <string name="LockForestryIsOff">Lock Forestry is OFF</string>
+  <string name="LockForestryIsOn">Lock Forestry is ON</string>
+  <string name="TreeAnarchyIsOff">Tree Anarchy is OFF</string>
+  <string name="TreeAnarchyIsOn">Tree Anarchy is ON</string>
+  <!-- Tree Anarchy -->
+  <string name="HideTreeOnLoad">Hide tree on load</string>
+  <string name="HideTreeDesc">After changing this value, you must restart the game</string>
+  <string name="TreeAnarchy">Tree Anarchy</string>
+  <string name="TreeAnarchyDesc">Allows you to place trees anywhere. When you place networks or buildings, you may use the following setting to hide the tree or delete the tree</string>
+  <string name="TreeAnarchyBehaviour">Behavior when overlap occurs</string>
+  <string name="TreeAnarchyHideTree">Hide Tree</string>
+  <string name="TreeAnarchyDeleteTree">Delete Tree</string>
+  <!-- Tree Resize -->
+  <string name="IncreaseTreeSize">Increase tree size</string>
+  <string name="DecreaseTreeSize">Decrease tree size</string>
+  <string name="PressAnyKey">Press any key</string>
+  <!-- Tab Strips -->
+  <string name="MainOptionTab">Main Options</string>
+  <string name="TreeAnarchyTab">Tree Anarchy</string>
+  <string name="KeyboardShortcutTab">Key Binding</string>
+  <string name="KeyBindDescription">When binding hotkeys, please make sure to use modifiers (SHIFT | CONTROL | ALT) for Tree Snapping and Lock Forestry. For tree size increment and decrement hotkeys, it is specially treated so you don't have to use modifiers, but please make sure to pick a unique hotkey.</string>
+  <!-- Main options -->
+  <string name="MaxTreeLimitTitle">Configure Custom Tree Limit</string>
+  <string name="MaxTreeLimit">Maximum Tree Limit:  {0} trees</string>
+  <string name="WindEffect">Allow tree effect on wind</string>
+  <string name="WindEffectLabel">This option affects the normal game behavior of tree's height diluting and weakening the wind on the map. Original game default is enabled</string>
+  <string name="RandomTreeRotation">Random Tree Rotation</string>
+  <string name="TreeSwayFactor">Tree Sway Factor</string>
+  <string name="LockForestry">Lock Forestry</string>
+  <string name="PersistentLock">Persistent lock on forestry resources</string>
+  <string name="SwayLabel">Useful eyecandy and tools. Lock forestry prevent trees from creating forestry resources and removing fertile land. Enabling Persistent Lock will set Lock Forestry to enabled on every game start. This is to prevent users from forgetting to turn on Lock Forestry when entering a game and destroying fertile land on a map</string>
+  <string name="Important">Important! Must be set before starting/loading a game
     
 The following settings are only used when loading from Old Unlimited Trees Format</string>
-    <string name="ReplaceRemoveDesc">The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees</string>
-    <string name="ReplaceRemoveName">Loading behavior for old unlimited trees game format</string>
-    <string name="ReplaceRemoveDropdown0">Keep missing trees</string>
-    <string name="ReplaceRemoveDropdown1">Remove missing trees</string>
-    <string name="ReplaceRemoveDropdown2">Replace missing trees</string>
-    <!-- Tree Snapping specific -->
-    <string name="TreeSnap">Tree Snapping</string>
-    <string name="TreeSnapLabel">This option allows free movement of trees, and allows trees to be snapped to buildings and props</string>
-    <string name="ExperimentalTreeSnap">Use Experimental Tree Snapping</string>
-    <string name="ExperimentalTreeSnapLabel">Experimental tree snapping is a hack in MoveIt mod, allowing tree snapping to Building, Networks, Props. Tree snapping works fine when moving trees, but when cloning, offsets will occur after placing the clone. To resolve this, deselect the tree and reselect any tree to reset position. Current I'm working within MoveIt internal framework during my free time to bring a better experience</string>
-    <string name="TreeSnapToBuilding">Enable this option to allow trees to snap to buildings</string>
-    <string name="TreeSnapToBuildingLabel">Tree snapping to sub-building does not work due to ray casting not recognizing sub-buildings</string>
-    <string name="TreeSnapToNetwork">Enable this option to allow trees to snap to networks</string>
-    <string name="TreeSnapToProp">Enable this option to allow trees to snap to props</string>
-    <string name="TreeSnapToPropLabel">Tree snapping to props does not work 100% due to some props which doesn't have defined shape for ray casting. e.g. Ploppable Surfaces</string>
+  <string name="ReplaceRemoveDesc">The default behavior is set to keep the missing trees. If you select remove, then the trees will be removed from the saved game. If you choose to replace the trees, then the first vanilla tree is used to replace the missing trees</string>
+  <string name="ReplaceRemoveName">Loading behavior for old unlimited trees game format</string>
+  <string name="ReplaceRemoveDropdown0">Keep missing trees</string>
+  <string name="ReplaceRemoveDropdown1">Remove missing trees</string>
+  <string name="ReplaceRemoveDropdown2">Replace missing trees</string>
+  <!-- Tree Snapping specific -->
+  <string name="TreeSnap">Tree Snapping</string>
+  <string name="TreeSnapLabel">This option allows free movement of trees, and allows trees to be snapped to buildings and props</string>
+  <string name="ExperimentalTreeSnap">Use Experimental Tree Snapping</string>
+  <string name="ExperimentalTreeSnapLabel">Experimental tree snapping is a hack in MoveIt mod, allowing tree snapping to Building, Networks, Props. Tree snapping works fine when moving trees, but when cloning, offsets will occur after placing the clone. To resolve this, deselect the tree and reselect any tree to reset position. Current I'm working within MoveIt internal framework during my free time to bring a better experience</string>
+  <string name="TreeSnapToBuilding">Enable this option to allow trees to snap to buildings</string>
+  <string name="TreeSnapToBuildingLabel">Tree snapping to sub-building does not work due to ray casting not recognizing sub-buildings</string>
+  <string name="TreeSnapToNetwork">Enable this option to allow trees to snap to networks</string>
+  <string name="TreeSnapToProp">Enable this option to allow trees to snap to props</string>
+  <string name="TreeSnapToPropLabel">Tree snapping to props does not work 100% due to some props which doesn't have defined shape for ray casting. e.g. Ploppable Surfaces</string>
 </resources>
