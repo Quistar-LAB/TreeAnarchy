@@ -126,7 +126,7 @@ namespace TreeAnarchy {
         internal static bool HideTreeOnLoad {
             get => m_hideTreeOnLoad;
             set {
-                if(m_hideTreeOnLoad != value) {
+                if (m_hideTreeOnLoad != value) {
                     m_hideTreeOnLoad = value;
                     ThreadPool.QueueUserWorkItem(SaveSettings);
                 }
