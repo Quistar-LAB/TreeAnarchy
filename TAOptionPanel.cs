@@ -59,8 +59,10 @@ namespace TreeAnarchy {
             UICheckBox WindEffectCB = AddCheckBox(panel, windEffectText, TreeEffectOnWind);
             WindEffectCB.eventCheckChanged += (_, isChecked) => TreeEffectOnWind = isChecked;
             WindEffectCB.relativePosition = new Vector3(OFFSETX, 0f);
-            UIFontRenderer fontRenderer = WindEffectCB.label.ObtainRenderer();
-            WindEffectCB.width = fontRenderer.MeasureString(windEffectText).x + 5f;
+            UIFontRenderer fontRenderer;
+            using(fontRenderer = WindEffectCB.label.ObtainRenderer()) {
+                WindEffectCB.width = fontRenderer.MeasureString(windEffectText).x + 5f;
+            }
             UILabel WindEffectLabel = AddDescription(panel, @"WindEffectLabel", WindEffectCB, SmallFontScale, TALocale.GetLocale(@"WindEffectLabel"));
             string lockForestryText = TALocale.GetLocale(@"LockForestry");
             LockForestryCB = AddCheckBox(panel, lockForestryText, UseLockForestry);
@@ -68,8 +70,9 @@ namespace TreeAnarchy {
             LockForestryCB.cachedName = LockForestryCBName;
             LockForestryCB.name = LockForestryCBName;
             LockForestryCB.relativePosition = new Vector3(OFFSETX, WindEffectCB.relativePosition.y + WindEffectCB.height + WindEffectLabel.height);
-            fontRenderer = LockForestryCB.label.ObtainRenderer();
-            LockForestryCB.width = fontRenderer.MeasureString(lockForestryText).x + 5f;
+            using (fontRenderer = LockForestryCB.label.ObtainRenderer()) {
+                LockForestryCB.width = fontRenderer.MeasureString(lockForestryText).x + 5f;
+            }
 
             UI.UIFancySlider swayPanel = panel.AddUIComponent<UI.UIFancySlider>();
             swayPanel.Initialize(TALocale.GetLocale("TreeSwayFactor"), 0f, 1f, 0.1f, TreeSwayFactor, (_, val) => {
@@ -81,8 +84,9 @@ namespace TreeAnarchy {
             UICheckBox PersistentLockCB = AddCheckBox(panel, persistentLockText, PersistentLockForestry);
             PersistentLockCB.eventCheckChanged += (_, isChecked) => PersistentLockForestry = isChecked;
             PersistentLockCB.relativePosition = new Vector3(OFFSETX, LockForestryCB.relativePosition.y + LockForestryCB.height);
-            fontRenderer = PersistentLockCB.label.ObtainRenderer();
-            PersistentLockCB.width = fontRenderer.MeasureString(persistentLockText).x + 5f;
+            using (fontRenderer = PersistentLockCB.label.ObtainRenderer()) {
+                PersistentLockCB.width = fontRenderer.MeasureString(persistentLockText).x + 5f;
+            }
             UILabel SwayLabel = AddDescription(panel, @"SwayLabel", PersistentLockCB, SmallFontScale, TALocale.GetLocale(@"SwayLabel"));
             UIPanel ScalePanel = (UIPanel)panel.AttachUIComponent(UITemplateManager.GetAsGameObject(@"OptionsSliderTemplate"));
             MaxTreeLabel = ScalePanel.Find<UILabel>(@"Label");
@@ -171,11 +175,12 @@ namespace TreeAnarchy {
             TreeLodFixCB.cachedName = TreeLODFixCBName;
             TreeLodFixCB.name = TreeLODFixCBName;
             UILabel label = TreeLodFixCB.Find<UILabel>(@"Label");
-            UIFontRenderer renderer = label.ObtainRenderer();
-            Vector2 size = renderer.MeasureString(treeLODFixName);
-            TreeLodFixCB.relativePosition = new Vector3(OFFSETX, TreeBehaviourDD.parent.relativePosition.y + TreeBehaviourDD.parent.height);
-            TreeLodFixCB.width = size.x + 2f;
-            TreeLODFixDD.parent.relativePosition = new Vector3(35f + size.x, TreeBehaviourDD.parent.relativePosition.y + TreeBehaviourDD.parent.height + 5f);
+            using (UIFontRenderer renderer = label.ObtainRenderer()) {
+                Vector2 size = renderer.MeasureString(treeLODFixName);
+                TreeLodFixCB.relativePosition = new Vector3(OFFSETX, TreeBehaviourDD.parent.relativePosition.y + TreeBehaviourDD.parent.height);
+                TreeLodFixCB.width = size.x + 2f;
+                TreeLODFixDD.parent.relativePosition = new Vector3(35f + size.x, TreeBehaviourDD.parent.relativePosition.y + TreeBehaviourDD.parent.height + 5f);
+            }
         }
 
         private static UIPanel AddTab(UITabstrip tabStrip, string tabName, int tabIndex, bool autoLayout) {
