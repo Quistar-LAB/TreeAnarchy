@@ -60,7 +60,7 @@ namespace TreeAnarchy {
             WindEffectCB.eventCheckChanged += (_, isChecked) => TreeEffectOnWind = isChecked;
             WindEffectCB.relativePosition = new Vector3(OFFSETX, 0f);
             UIFontRenderer fontRenderer;
-            using(fontRenderer = WindEffectCB.label.ObtainRenderer()) {
+            using (fontRenderer = WindEffectCB.label.ObtainRenderer()) {
                 WindEffectCB.width = fontRenderer.MeasureString(windEffectText).x + 5f;
             }
             UILabel WindEffectLabel = AddDescription(panel, @"WindEffectLabel", WindEffectCB, SmallFontScale, TALocale.GetLocale(@"WindEffectLabel"));
