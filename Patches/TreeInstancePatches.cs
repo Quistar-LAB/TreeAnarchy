@@ -16,93 +16,6 @@ namespace TreeAnarchy.Patches {
         private const ushort FixedHeightFlag = unchecked((ushort)TreeInstance.Flags.FixedHeight);
 
         /// <summary>
-        /// Replace all Mathf to faster EMath
-        /// </summary>
-        internal static IEnumerable<CodeInstruction> ReplaceMath(IEnumerable<CodeInstruction> instructions) {
-            MethodInfo max = AccessTools.Method(typeof(Mathf), nameof(Mathf.Max), new Type[] { typeof(int), typeof(int) });
-            MethodInfo min = AccessTools.Method(typeof(Mathf), nameof(Mathf.Min), new Type[] { typeof(int), typeof(int) });
-            MethodInfo maxf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Max), new Type[] { typeof(float), typeof(float) });
-            MethodInfo minf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Min), new Type[] { typeof(float), typeof(float) });
-            MethodInfo clamp = AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) });
-            MethodInfo clampf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(float), typeof(float), typeof(float) });
-            MethodInfo roundToInt = AccessTools.Method(typeof(Mathf), nameof(Mathf.RoundToInt), new Type[] { typeof(float) });
-            MethodInfo vector3Min = AccessTools.Method(typeof(Vector3), nameof(Vector3.Min));
-            MethodInfo vector3Max = AccessTools.Method(typeof(Vector3), nameof(Vector3.Max));
-            MethodInfo sin = AccessTools.Method(typeof(Mathf), nameof(Mathf.Sin));
-            MethodInfo cos = AccessTools.Method(typeof(Mathf), nameof(Mathf.Cos));
-            MethodInfo absi = AccessTools.Method(typeof(Mathf), nameof(Mathf.Abs), new Type[] { typeof(int) });
-            MethodInfo absf = AccessTools.Method(typeof(Mathf), nameof(Mathf.Abs), new Type[] { typeof(float) });
-            MethodInfo sqrt = AccessTools.Method(typeof(Mathf), nameof(Mathf.Sqrt));
-            MethodInfo lerpFloat = AccessTools.Method(typeof(Mathf), nameof(Mathf.Lerp), new Type[] { typeof(float), typeof(float), typeof(float) });
-            MethodInfo lerpVector = AccessTools.Method(typeof(Mathf), nameof(Mathf.Lerp), new Type[] { typeof(Vector3), typeof(Vector3), typeof(float) });
-            MethodInfo getBlack = AccessTools.PropertyGetter(typeof(Color), nameof(Color.black));
-            MethodInfo getMatrixIdentity = AccessTools.PropertyGetter(typeof(Matrix4x4), nameof(Matrix4x4.identity));
-            MethodInfo getVector4Zero = AccessTools.PropertyGetter(typeof(Vector4), nameof(Vector4.zero));
-            MethodInfo checkRenderDistance = AccessTools.Method(typeof(RenderManager.CameraInfo), nameof(RenderManager.CameraInfo.CheckRenderDistance));
-            foreach (var code in instructions) {
-                if (code.opcode == OpCodes.Call && code.operand == clamp) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == clampf) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Clamp), new Type[] { typeof(float), typeof(float), typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == roundToInt) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.RoundToInt), new Type[] { typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == vector3Min) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Min), new Type[] { typeof(Vector3), typeof(Vector3) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == min) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Min), new Type[] { typeof(int), typeof(int) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == minf) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Min), new Type[] { typeof(float), typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == vector3Max) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Max), new Type[] { typeof(Vector3), typeof(Vector3) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == max) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Max), new Type[] { typeof(int), typeof(int) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == maxf) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Max), new Type[] { typeof(float), typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == cos) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Cos));
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == sin) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Sin));
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == absi) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Abs), new Type[] { typeof(int) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == absf) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Abs), new Type[] { typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == sqrt) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Sqrt));
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == lerpVector) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp), new Type[] { typeof(Vector3), typeof(Vector3), typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == lerpFloat) {
-                    code.operand = AccessTools.Method(typeof(EMath), nameof(EMath.Lerp), new Type[] { typeof(float), typeof(float), typeof(float) });
-                    yield return code;
-                } else if (code.opcode == OpCodes.Call && code.operand == getBlack) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.ColorBlack))).WithLabels(code.labels);
-                } else if (code.opcode == OpCodes.Call && code.operand == getVector4Zero) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.Vector4Zero))).WithLabels(code.labels);
-                } else if (code.opcode == OpCodes.Call && code.operand == getMatrixIdentity) {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(EMath), nameof(EMath.matrix4Identity))).WithLabels(code.labels);
-                } else if (code.opcode == OpCodes.Callvirt && code.operand == checkRenderDistance) {
-                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(EMath), nameof(EMath.CheckRenderDistance)));
-                } else {
-                    yield return code;
-                }
-            }
-        }
-
-        /// <summary>
         /// Replaces all calculation for scale into loading pre-calculated m_defScale[]
         /// </summary>
         /// <param name="treeIndexParamPos">TreeID parameter index</param>
@@ -171,11 +84,11 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> SetInfoTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> SetInfoTranspiler(IEnumerable<CodeInstruction> instructions) => instructions;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> SetPositionTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> SetPositionTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
 
         /// <summary>
         /// Used in Tree Anarchy state to get anarchy state set by user. This is specifically used in TreeInstance::set_GrowState
@@ -192,7 +105,7 @@ namespace TreeAnarchy.Patches {
             yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TreeInstancePatches), nameof(GetAnarchyState)));
             yield return new CodeInstruction(OpCodes.Brfalse_S, valueNotZero);
             yield return new CodeInstruction(OpCodes.Ret);
-            foreach (var code in ReplaceMath(instructions)) {
+            foreach (var code in instructions) {
                 if (counter == 0) {
                     yield return code.WithLabels(valueNotZero);
                 } else {
@@ -205,7 +118,7 @@ namespace TreeAnarchy.Patches {
         private static IEnumerable<CodeInstruction> AfterTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             bool skip = false;
             bool firstBeqFound = false;
-            foreach (var code in ReplaceMath(instructions)) {
+            foreach (var code in instructions) {
                 if (!skip && code.opcode == OpCodes.Ldc_I4_3) {
                     yield return new CodeInstruction(OpCodes.Ldc_I4_S, 0x23).WithLabels(code.labels);
                 } else if (!skip && !firstBeqFound && code.opcode == OpCodes.Beq) {
@@ -241,7 +154,7 @@ namespace TreeAnarchy.Patches {
         private static IEnumerable<CodeInstruction> CalculateTreeTranspiler(IEnumerable<CodeInstruction> instructions) {
             MethodInfo terrainInstance = AccessTools.PropertyGetter(typeof(Singleton<TerrainManager>), nameof(Singleton<TerrainManager>.instance));
             MethodInfo sampleDetailHeight = AccessTools.Method(typeof(TerrainManager), nameof(TerrainManager.SampleDetailHeight), new Type[] { typeof(Vector3) });
-            foreach (var code in ReplaceMath(instructions)) {
+            foreach (var code in instructions) {
                 if (code.opcode == OpCodes.Call && code.operand == terrainInstance) {
                     yield return new CodeInstruction(OpCodes.Ldarga_S, 0).WithLabels(code.labels);
                 } else if (code.opcode == OpCodes.Callvirt && code.operand == sampleDetailHeight) {
@@ -266,7 +179,6 @@ namespace TreeAnarchy.Patches {
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void CheckOverlapCoroutine(ref TreeInstance tree, uint treeID, Vector3 position) {
             if (tree.Info is TreeInfo info && !CheckAnarchyState(ref tree)) {
                 Quad2 quad;
@@ -387,17 +299,18 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> PopulateGroupDataStaticTranspiler(IEnumerable<CodeInstruction> instructions) =>
-            ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions));
+            ReplaceGetWindSpeedWithCustom(instructions);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> RayCastTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(ReplaceMath(instructions));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> RenderInstanceTransplier(IEnumerable<CodeInstruction> instructions) => ReplaceScaleCalculator(instructions, true);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> RenderInstanceStaticTransplier(IEnumerable<CodeInstruction> instructions) {
             MethodInfo identity = AccessTools.PropertyGetter(typeof(Quaternion), nameof(Quaternion.identity));
-            foreach (var code in ReplaceGetWindSpeedWithCustom(ReplaceMath(instructions))) {
+            foreach (var code in ReplaceGetWindSpeedWithCustom(instructions)) {
                 if (code.opcode == OpCodes.Call && code.operand == identity) {
                     yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_treeQuaternions))).WithLabels(code.labels);
                     yield return new CodeInstruction(OpCodes.Ldarg_2);
@@ -419,8 +332,8 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
-
+        //private static IEnumerable<CodeInstruction> RenderLODTranspiler(IEnumerable<CodeInstruction> instructions) => ReplaceMath(instructions);
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
@@ -438,6 +351,7 @@ namespace TreeAnarchy.Patches {
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TerrainUpdatedVectorTranspiler(IEnumerable<CodeInstruction> instructions) {
             List<Label> labels = instructions.Last().labels;
             foreach (var code in instructions) {
@@ -455,6 +369,7 @@ namespace TreeAnarchy.Patches {
         }
 
         internal static void EnableTreeInstancePatch(Harmony harmony) {
+#if FALSE
             try {
                 harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SetInfoTranspiler))));
@@ -469,6 +384,7 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog("Failed to patch TreeInstance::Position. This is non-Fatal");
                 TAMod.TALog(e.Message);
             }
+#endif
             try {
                 harmony.Patch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(TreeInstancePatches.SetGrowStateTranspiler))));
@@ -526,6 +442,7 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog("Failed to patch static TreeInstance::PopulateGroupData. This is non-Fatal");
                 TAMod.TALog(e.Message);
             }
+#if FALSE
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RayCast)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RayCastTranspiler))));
@@ -533,6 +450,7 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog("Failed to patch TreeInstance::RayCast. This is non-Fatal");
                 TAMod.TALog(e.Message);
             }
+#endif
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
                     new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }),
@@ -551,6 +469,7 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog(e.Message);
                 throw;
             }
+#if FALSE
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderLod)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RenderLODTranspiler))));
@@ -559,6 +478,7 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog(e.Message);
                 throw;
             }
+#endif
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
                     new Type[] { typeof(uint), typeof(float), typeof(float), typeof(float), typeof(float) }),
@@ -578,8 +498,8 @@ namespace TreeAnarchy.Patches {
         }
 
         internal static void DisableTreeInstancePatch(Harmony harmony, string HARMONYID) {
-            harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Info)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.Position)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.PropertySetter(typeof(TreeInstance), nameof(TreeInstance.GrowState)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.AfterTerrainUpdated)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.CalculateTree)), HarmonyPatchType.Transpiler, HARMONYID);
@@ -593,12 +513,12 @@ namespace TreeAnarchy.Patches {
                 new Type[] { typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(int).MakeByRefType(), typeof(int).MakeByRefType(),
                                 typeof(Vector3), typeof(RenderGroup.MeshData), typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float).MakeByRefType() }),
                 HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RayCast)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RayCast)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
                 new Type[] { typeof(RenderManager.CameraInfo), typeof(uint), typeof(int) }), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
                 new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderLod)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderLod)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),
                 new Type[] { typeof(uint), typeof(float), typeof(float), typeof(float), typeof(float) }), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.TerrainUpdated),

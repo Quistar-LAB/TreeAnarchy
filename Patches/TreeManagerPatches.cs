@@ -118,93 +118,31 @@ namespace TreeAnarchy.Patches {
         /// Major optimization to the routine, add local variables to treeGrid and treeBuffer, instead of using load field which is slow
         /// Also using new EMath optimized library
         /// </summary>
-        private static IEnumerable<CodeInstruction> AfterTerrainUpdateTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
-            int firstSigOccuranceCount = 0;
-            int secondSigOccurancecount = 0;
-            LocalBuilder treeGrid = il.DeclareLocal(typeof(uint[]));
-            LocalBuilder treeBuffer = il.DeclareLocal(typeof(TreeInstance[]));
-            MethodInfo mathMax = AccessTools.Method(typeof(EMath), nameof(EMath.Max), new Type[] { typeof(int), typeof(int) });
-            MethodInfo mathMin = AccessTools.Method(typeof(EMath), nameof(EMath.Min), new Type[] { typeof(int), typeof(int) });
-            FieldInfo treeGridField = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_treeGrid));
-            FieldInfo treeArrayField = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees));
-            using (var codes = TreeInstancePatches.ReplaceMath(instructions).GetEnumerator()) {
-                while (codes.MoveNext()) {
-                    var cur = codes.Current;
-                    if (cur.LoadsConstant(270f) && codes.MoveNext()) {
-                        yield return cur;
-                        cur = codes.Current;
-                        if (cur.opcode == OpCodes.Add && codes.MoveNext()) {
-                            yield return cur;
-                            cur = codes.Current;
-                            if (cur.opcode == OpCodes.Conv_I4 && codes.MoveNext()) {
-                                yield return cur;
-                                cur = codes.Current;
-                                if (cur.opcode == OpCodes.Ldc_I4_0 && codes.MoveNext()) {
-                                    yield return cur;
-                                    cur = codes.Current;
-                                    if (cur.opcode == OpCodes.Call && cur.operand == mathMax && codes.MoveNext()) {
-                                        yield return cur;
-                                        var next = codes.Current;
-                                        if (++firstSigOccuranceCount == 2) {
-                                            // skip the second stloc
-                                        } else {
-                                            yield return next;
-                                        }
-                                    }
-                                } else if (cur.LoadsConstant(539) && codes.MoveNext()) {
-                                    yield return cur;
-                                    cur = codes.Current;
-                                    if (cur.opcode == OpCodes.Call && cur.operand == mathMin && codes.MoveNext()) {
-                                        yield return cur;
-                                        cur = codes.Current;
-                                        if (++secondSigOccurancecount == 2 && codes.MoveNext()) {
-                                            yield return cur;
-                                            // skip the second ldloc and insert codes to initialize custom local variable
-                                            yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                            yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_treeGrid)));
-                                            yield return new CodeInstruction(OpCodes.Stloc_S, treeGrid);
-                                            yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                            yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees)));
-                                            yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Array32<TreeInstance>), nameof(Array32<TreeInstance>.m_buffer)));
-                                            yield return new CodeInstruction(OpCodes.Stloc_S, treeBuffer);
-                                        } else {
-                                            yield return cur;
-                                        }
-                                    }
-                                }
-                            }
+        private static bool AfterTerrainUpdatePrefix(TreeManager __instance, TerrainArea heightArea, TerrainArea surfaceArea, TerrainArea zoneArea) {
+            float x = heightArea.m_min.x;
+            float z = heightArea.m_min.z;
+            float x2 = heightArea.m_max.x;
+            float z2 = heightArea.m_max.z;
+            int startX = EMath.Max((int)((x - 8f) / 32f + 270f), 0);
+            int startZ = EMath.Max((int)((z - 8f) / 32f + 270f), 0);
+            int endX = EMath.Min((int)((x2 + 8f) / 32f + 270f), 539);
+            int endZ = EMath.Min((int)((z2 + 8f) / 32f + 270f), 539);
+            TreeInstance[] trees = __instance.m_trees.m_buffer;
+            uint[] treeGrid = __instance.m_treeGrid;
+            for (int i = startZ; i <= endZ; i++) {
+                for (int j = startX; j <= endX; j++) {
+                    uint treeID = treeGrid[i * 540 + j];
+                    while (treeID != 0u) {
+                        Vector3 position = trees[treeID].Position;
+                        float num7 = EMath.Max(EMath.Max(x - 8f - position.x, z - 8f - position.z), EMath.Max(position.x - x2 - 8f, position.z - z2 - 8f));
+                        if (num7 < 0f) {
+                            trees[treeID].AfterTerrainUpdated(treeID, x, z, x2, z2);
                         }
-                    } else if (cur.opcode == OpCodes.Ldarg_0 && codes.MoveNext()) {
-                        var next = codes.Current;
-                        if (next.opcode == OpCodes.Ldfld && next.operand == treeGridField) {
-                            yield return new CodeInstruction(OpCodes.Ldloc_S, treeGrid).WithLabels(cur.labels);
-                        } else if (next.opcode == OpCodes.Ldfld && next.operand == treeArrayField && codes.MoveNext()) {
-                            yield return new CodeInstruction(OpCodes.Ldloc_S, treeBuffer).WithLabels(cur.labels);
-                        } else {
-                            yield return cur;
-                            yield return next;
-                        }
-                    } else if (cur.opcode == OpCodes.Conv_U) {
-                        // skip the code
-                    } else if ((cur.opcode == OpCodes.Stloc_S || cur.opcode == OpCodes.Ldloc_S) && (cur.operand as LocalBuilder).LocalIndex == 13) {
-                        // skip the code
-                    } else if (cur.opcode == OpCodes.Ldc_I4_0 && codes.MoveNext()) {
-                        var next = codes.Current;
-                        if (next.opcode == OpCodes.Stloc_S && (next.operand as LocalBuilder).LocalIndex == 11) {
-                            // skip codes
-                        } else {
-                            yield return cur;
-                            yield return next;
-                        }
-                    } else if (cur.opcode == OpCodes.Ldloc_S && (cur.operand as LocalBuilder).LocalIndex == 11 && codes.MoveNext()) {
-                        while (codes.MoveNext()) {
-                            if (codes.Current.opcode == OpCodes.Br) break;
-                        }
-                    } else {
-                        yield return cur;
+                        treeID = trees[treeID].m_nextGridTree;
                     }
                 }
             }
+            return false;
         }
 
         private delegate T PrefabGetter<out T>();
@@ -398,7 +336,7 @@ namespace TreeAnarchy.Patches {
 
         private static IEnumerable<CodeInstruction> CalculateAreaHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             LocalBuilder treeScales = il.DeclareLocal(typeof(TAManager.ExtraTreeInfo[]));
-            using (var codes = RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il)).GetEnumerator()) {
+            using (var codes = RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il)).GetEnumerator()) {
                 yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(TAManager), nameof(TAManager.m_extraTreeInfos)));
                 yield return new CodeInstruction(OpCodes.Stloc_S, treeScales);
                 while (codes.MoveNext()) {
@@ -460,10 +398,10 @@ namespace TreeAnarchy.Patches {
                 for (int i = 0; i < len; i++) {
                     RenderGroup renderGroup = renderedGroups[i];
                     if ((renderGroup.m_instanceMask & 1 << treeLayer) != 0) {
-                        int startX = renderGroup.m_x * (540 / 45);
-                        int startZ = renderGroup.m_z * (540 / 45);
-                        int endX = (renderGroup.m_x + 1) * (540 / 45) - 1;
-                        int endZ = (renderGroup.m_z + 1) * (540 / 45) - 1;
+                        int startX = renderGroup.m_x * 540 / 45;
+                        int startZ = renderGroup.m_z * 540 / 45;
+                        int endX = (renderGroup.m_x + 1) * 540 / 45 - 1;
+                        int endZ = (renderGroup.m_z + 1) * 540 / 45 - 1;
                         for (int j = startZ; j <= endZ; j++) {
                             for (int k = startX; k <= endX; k++) {
                                 uint treeID = *(pGrid + (j * 540 + k));
@@ -603,7 +541,7 @@ namespace TreeAnarchy.Patches {
             LocalBuilder treeBuffer = il.DeclareLocal(typeof(TreeInstance[]));
             FieldInfo treeGridField = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_treeGrid));
             FieldInfo treeArrayField = AccessTools.Field(typeof(TreeManager), nameof(TreeManager.m_trees));
-            using (var codes = TreeInstancePatches.ReplaceMath(instructions).GetEnumerator()) {
+            using (var codes = instructions.GetEnumerator()) {
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
                 yield return new CodeInstruction(OpCodes.Ldfld, treeGridField);
                 yield return new CodeInstruction(OpCodes.Stloc_S, treeGrid);
@@ -654,7 +592,7 @@ namespace TreeAnarchy.Patches {
             FieldInfo buildingGridField = AccessTools.Field(typeof(BuildingManager), nameof(BuildingManager.m_buildingGrid));
             FieldInfo buildingArrayField = AccessTools.Field(typeof(BuildingManager), nameof(BuildingManager.m_buildings));
             MethodInfo simManager = AccessTools.PropertyGetter(typeof(Singleton<SimulationManager>), nameof(Singleton<SimulationManager>.instance));
-            using (var codes = InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il).GetEnumerator()) {
+            using (var codes = InstallTreeGridBufferLocals(instructions, il).GetEnumerator()) {
                 yield return new CodeInstruction(OpCodes.Call, simManager);
                 yield return new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(SimulationManager), nameof(SimulationManager.m_randomizer)));
                 yield return new CodeInstruction(OpCodes.Stloc_S, randomizer);
@@ -755,8 +693,8 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> InitializeTreeTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> InitializeTreeTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
 
         private unsafe static void OnPostRenderCoroutine(RenderManager.CameraInfo cameraInfo, ref Quaternion quaternion, int renderPass, int prefabCount, int sqrLen,
             float tangent, Shader renderShader, ref DrawCallData drawCallData, int ID_TileRect, int ID_ShadowAMap, int ID_ShadowMatrix, RenderTexture renderShadowTexture) {
@@ -831,7 +769,7 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerOverlapQuadTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
-             RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
+             RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerPopulateGroupDataTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
@@ -839,11 +777,11 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerRayCastTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
-            RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
+            RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> SampleSmoothHeightTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
-            RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
+            RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
         /// <summary>
         /// Did not take care of optimizing burning tree loop
@@ -885,7 +823,7 @@ namespace TreeAnarchy.Patches {
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IEnumerable<CodeInstruction> TreeManagerTerrainUpdatedTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
-            RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
+            RemoveBoundaryCheck(InstallTreeGridBufferLocals(instructions, il));
 
         private static IEnumerable<CodeInstruction> UpdateDataTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) {
             LocalBuilder bufferLimit = il.DeclareLocal(typeof(int));
@@ -920,12 +858,12 @@ namespace TreeAnarchy.Patches {
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> UpdateTreeRendererTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> UpdateTreeRendererTranspiler(IEnumerable<CodeInstruction> instructions) => TreeInstancePatches.ReplaceMath(instructions);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IEnumerable<CodeInstruction> UpdateTreesTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
-            RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        //private static IEnumerable<CodeInstruction> UpdateTreesTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il) =>
+        //    RemoveBoundaryCheck(InstallTreeGridBufferLocals(TreeInstancePatches.ReplaceMath(instructions), il));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CustomSetPosY(TreeInstance[] trees, int treeID) {
@@ -1180,7 +1118,7 @@ namespace TreeAnarchy.Patches {
                 if (!(patches is null) && !(patches.Prefixes is null)) {
                     harmony.Unpatch(afterTerrainUpdate, HarmonyPatchType.Prefix);
                 }
-                harmony.Patch(afterTerrainUpdate, transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.AfterTerrainUpdateTranspiler))));
+                harmony.Patch(afterTerrainUpdate, prefix: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.AfterTerrainUpdatePrefix))));
             } catch (Exception e) {
                 TAMod.TALog("Failed to patch TreeManager::AfterTerrainUpdate with prefix");
                 TAMod.TALog(e.Message);
@@ -1248,13 +1186,13 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog("Failed to patch TreeManager::HandleFireSpread. This is non-Fatal");
                 TAMod.TALog(e.Message);
             }
-            try {
-                harmony.Patch(AccessTools.Method(typeof(TreeManager), @"InitializeTree"),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.InitializeTreeTranspiler))));
-            } catch (Exception e) {
-                TAMod.TALog("Failed to patch TreeManager::InitializeTree. This is non-Fatal");
-                TAMod.TALog(e.Message);
-            }
+            //try {
+            //    harmony.Patch(AccessTools.Method(typeof(TreeManager), @"InitializeTree"),
+            //        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.InitializeTreeTranspiler))));
+            //} catch (Exception e) {
+            //    TAMod.TALog("Failed to patch TreeManager::InitializeTree. This is non-Fatal");
+            //    TAMod.TALog(e.Message);
+            //}
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeManager), @"OnPostRender"),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.OnPostRenderTranspiler))));
@@ -1316,21 +1254,21 @@ namespace TreeAnarchy.Patches {
                 TAMod.TALog("Failed to patch TreeManager::UpdateData. This is non-Fatal");
                 TAMod.TALog(e.Message);
             }
-            try {
-                harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTreeRenderer)),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.UpdateTreeRendererTranspiler))));
-            } catch (Exception e) {
-                TAMod.TALog("Failed to patch TreeManager::UpdateTreeRenderer. This is non-Fatal");
-                TAMod.TALog(e.Message);
-            }
-            try {
-                harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)),
-                    transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.UpdateTreesTranspiler))));
-            } catch (Exception e) {
-                TAMod.TALog("Failed to patch TreeManager::UpdateTrees");
-                TAMod.TALog(e.Message);
-                throw;
-            }
+            //try {
+            //    harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTreeRenderer)),
+            //        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.UpdateTreeRendererTranspiler))));
+            //} catch (Exception e) {
+            //    TAMod.TALog("Failed to patch TreeManager::UpdateTreeRenderer. This is non-Fatal");
+            //    TAMod.TALog(e.Message);
+            //}
+            //try {
+            //    harmony.Patch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)),
+            //        transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(TreeManagerPatches.UpdateTreesTranspiler))));
+            //} catch (Exception e) {
+            //    TAMod.TALog("Failed to patch TreeManager::UpdateTrees");
+            //    TAMod.TALog(e.Message);
+            //    throw;
+            //}
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeManagerPatches), nameof(DeserializeTranspiler))));
@@ -1359,7 +1297,7 @@ namespace TreeAnarchy.Patches {
 
         internal static void DisableTreeManagerPatch(Harmony harmony, string HARMONYID) {
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"Awake"), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), HarmonyPatchType.Transpiler, HARMONYID);
+            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.AfterTerrainUpdate)), HarmonyPatchType.Prefix, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"BeginRenderingImpl"), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateAreaHeight)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.CalculateGroupData)), HarmonyPatchType.Transpiler, HARMONYID);
@@ -1368,7 +1306,7 @@ namespace TreeAnarchy.Patches {
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"EndRenderingImpl"), HarmonyPatchType.Prefix, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"FinalizeTree"), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"HandleFireSpread"), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"InitializeTree"), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"InitializeTree"), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"OnPostRender"), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.OverlapQuad)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.PopulateGroupData)), HarmonyPatchType.Transpiler, HARMONYID);
@@ -1377,8 +1315,8 @@ namespace TreeAnarchy.Patches {
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), @"SimulationStepImpl"), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.TerrainUpdated)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateData)), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTreeRenderer)), HarmonyPatchType.Transpiler, HARMONYID);
-            harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTreeRenderer)), HarmonyPatchType.Transpiler, HARMONYID);
+            //harmony.Unpatch(AccessTools.Method(typeof(TreeManager), nameof(TreeManager.UpdateTrees)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Deserialize)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.Serialize)), HarmonyPatchType.Transpiler, HARMONYID);
             harmony.Unpatch(AccessTools.Method(typeof(TreeManager.Data), nameof(TreeManager.Data.AfterDeserialize)), HarmonyPatchType.Transpiler, HARMONYID);
