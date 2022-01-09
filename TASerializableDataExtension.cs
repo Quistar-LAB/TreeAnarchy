@@ -154,18 +154,20 @@ namespace TreeAnarchy {
                     }
                     @float.EndRead();
                 }
-                int burningListSize = (int)s.ReadUInt24();
-                treeManager.m_burningTrees.EnsureCapacity(burningListSize);
-                for (int n = 0; n < burningListSize; n++) {
-                    TreeManager.BurningTree item;
-                    item.m_treeIndex = s.ReadUInt24();
-                    item.m_fireIntensity = (byte)s.ReadUInt8();
-                    item.m_fireDamage = (byte)s.ReadUInt8();
-                    if (item.m_treeIndex != 0u) {
-                        treeManager.m_burningTrees.Add(item);
-                        trees[item.m_treeIndex].m_flags |= 64;
-                        if (item.m_fireIntensity != 0) {
-                            trees[item.m_treeIndex].m_flags |= 128;
+                if ((Format)s.version >= Format.Version7) {
+                    int burningListSize = (int)s.ReadUInt24();
+                    treeManager.m_burningTrees.EnsureCapacity(burningListSize);
+                    for (int n = 0; n < burningListSize; n++) {
+                        TreeManager.BurningTree item;
+                        item.m_treeIndex = s.ReadUInt24();
+                        item.m_fireIntensity = (byte)s.ReadUInt8();
+                        item.m_fireDamage = (byte)s.ReadUInt8();
+                        if (item.m_treeIndex != 0u) {
+                            treeManager.m_burningTrees.Add(item);
+                            trees[item.m_treeIndex].m_flags |= 64;
+                            if (item.m_fireIntensity != 0) {
+                                trees[item.m_treeIndex].m_flags |= 128;
+                            }
                         }
                     }
                 }
