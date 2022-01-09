@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace TreeAnarchy {
     public class TAMod : ILoadingExtension, IUserMod {
-        internal const string m_modVersion = @"1.3.0";
+        internal const string m_modVersion = @"1.3.2";
         internal const string m_assemblyVersion = m_modVersion + @".*";
         private const string m_modName = @"Tree Anarchy";
         private const string m_modDesc = @"Lets you plant more trees with tree snapping";
@@ -350,7 +350,9 @@ namespace TreeAnarchy {
                 using (StreamWriter sw = new StreamWriter(debugFile)) {
                     sw.WriteLine(@"Mods Installed are:");
                     foreach (PluginManager.PluginInfo info in Singleton<PluginManager>.instance.GetPluginsInfo()) {
-                        sw.WriteLine($"=> {info.name}-{(info.userModInstance as IUserMod).Name} {(info.isEnabled ? @"** Enabled **" : @"** Disabled **")}");
+                        if(!(info is null) && info.userModInstance is IUserMod modInstance) {
+                            sw.WriteLine($"=> {info.name}-{modInstance.Name} {(info.isEnabled ? @"** Enabled **" : @"** Disabled **")}");
+                        }
                     }
                     sw.WriteLine(@"-------------------------------------");
                 }
