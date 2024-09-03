@@ -267,7 +267,7 @@ namespace TreeAnarchy {
             vector.y = treeState.position.y + deltaPosition.y;
             vector = CalculateTreeVector(vector, deltaPosition.y, followTerrain);
 
-            TreeInstance.RenderInstance(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation);
+            TreeInstance.RenderInstance(cameraInfo, treeInfo, vector, scale, brightness, RenderManager.DefaultColorLocation, disableRuined: false);
             return false;
         }
 

@@ -178,7 +178,7 @@ namespace TreeAnarchy {
 
         private static IEnumerable<CodeInstruction> TreeToolRenderOverlayTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase method) {
             bool skipFirst = false;
-            int randomizerLocalIndex = 4;
+            int randomizerLocalIndex = 3;
             ConstructorInfo randomizer = AccessTools.Constructor(typeof(Randomizer), new Type[] { typeof(uint) });
             var variables = method.GetMethodBody().LocalVariables;
             foreach (var variable in variables) {
@@ -194,7 +194,7 @@ namespace TreeAnarchy {
                     if (cur.opcode == OpCodes.Call && cur.operand == randomizer) {
                         yield return cur;
                         yield return new CodeInstruction(OpCodes.Ldloca_S, randomizerLocalIndex);
-                        yield return new CodeInstruction(OpCodes.Ldloc_3);
+                        yield return new CodeInstruction(OpCodes.Ldloc_2);
                         yield return new CodeInstruction(OpCodes.Ldloc_0);
                         yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(TAManager), nameof(TAManager.GetSeedTreeScale)));
                         while (codes.MoveNext()) {

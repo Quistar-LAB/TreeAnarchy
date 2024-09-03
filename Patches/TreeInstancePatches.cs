@@ -462,7 +462,7 @@ namespace TreeAnarchy.Patches {
             }
             try {
                 harmony.Patch(AccessTools.Method(typeof(TreeInstance), nameof(TreeInstance.RenderInstance),
-                    new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4) }),
+                    new Type[] { typeof(RenderManager.CameraInfo), typeof(TreeInfo), typeof(Vector3), typeof(float), typeof(float), typeof(Vector4), typeof(bool) }),
                     transpiler: new HarmonyMethod(AccessTools.Method(typeof(TreeInstancePatches), nameof(RenderInstanceStaticTransplier))));
             } catch (Exception e) {
                 TAMod.TALog("Failed to patch static TreeInstance::RenderInstance");

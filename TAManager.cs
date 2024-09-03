@@ -43,8 +43,6 @@ namespace TreeAnarchy {
                 SingletonLite<TAManager>.instance.SetTCBuffer(MaxTreeLimit);
 #endif
             }
-            manager.SetResolution(TAMod.TreeLODSelectedResolution);
-            TAMod.TALog("Setting Tree LOD to " + TAMod.TreeLODSelectedResolution);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
